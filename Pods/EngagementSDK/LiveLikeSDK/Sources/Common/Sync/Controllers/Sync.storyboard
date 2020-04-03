@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="14490.70" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="y2y-TT-Q7l">
+    <device id="retina4_7" orientation="portrait">
+        <adaptation id="fullscreen"/>
+    </device>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14490.49"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--Sync Alert View Controller-->
+        <scene sceneID="KrD-iw-t1X">
+            <objects>
+                <viewController id="y2y-TT-Q7l" customClass="SyncAlertViewController" customModule="EngagementSDK" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="U5C-bc-QO2">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Nv9-9D-GiJ">
+                                <rect key="frame" x="67.5" y="282" width="240" height="123.5"/>
+                                <subviews>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Player Sync Code" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="a3K-In-5e3">
+                                        <rect key="frame" x="8" y="12" width="224" height="21"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                        <nil key="textColor"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="123 456" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Ya4-Uc-aBT">
+                                        <rect key="frame" x="8" y="37" width="224" height="27.5"/>
+                                        <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="23"/>
+                                        <nil key="textColor"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Time left: 45s" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="CBG-rS-DvO">
+                                        <rect key="frame" x="8" y="68.5" width="224" height="21"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                        <nil key="textColor"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="hz7-6J-UWv">
+                                        <rect key="frame" x="0.0" y="93.5" width="240" height="30"/>
+                                        <state key="normal" title="OK"/>
+                                        <connections>
+                                            <action selector="okButtonPressed:" destination="y2y-TT-Q7l" eventType="touchUpInside" id="6wz-11-d7o"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstAttribute="trailing" secondItem="a3K-In-5e3" secondAttribute="trailing" constant="8" id="3kV-xV-VmS"/>
+                                    <constraint firstItem="Ya4-Uc-aBT" firstAttribute="top" secondItem="a3K-In-5e3" secondAttribute="bottom" constant="4" id="GaN-8t-gQx"/>
+                                    <constraint firstAttribute="trailing" secondItem="Ya4-Uc-aBT" secondAttribute="trailing" constant="8" id="Kyz-eJ-TOb"/>
+                                    <constraint firstItem="CBG-rS-DvO" firstAttribute="leading" secondItem="Nv9-9D-GiJ" secondAttribute="leading" constant="8" id="QBp-Q4-dYu"/>
+                                    <constraint firstItem="hz7-6J-UWv" firstAttribute="leading" secondItem="Nv9-9D-GiJ" secondAttribute="leading" id="TLI-8B-7z4"/>
+                                    <constraint firstItem="hz7-6J-UWv" firstAttribute="top" secondItem="CBG-rS-DvO" secondAttribute="bottom" constant="4" id="WgF-oN-Iwk"/>
+                                    <constraint firstAttribute="trailing" secondItem="CBG-rS-DvO" secondAttribute="trailing" constant="8" id="Ye3-EU-S5B"/>
+                                    <constraint firstItem="a3K-In-5e3" firstAttribute="leading" secondItem="Nv9-9D-GiJ" secondAttribute="leading" constant="8" id="gLp-x4-XaP"/>
+                                    <constraint firstItem="CBG-rS-DvO" firstAttribute="top" secondItem="Ya4-Uc-aBT" secondAttribute="bottom" constant="4" id="gpm-ae-gpi"/>
+                                    <constraint firstAttribute="trailing" secondItem="hz7-6J-UWv" secondAttribute="trailing" id="ktd-iE-Dd3"/>
+                                    <constraint firstAttribute="bottom" secondItem="hz7-6J-UWv" secondAttribute="bottom" id="qES-YW-6oo"/>
+                                    <constraint firstItem="a3K-In-5e3" firstAttribute="top" secondItem="Nv9-9D-GiJ" secondAttribute="top" constant="12" id="r0f-hc-RQu"/>
+                                    <constraint firstItem="Ya4-Uc-aBT" firstAttribute="leading" secondItem="Nv9-9D-GiJ" secondAttribute="leading" constant="8" id="tKZ-XO-aMP"/>
+                                    <constraint firstAttribute="width" constant="240" id="x1q-Lm-CMq"/>
+                                </constraints>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                        <real key="value" value="6"/>
+                                    </userDefinedRuntimeAttribute>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="borderWidth">
+                                        <real key="value" value="0.0"/>
+                                    </userDefinedRuntimeAttribute>
+                                    <userDefinedRuntimeAttribute type="color" keyPath="borderColor">
+                                        <color key="value" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </userDefinedRuntimeAttribute>
+                                </userDefinedRuntimeAttributes>
+                            </view>
+                        </subviews>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstItem="Nv9-9D-GiJ" firstAttribute="centerX" secondItem="gnZ-ub-oyQ" secondAttribute="centerX" id="jGb-8c-thy"/>
+                            <constraint firstItem="Nv9-9D-GiJ" firstAttribute="centerY" secondItem="gnZ-ub-oyQ" secondAttribute="centerY" id="ml7-8b-Q0O"/>
+                        </constraints>
+                        <viewLayoutGuide key="safeArea" id="gnZ-ub-oyQ"/>
+                    </view>
+                    <connections>
+                        <outlet property="alertView" destination="Nv9-9D-GiJ" id="iYl-He-yr8"/>
+                        <outlet property="pinLabel" destination="Ya4-Uc-aBT" id="Jr6-iT-69e"/>
+                        <outlet property="timeoutLabel" destination="CBG-rS-DvO" id="TnY-EV-SD1"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="ig1-Jc-zq4" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="86" y="141"/>
+        </scene>
+    </scenes>
+</document>

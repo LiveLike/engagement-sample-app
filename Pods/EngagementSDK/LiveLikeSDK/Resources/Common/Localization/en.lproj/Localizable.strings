@@ -1,0 +1,45 @@
+/* 
+  Localizable.strings
+  EngagementSDK
+
+  Created by Heinrich Dahms on 2019-06-24.
+  
+*/
+
+// ************
+// Chat
+// ************
+
+"EngagementSDK.chat.input.placeholder.say-something" = "Say something...";
+
+// ************
+// Widgets
+// ************
+
+// Dismiss Widget
+"EngagementSDK.widget.DismissWidget.widget" = "WIDGET";
+"EngagementSDK.widget.DismissWidget.on" = "ON";
+"EngagementSDK.widget.DismissWidget.off" = "OFF";
+"EngagementSDK.widget.DismissWidget.title" = "Do you want to turn off widgets?";
+"EngagementSDK.widget.DismissWidget.responses.no" = "No";
+"EngagementSDK.widget.DismissWidget.responses.for-now" = "For Now";
+"EngagementSDK.widget.DismissWidget.responses.forever" = "Forever";
+"EngagementSDK.widget.DismissWidget.pause.confirmation.no" = "Great! You can turn off widgets anytime!";
+"EngagementSDK.widget.DismissWidget.pause.confirmation.for-now" = "Cool. You won't see anymore widgets for this session.";
+"EngagementSDK.widget.DismissWidget.pause.confirmation.forever" = "Alright! You can turn on widgets anytime!";
+"EngagementSDK.widget.DismissWidget.unpause.title" = "Do you want to turn on widgets?";
+"EngagementSDK.widget.DismissWidget.unpause.responses.yes" = "Yes!!!";
+"EngagementSDK.widget.DismissWidget.unpause.responses.no" = "Not Now";
+"EngagementSDK.widget.DismissWidget.unpause.confirmation.no" = "Alright! You can turn on widgets anytime!";
+"EngagementSDK.widget.DismissWidget.unpause.confirmation.yes" = "Good choice! Enjoy your game!!!";
+
+// Cheer Meter Widget
+"EngagementSDK.widget.CheerMeter.scoreTitle" = "MY SCORE";
+"EngagementSDK.widget.CheerMeter.instruction" = "Tap to win the game!";
+
+// Gamifiction Views
+"EngagementSDK.gamification.TutorialWidget.title" = "Great Start!";
+"EngagementSDK.gamification.TutorialWidget.message" = "Keep responding to earn more points and reach the top of the leaderboards!";
+"EngagementSDK.gamification.BadgeCollectWidget.message" = "Congrats! You just unlocked a new badge!";
+"EngagementSDK.gamification.BadgeCollectWidget.button" = "Collect";
+"EngagementSDK.gamification.Rank.phrase" = "RANK";

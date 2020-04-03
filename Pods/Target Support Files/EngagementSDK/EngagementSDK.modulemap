@@ -1,0 +1,6 @@
+framework module EngagementSDK {
+  umbrella header "EngagementSDK-umbrella.h"
+
+  export *
+  module * { export * }
+}

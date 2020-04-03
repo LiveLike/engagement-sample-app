@@ -1,0 +1,32 @@
+PODS:
+  - EngagementSDK (1.10.11):
+    - lottie-ios (~> 2.5.3)
+    - Mixpanel-swift (~> 2.5.8)
+    - PubNub (~> 4.12.0)
+  - lottie-ios (2.5.3)
+  - Mixpanel-swift (2.5.9):
+    - Mixpanel-swift/Complete (= 2.5.9)
+  - Mixpanel-swift/Complete (2.5.9)
+  - PubNub (4.12.0):
+    - PubNub/Core (= 4.12.0)
+  - PubNub/Core (4.12.0)
+
+DEPENDENCIES:
+  - EngagementSDK
+
+SPEC REPOS:
+  trunk:
+    - EngagementSDK
+    - lottie-ios
+    - Mixpanel-swift
+    - PubNub
+
+SPEC CHECKSUMS:
+  EngagementSDK: 05748759c5097251850ec7cff8e62af13e96f179
+  lottie-ios: a50d5c0160425cd4b01b852bb9578963e6d92d31
+  Mixpanel-swift: 4a2e061c8b7a5000ed7f72d2a6196884b5de8b49
+  PubNub: 44e2eb39746e7231b98b978a8e3b9726b11dca9c
+
+PODFILE CHECKSUM: ebd3afff3ce63b7f9d0766cef8ea1e586de6e96a
+
+COCOAPODS: 1.9.1
