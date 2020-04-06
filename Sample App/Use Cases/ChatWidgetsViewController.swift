@@ -22,7 +22,7 @@ class ChatWidgetsViewController: UIViewController {
         return widgetView
     }()
     
-    private var chatView: UIView = {
+    private let chatView: UIView = {
         let chatView = UIView()
         chatView.translatesAutoresizingMaskIntoConstraints = false
         return chatView
