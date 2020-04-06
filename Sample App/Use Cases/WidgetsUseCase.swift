@@ -44,7 +44,7 @@ class WidgetsUseCase: UIViewController {
 
 // MARK: - EngagementSDK ContentSessionDelegate
 extension WidgetsUseCase: ContentSessionDelegate {
-     func setUpEngagementSDK() {
+     private func setUpEngagementSDK() {
         
         guard let clientID = Defaults.activeClientID,
             let programID = Defaults.activeProgramID else {

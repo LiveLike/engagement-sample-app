@@ -69,6 +69,17 @@ class HomeViewController: UIViewController {
         return button
     }()
     
+    private let chatModuleButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle("Chat & Widgets", for: .normal)
+        button.backgroundColor = .systemGray6
+        button.contentHorizontalAlignment = .leading
+        button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
+        button.addTarget(self, action: #selector(didPressChatButton), for: .touchUpInside)
+        return button
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -89,6 +100,7 @@ class HomeViewController: UIViewController {
         stackView.addArrangedSubview(programIDTextField)
         stackView.addArrangedSubview(useCasesLabel)
         stackView.addArrangedSubview(widgetModuleButton)
+        stackView.addArrangedSubview(chatModuleButton)
         
         clientIDTextField.addTarget(self, action: #selector(clientIDTextFieldEditingDidEnd), for: .editingDidEnd)
         programIDTextField.addTarget(self, action: #selector(programIDTextFieldEditingDidEnd), for: .editingDidEnd)
@@ -119,6 +131,12 @@ class HomeViewController: UIViewController {
         let widgetsVC = WidgetsUseCase()
         widgetsVC.modalPresentationStyle = .fullScreen
         self.navigationController?.pushViewController(widgetsVC, animated: true)
+    }
+    
+    @objc func didPressChatButton() {
+        let chatWidgetsVC = ChatWidgetsViewController()
+        chatWidgetsVC.modalPresentationStyle = .fullScreen
+        self.navigationController?.pushViewController(chatWidgetsVC, animated: true)
     }
 
 }
