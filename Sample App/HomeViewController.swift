@@ -69,7 +69,7 @@ class HomeViewController: UIViewController {
         return button
     }()
     
-    private let chatModuleButton: UIButton = {
+    private let chatWidgetModuleButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle("Chat & Widgets", for: .normal)
@@ -100,7 +100,7 @@ class HomeViewController: UIViewController {
         stackView.addArrangedSubview(programIDTextField)
         stackView.addArrangedSubview(useCasesLabel)
         stackView.addArrangedSubview(widgetModuleButton)
-        stackView.addArrangedSubview(chatModuleButton)
+        stackView.addArrangedSubview(chatWidgetModuleButton)
         
         clientIDTextField.addTarget(self, action: #selector(clientIDTextFieldEditingDidEnd), for: .editingDidEnd)
         programIDTextField.addTarget(self, action: #selector(programIDTextFieldEditingDidEnd), for: .editingDidEnd)
