@@ -18,14 +18,6 @@ class ViewController: UIViewController {
         return stackView
     }()
     
-    private let sdkVersionLabel: UILabel = {
-        let label = UILabel()
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = "LL SDK [\(EngagementSDK.version)]"
-        label.textAlignment = .center
-        return label
-    }()
-    
     private let clientIDLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -79,6 +71,8 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        title = "Engagement SDK \(EngagementSDK.version)"
     
         view.addSubview(stackView)
         
@@ -89,7 +83,6 @@ class ViewController: UIViewController {
             stackView.bottomAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10)
         ])
         
-        stackView.addArrangedSubview(sdkVersionLabel)
         stackView.addArrangedSubview(clientIDLabel)
         stackView.addArrangedSubview(clientIDTextField)
         stackView.addArrangedSubview(programIDLabel)
@@ -125,7 +118,7 @@ class ViewController: UIViewController {
     @objc func didPressWidgetButton() {
         let widgetsVC = WidgetsUseCase()
         widgetsVC.modalPresentationStyle = .fullScreen
-        self.present(widgetsVC, animated: true, completion: nil)
+        self.navigationController?.pushViewController(widgetsVC, animated: true)
     }
 
 }
