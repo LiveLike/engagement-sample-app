@@ -11,6 +11,11 @@ import EngagementSDK
 
 class ViewController: UIViewController {
     
+    private let clientIDUserDefaultsKey = "com.livelike.SampleApp.clientID"
+    private let programIDUserDefaultsKey = "com.livelike.SampleApp.programID"
+    
+    private let userDefaults = UserDefaults.standard
+    
     private let stackView: UIStackView = {
         let stackView = UIStackView()
         stackView.translatesAutoresizingMaskIntoConstraints = false
@@ -85,8 +90,31 @@ class ViewController: UIViewController {
         stackView.addArrangedSubview(programIDLabel)
         stackView.addArrangedSubview(programIDTextField)
         stackView.addArrangedSubview(useCasesLabel)
+        
+        clientIDTextField.addTarget(self, action: #selector(clientIDTextFieldEditingDidEnd), for: .editingDidEnd)
+        programIDTextField.addTarget(self, action: #selector(programIDTextFieldEditingDidEnd), for: .editingDidEnd)
+        
+        
+        // Loads previous client id and program id from UserDefaults
+        clientIDTextField.text = userDefaults.string(forKey: clientIDUserDefaultsKey)
+        programIDTextField.text = userDefaults.string(forKey: programIDUserDefaultsKey)
+    }
+    
+    @objc private func clientIDTextFieldEditingDidEnd() {
+        // Stores clientID into UserDefaults if not nil or empty
+        guard let clientID = clientIDTextField.text, !clientID.isEmpty else {
+            return
+        }
+        userDefaults.set(clientID, forKey: clientIDUserDefaultsKey)
     }
 
+    @objc private func programIDTextFieldEditingDidEnd() {
+        // Stores programID into UserDefaults if not nil or empty
+        guard let programID = programIDTextField.text, !programID.isEmpty else {
+            return
+        }
+        userDefaults.set(programID, forKey: clientIDUserDefaultsKey)
+    }
 
 }
 
