@@ -3,10 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		767AFD57243B8B2600F85E8A /* ChatModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767AFD56243B8B2600F85E8A /* ChatModule.swift */; };
 		76FE3E922437990E003F179B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE3E912437990E003F179B /* AppDelegate.swift */; };
 		76FE3E942437990E003F179B /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE3E932437990E003F179B /* SceneDelegate.swift */; };
 		76FE3E962437990E003F179B /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE3E952437990E003F179B /* ViewController.swift */; };
@@ -18,6 +19,7 @@
 
 /* Begin PBXFileReference section */
 		18CA8D5CBB21254E2489C76B /* Pods-Sample App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.release.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.release.xcconfig"; sourceTree = "<group>"; };
+		767AFD56243B8B2600F85E8A /* ChatModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModule.swift; sourceTree = "<group>"; };
 		76FE3E8E2437990E003F179B /* Sample App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Sample App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		76FE3E912437990E003F179B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		76FE3E932437990E003F179B /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -48,7 +50,6 @@
 				842A1B4B833DABFEBA36D5AF /* Pods-Sample App.debug.xcconfig */,
 				18CA8D5CBB21254E2489C76B /* Pods-Sample App.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -88,6 +89,7 @@
 				76FE3E9A24379912003F179B /* Assets.xcassets */,
 				76FE3E9C24379912003F179B /* LaunchScreen.storyboard */,
 				76FE3E9F24379912003F179B /* Info.plist */,
+				767AFD56243B8B2600F85E8A /* ChatModule.swift */,
 			);
 			path = "Sample App";
 			sourceTree = "<group>";
@@ -208,6 +210,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				76FE3E962437990E003F179B /* ViewController.swift in Sources */,
+				767AFD57243B8B2600F85E8A /* ChatModule.swift in Sources */,
 				76FE3E922437990E003F179B /* AppDelegate.swift in Sources */,
 				76FE3E942437990E003F179B /* SceneDelegate.swift in Sources */,
 			);
