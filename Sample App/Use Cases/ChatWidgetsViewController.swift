@@ -93,11 +93,6 @@ class ChatWidgetsViewController: UIViewController {
     
     private func setUpEngagementSDK() {
         
-        guard let clientID = Defaults.activeClientID,
-            let programID = Defaults.activeProgramID else {
-            return
-        }
-        
         let sdk = EngagementSDK.init(clientID: clientID,
                                      accessTokenStorage: self)
         let config = SessionConfiguration(programID: programID)
