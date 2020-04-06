@@ -12,13 +12,27 @@ class WidgetsUseCase: UIViewController {
 
     private var session: ContentSession?
     private let widgetViewController = WidgetViewController()
+    private var clientID: String
+    private var programID: String
     
-    private var widgetView: UIView = {
+    private let widgetView: UIView = {
         let widgetView = UIView()
         widgetView.translatesAutoresizingMaskIntoConstraints = false
         widgetView.backgroundColor = .white
         return widgetView
     }()
+    
+    init(clientID: String, programID: String) {
+        
+        self.clientID = clientID
+        self.programID = programID
+        
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -38,25 +52,6 @@ class WidgetsUseCase: UIViewController {
             widgetView.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor)
         ])
         
-    }
-    
-}
-
-// MARK: - EngagementSDK ContentSessionDelegate
-extension WidgetsUseCase: ContentSessionDelegate {
-     private func setUpEngagementSDK() {
-        
-        guard let clientID = Defaults.activeClientID,
-            let programID = Defaults.activeProgramID else {
-            return
-        }
-        
-        let sdk = EngagementSDK.init(clientID: clientID,
-                                     accessTokenStorage: self)
-        let config = SessionConfiguration(programID: programID)
-        session = sdk.contentSession(config: config, delegate: self)
-        EngagementSDK.logLevel = .verbose
-        
         // Add widgetViewController as child view controller
         addChild(widgetViewController)
         widgetView.addSubview(widgetViewController.view)
@@ -69,11 +64,31 @@ extension WidgetsUseCase: ContentSessionDelegate {
             widgetViewController.view.trailingAnchor.constraint(equalTo: widgetView.trailingAnchor),
             widgetViewController.view.leadingAnchor.constraint(equalTo: widgetView.leadingAnchor)
         ])
+        
+    }
+    
+    private func setUpEngagementSDK() {
+        
+        guard let clientID = Defaults.activeClientID,
+            let programID = Defaults.activeProgramID else {
+            return
+        }
+        
+        let sdk = EngagementSDK.init(clientID: clientID,
+                                     accessTokenStorage: self)
+        let config = SessionConfiguration(programID: programID)
+        session = sdk.contentSession(config: config, delegate: self)
+        EngagementSDK.logLevel = .verbose
+        
         widgetViewController.session = session
         session?.delegate = self
         
     }
     
+}
+
+// MARK: - EngagementSDK ContentSessionDelegate
+extension WidgetsUseCase: ContentSessionDelegate {
     func session(_ session: ContentSession, didChangeStatus status: SessionStatus) {
         print("Session status did change \(status)")
     }
@@ -82,9 +97,6 @@ extension WidgetsUseCase: ContentSessionDelegate {
         print("Did receive error: \(error)")
     }
     
-    func playheadTimeSource() -> Date {
-        return Date()
-    }
 }
 
 // MARK: AccessTokenStorage

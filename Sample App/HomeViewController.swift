@@ -128,15 +128,39 @@ class HomeViewController: UIViewController {
     }
     
     @objc func didPressWidgetButton() {
-        let widgetsVC = WidgetsUseCase()
+        guard let clientID = Defaults.activeClientID,
+            let programID = Defaults.activeProgramID else {
+                displayCliendProgramIDError()
+                return
+        }
+        
+        let widgetsVC = WidgetsUseCase(clientID: clientID, programID: programID)
         widgetsVC.modalPresentationStyle = .fullScreen
         self.navigationController?.pushViewController(widgetsVC, animated: true)
     }
     
     @objc func didPressChatButton() {
-        let chatWidgetsVC = ChatWidgetsViewController()
+        guard let clientID = Defaults.activeClientID,
+            let programID = Defaults.activeProgramID else {
+                displayCliendProgramIDError()
+                return
+        }
+        
+        let chatWidgetsVC = ChatWidgetsViewController(clientID: clientID, programID: programID)
         chatWidgetsVC.modalPresentationStyle = .fullScreen
         self.navigationController?.pushViewController(chatWidgetsVC, animated: true)
+    }
+    
+    private func displayCliendProgramIDError() {
+        let alertController = UIAlertController(title: "Error!",
+                                                message: "Please enter a valid Client ID and Program ID",
+                                                preferredStyle: .alert)
+        alertController.addAction(UIAlertAction(title: "OK",
+                                                style: .default,
+                                                handler: { [weak alertController] _ in
+            alertController?.dismiss(animated: true, completion: nil)
+        }))
+        present(alertController, animated: true, completion: nil)
     }
 
 }

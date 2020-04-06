@@ -13,8 +13,10 @@ class ChatWidgetsViewController: UIViewController {
     private var session: ContentSession?
     private let widgetViewController = WidgetViewController()
     private let chatViewController = ChatViewController()
+    private var clientID: String
+    private var programID: String
     
-    private var widgetView: UIView = {
+    private let widgetView: UIView = {
         let widgetView = UIView()
         widgetView.translatesAutoresizingMaskIntoConstraints = false
         return widgetView
@@ -25,6 +27,18 @@ class ChatWidgetsViewController: UIViewController {
         chatView.translatesAutoresizingMaskIntoConstraints = false
         return chatView
     }()
+    
+    init(clientID: String, programID: String) {
+        
+        self.clientID = clientID
+        self.programID = programID
+        
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -49,24 +63,6 @@ class ChatWidgetsViewController: UIViewController {
             widgetView.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor)
         ])
         
-    }
-
-}
-
-// MARK: - ContentSessionDelegate
-extension ChatWidgetsViewController: ContentSessionDelegate {
-     private func setUpEngagementSDK() {
-        
-        guard let clientID = Defaults.activeClientID,
-            let programID = Defaults.activeProgramID else {
-            return
-        }
-        
-        let sdk = EngagementSDK.init(clientID: clientID,
-                                     accessTokenStorage: self)
-        let config = SessionConfiguration(programID: programID)
-        session = sdk.contentSession(config: config, delegate: self)
-        
         // Add widgetViewController as child view controller
         addChild(widgetViewController)
         widgetView.addSubview(widgetViewController.view)
@@ -79,7 +75,6 @@ extension ChatWidgetsViewController: ContentSessionDelegate {
             widgetViewController.view.trailingAnchor.constraint(equalTo: widgetView.trailingAnchor),
             widgetViewController.view.leadingAnchor.constraint(equalTo: widgetView.leadingAnchor)
         ])
-        widgetViewController.session = session
         
         addChild(chatViewController)
         chatView.addSubview(chatViewController.view)
@@ -94,10 +89,30 @@ extension ChatWidgetsViewController: ContentSessionDelegate {
             chatViewController.view.leadingAnchor.constraint(equalTo: chatView.leadingAnchor)
         ])
         
+    }
+    
+    private func setUpEngagementSDK() {
+        
+        guard let clientID = Defaults.activeClientID,
+            let programID = Defaults.activeProgramID else {
+            return
+        }
+        
+        let sdk = EngagementSDK.init(clientID: clientID,
+                                     accessTokenStorage: self)
+        let config = SessionConfiguration(programID: programID)
+        session = sdk.contentSession(config: config, delegate: self)
+        
+        widgetViewController.session = session
         chatViewController.session = session
         session?.delegate = self
         
     }
+
+}
+
+// MARK: - ContentSessionDelegate
+extension ChatWidgetsViewController: ContentSessionDelegate {
     
     func session(_ session: ContentSession, didChangeStatus status: SessionStatus) {
         print("Session status did change \(status)")
@@ -106,10 +121,7 @@ extension ChatWidgetsViewController: ContentSessionDelegate {
     func session(_ session: ContentSession, didReceiveError error: Error) {
         print("Did receive error: \(error)")
     }
-    
-    func playheadTimeSource() -> Date {
-        return Date()
-    }
+ 
 }
 
 // MARK: AccessTokenStorage
