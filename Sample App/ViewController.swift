@@ -10,12 +10,6 @@ import UIKit
 import EngagementSDK
 
 class ViewController: UIViewController {
-    
-    private let clientIDUserDefaultsKey = "com.livelike.SampleApp.clientID"
-    private let programIDUserDefaultsKey = "com.livelike.SampleApp.programID"
-    
-    private let userDefaults = UserDefaults.standard
-    
     private let stackView: UIStackView = {
         let stackView = UIStackView()
         stackView.translatesAutoresizingMaskIntoConstraints = false
@@ -72,6 +66,17 @@ class ViewController: UIViewController {
         return label
     }()
     
+    private let widgetModuleButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle("Widgets", for: .normal)
+        button.backgroundColor = .systemGray6
+        button.contentHorizontalAlignment = .leading
+        button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
+        button.addTarget(self, action: #selector(didPressWidgetButton), for: .touchUpInside)
+        return button
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
     
@@ -90,14 +95,15 @@ class ViewController: UIViewController {
         stackView.addArrangedSubview(programIDLabel)
         stackView.addArrangedSubview(programIDTextField)
         stackView.addArrangedSubview(useCasesLabel)
+        stackView.addArrangedSubview(widgetModuleButton)
         
         clientIDTextField.addTarget(self, action: #selector(clientIDTextFieldEditingDidEnd), for: .editingDidEnd)
         programIDTextField.addTarget(self, action: #selector(programIDTextFieldEditingDidEnd), for: .editingDidEnd)
         
         
         // Loads previous client id and program id from UserDefaults
-        clientIDTextField.text = userDefaults.string(forKey: clientIDUserDefaultsKey)
-        programIDTextField.text = userDefaults.string(forKey: programIDUserDefaultsKey)
+        clientIDTextField.text = Defaults.activeClientID
+        programIDTextField.text = Defaults.activeProgramID
     }
     
     @objc private func clientIDTextFieldEditingDidEnd() {
@@ -105,7 +111,7 @@ class ViewController: UIViewController {
         guard let clientID = clientIDTextField.text, !clientID.isEmpty else {
             return
         }
-        userDefaults.set(clientID, forKey: clientIDUserDefaultsKey)
+        Defaults.activeClientID = clientID
     }
 
     @objc private func programIDTextFieldEditingDidEnd() {
@@ -113,7 +119,13 @@ class ViewController: UIViewController {
         guard let programID = programIDTextField.text, !programID.isEmpty else {
             return
         }
-        userDefaults.set(programID, forKey: clientIDUserDefaultsKey)
+        Defaults.activeProgramID = programID
+    }
+    
+    @objc func didPressWidgetButton() {
+        let widgetsVC = WidgetsUseCase()
+        widgetsVC.modalPresentationStyle = .fullScreen
+        self.present(widgetsVC, animated: true, completion: nil)
     }
 
 }
