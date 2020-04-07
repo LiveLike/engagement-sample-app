@@ -1,5 +1,5 @@
 //
-//  ChatWidgetsViewController.swift
+//  ChatAndWidgetsUseCase.swift
 //  Sample App
 //
 //  Copyright © 2020 LiveLike. All rights reserved.
@@ -8,7 +8,7 @@
 import UIKit
 import EngagementSDK
 
-class ChatWidgetsViewController: UIViewController {
+class ChatAndWidgetsUseCase: UIViewController {
 
     private var session: ContentSession?
     private let widgetViewController = WidgetViewController()
@@ -43,11 +43,11 @@ class ChatWidgetsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Widgets and Chat"
-        setUpUI()
-        setUpEngagementSDK()
+        setupUI()
+        setupEngagementSDK()
     }
     
-    private func setUpUI() {
+    private func setupUI() {
         self.view.addSubview(chatView)
         self.view.addSubview(widgetView)
         
@@ -91,7 +91,7 @@ class ChatWidgetsViewController: UIViewController {
         
     }
     
-    private func setUpEngagementSDK() {
+    private func setupEngagementSDK() {
         
         let sdk = EngagementSDK.init(clientID: clientID,
                                      accessTokenStorage: self)
@@ -107,7 +107,7 @@ class ChatWidgetsViewController: UIViewController {
 }
 
 // MARK: - ContentSessionDelegate
-extension ChatWidgetsViewController: ContentSessionDelegate {
+extension ChatAndWidgetsUseCase: ContentSessionDelegate {
     
     func session(_ session: ContentSession, didChangeStatus status: SessionStatus) {
         print("Session status did change \(status)")
@@ -120,7 +120,7 @@ extension ChatWidgetsViewController: ContentSessionDelegate {
 }
 
 // MARK: AccessTokenStorage
-extension ChatWidgetsViewController: AccessTokenStorage {
+extension ChatAndWidgetsUseCase: AccessTokenStorage {
     func fetchAccessToken() -> String? {
         return Defaults.userAccessToken
     }
