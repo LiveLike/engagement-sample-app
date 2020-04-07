@@ -26,6 +26,7 @@ class ChatModule: UIViewController {
         self.clientID = clientID
         self.programID = programID
         super.init(nibName: nil, bundle: nil)
+        self.title = "Chat Module"
     }
     
     required init?(coder: NSCoder) {

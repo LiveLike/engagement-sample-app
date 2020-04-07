@@ -58,6 +58,17 @@ class HomeViewController: UIViewController {
         return label
     }()
     
+    private let chatModuleButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle("Chat", for: .normal)
+        button.backgroundColor = .systemGray6
+        button.contentHorizontalAlignment = .leading
+        button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
+        button.addTarget(self, action: #selector(chatModuleButtonSelected), for: .touchUpInside)
+        return button
+    }()
+    
     private let widgetModuleButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -99,12 +110,12 @@ class HomeViewController: UIViewController {
         stackView.addArrangedSubview(programIDLabel)
         stackView.addArrangedSubview(programIDTextField)
         stackView.addArrangedSubview(useCasesLabel)
+        stackView.addArrangedSubview(chatModuleButton)
         stackView.addArrangedSubview(widgetModuleButton)
         stackView.addArrangedSubview(chatWidgetModuleButton)
         
         clientIDTextField.addTarget(self, action: #selector(clientIDTextFieldEditingDidEnd), for: .editingDidEnd)
         programIDTextField.addTarget(self, action: #selector(programIDTextFieldEditingDidEnd), for: .editingDidEnd)
-        
         
         // Loads previous client id and program id from UserDefaults
         clientIDTextField.text = Defaults.activeClientID
@@ -149,6 +160,33 @@ class HomeViewController: UIViewController {
         let chatWidgetsVC = ChatWidgetsViewController(clientID: clientID, programID: programID)
         chatWidgetsVC.modalPresentationStyle = .fullScreen
         self.navigationController?.pushViewController(chatWidgetsVC, animated: true)
+    }
+    
+    @objc public func chatModuleButtonSelected() {
+        guard let clientID = clientIDTextField.text, !clientID.isEmpty else {
+            let alert = UIAlertController(
+                title: "Invalid Client ID",
+                message: "Set a Client ID before selecting a Use Case.",
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+            present(alert, animated: true, completion: nil)
+            return
+        }
+        
+        guard let programID = programIDTextField.text, !programID.isEmpty else {
+            let alert = UIAlertController(
+                title: "Invalid Program ID",
+                message: "Set a Program ID before selecting a Use Case.",
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+            present(alert, animated: true, completion: nil)
+            return
+        }
+        
+        let chatModule = ChatModule(clientID: clientID, programID: programID)
+        navigationController?.pushViewController(chatModule, animated: true)
     }
     
     private func displayCliendProgramIDError() {
