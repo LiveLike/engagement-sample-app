@@ -1,5 +1,5 @@
 //
-//  ChatModule.swift
+//  ChatUseCase.swift
 //  Sample App
 //
 //  Created by Jelzon Monzon on 4/6/20.
@@ -9,7 +9,7 @@
 import UIKit
 import EngagementSDK
 
-class ChatModule: UIViewController {
+class ChatUseCase: UIViewController {
     
     private var sdk: EngagementSDK!
     private var session: ContentSession!
@@ -36,8 +36,8 @@ class ChatModule: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        configureLayout()
-        configureTheme()
+        setupUI()
+        setupTheme()
         
         sdk = EngagementSDK(clientID: clientID)
         sdk.delegate = self
@@ -47,7 +47,7 @@ class ChatModule: UIViewController {
         chatViewController.session = session
     }
     
-    private func configureLayout() {
+    private func setupUI() {
         chatViewController.view.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(chatViewController.view)
         addChild(chatViewController)
@@ -61,7 +61,7 @@ class ChatModule: UIViewController {
         ])
     }
     
-    private func configureTheme() {
+    private func setupTheme() {
         let theme = Theme()
         theme.chatBodyColor = .white
         theme.chatImageWidth = 20.0
@@ -100,7 +100,7 @@ class ChatModule: UIViewController {
     
 }
 
-extension ChatModule: EngagementSDKDelegate {
+extension ChatUseCase: EngagementSDKDelegate {
     func sdk(_ sdk: EngagementSDK, setupFailedWithError error: Error) {
         let alert = UIAlertController(
             title: "EngagementSDK Error",
@@ -112,7 +112,7 @@ extension ChatModule: EngagementSDKDelegate {
     }
 }
 
-extension ChatModule: ContentSessionDelegate {
+extension ChatUseCase: ContentSessionDelegate {
     func session(_ session: ContentSession, didReceiveError error: Error) {
         let alert = UIAlertController(
             title: "ContentSession Error",

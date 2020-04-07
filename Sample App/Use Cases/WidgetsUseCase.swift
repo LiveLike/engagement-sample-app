@@ -37,11 +37,11 @@ class WidgetsUseCase: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Widgets"
-        setUpUI()
-        setUpEngagementSDK()
+        setupUI()
+        setupEngagementSDK()
     }
     
-    private func setUpUI() {
+    private func setupUI() {
         self.view.addSubview(widgetView)
         
         let safeArea = self.view.safeAreaLayoutGuide
@@ -67,7 +67,7 @@ class WidgetsUseCase: UIViewController {
         
     }
     
-    private func setUpEngagementSDK() {
+    private func setupEngagementSDK() {
         
         let sdk = EngagementSDK.init(clientID: clientID,
                                      accessTokenStorage: self)
