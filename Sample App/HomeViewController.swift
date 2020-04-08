@@ -82,10 +82,10 @@ class HomeViewController: UIViewController {
         return button
     }()
     
-    private let chatWidgetModuleButton: UIButton = {
+    private let widgetChatSpoilerModuleButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.setTitle("Chat & Widgets", for: .normal)
+        button.setTitle("Widgets + Chat w/ Spoiler Prevention", for: .normal)
         button.backgroundColor = .systemGray6
         button.contentHorizontalAlignment = .leading
         button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
@@ -114,7 +114,7 @@ class HomeViewController: UIViewController {
         stackView.addArrangedSubview(useCasesLabel)
         stackView.addArrangedSubview(chatModuleButton)
         stackView.addArrangedSubview(widgetModuleButton)
-        stackView.addArrangedSubview(chatWidgetModuleButton)
+        stackView.addArrangedSubview(widgetChatSpoilerModuleButton)
         
         // Loads previous client id and program id from UserDefaults
         clientIDTextField.text = Defaults.activeClientID
@@ -164,7 +164,7 @@ class HomeViewController: UIViewController {
             return
         }
         
-        let chatWidgetsVC = ChatAndWidgetsUseCase(clientID: clientID, programID: programID)
+        let chatWidgetsVC = WidgetChatSpoilerPreventionUseCase(clientID: clientID, programID: programID)
         chatWidgetsVC.modalPresentationStyle = .fullScreen
         self.navigationController?.pushViewController(chatWidgetsVC, animated: true)
     }
