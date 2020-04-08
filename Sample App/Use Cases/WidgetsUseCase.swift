@@ -39,6 +39,11 @@ class WidgetsUseCase: UIViewController {
         title = "Widgets"
         setupUI()
         setupEngagementSDK()
+        addNotificationObservers()
+    }
+    
+    deinit {
+        removeNSNotificationObservers()
     }
     
     private func setupUI() {
@@ -78,6 +83,29 @@ class WidgetsUseCase: UIViewController {
         widgetViewController.session = session
         session?.delegate = self
         
+    }
+    
+    private func addNotificationObservers() {
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(pauseSession),
+                                               name: UIApplication.willResignActiveNotification,
+                                               object: nil)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(resumeSession),
+                                               name: UIApplication.didBecomeActiveNotification,
+                                               object: nil)
+    }
+    
+    private func removeNSNotificationObservers() {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func pauseSession() {
+        session?.pause()
+    }
+    
+    @objc func resumeSession() {
+        session?.resume()
     }
     
 }
