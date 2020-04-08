@@ -4,6 +4,9 @@
 //
 //  Copyright © 2020 LiveLike. All rights reserved.
 //
+//  This use case showcases Widgets, Chat and Spoiler Prevention functionality working
+//  together in one View Controller.
+//  Spoiler Prevention - https://docs.livelike.com/docs/ios-spoiler-free-sync
 
 import UIKit
 import EngagementSDK
@@ -19,7 +22,7 @@ class WidgetChatSpoilerPreventionUseCase: UIViewController {
     private let avPlayerViewController = AVPlayerViewController()
     
     /// ℹ️ The AVPlayer URL would be the same URL that is used as the source
-    /// video in the LiveLike Producer site
+    /// video in the LiveLike Producer site. Read more about it here https://docs.livelike.com/docs/ios-spoiler-free-sync
     private let videoPlayer: AVPlayer = AVPlayer(url: URL(string: "https://cf-streams.livelikecdn.com/live/colorbars-angle1/index.m3u8")!)
     
     private let videoPlayerView: UIView = {
@@ -50,7 +53,6 @@ class WidgetChatSpoilerPreventionUseCase: UIViewController {
     
     private func setupUI() {
         
-        // Add widgetViewController as child view controller
         addChild(widgetViewController)
         widgetViewController.didMove(toParent: self)
         widgetViewController.view.translatesAutoresizingMaskIntoConstraints = false
@@ -87,7 +89,10 @@ class WidgetChatSpoilerPreventionUseCase: UIViewController {
         avPlayerViewController.player = videoPlayer
         avPlayerViewController.showsPlaybackControls = false
         
-        avPlayerViewController.view.frame = CGRect(x: 0, y: 0, width: videoPlayerView.bounds.width, height: videoPlayerView.bounds.height)
+        avPlayerViewController.view.frame = CGRect(x: 0,
+                                                   y: 0,
+                                                   width: videoPlayerView.bounds.width,
+                                                   height: videoPlayerView.bounds.height)
         videoPlayerView.addSubview(avPlayerViewController.view)
         self.addChild(avPlayerViewController)
         
@@ -112,6 +117,9 @@ class WidgetChatSpoilerPreventionUseCase: UIViewController {
 
 // MARK: - ContentSessionDelegate
 extension WidgetChatSpoilerPreventionUseCase: ContentSessionDelegate {
+    
+    /// ℹ️ This func is required to turn on Spoiler Prevention functionality
+    /// Read more about it here https://docs.livelike.com/docs/ios-spoiler-free-sync
     func playheadTimeSource(_ session: ContentSession) -> Date? {
         return avPlayerViewController.player?.programDateTime ?? Date()
     }
