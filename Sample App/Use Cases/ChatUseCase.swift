@@ -19,15 +19,6 @@ class ChatUseCase: UIViewController {
     
     private let chatViewController = ChatViewController()
     
-    var safeArea: UILayoutGuide {
-        get {
-            if #available(iOS 11.0, *) {
-                return self.view.safeAreaLayoutGuide
-            } else {
-                return self.view.layoutMarginsGuide
-            }
-        }
-    }
     
     init(
         clientID: String,
@@ -63,6 +54,8 @@ class ChatUseCase: UIViewController {
         addChild(chatViewController)
         chatViewController.didMove(toParent: self)
         
+        let safeArea = self.view.safeAreaLayoutGuide
+              
         NSLayoutConstraint.activate([
             chatViewController.view.topAnchor.constraint(equalTo: safeArea.topAnchor),
             chatViewController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),

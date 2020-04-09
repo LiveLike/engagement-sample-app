@@ -10,16 +10,6 @@ import UIKit
 import EngagementSDK
 
 class HomeViewController: UIViewController {
-    private var safeArea: UILayoutGuide {
-        get {
-            if #available(iOS 11.0, *) {
-                return self.view.safeAreaLayoutGuide
-            } else {
-                return self.view.layoutMarginsGuide
-            }
-        }
-    }
-    
     private let stackView: UIStackView = {
         let stackView = UIStackView()
         stackView.translatesAutoresizingMaskIntoConstraints = false
@@ -110,6 +100,8 @@ class HomeViewController: UIViewController {
         title = "Engagement SDK \(EngagementSDK.version)"
     
         view.addSubview(stackView)
+        
+        let safeArea = self.view.safeAreaLayoutGuide
         
         NSLayoutConstraint.activate([
             stackView.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 10),
