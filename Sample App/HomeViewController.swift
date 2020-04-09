@@ -64,8 +64,8 @@ class HomeViewController: UIViewController {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle("Chat", for: .normal)
-        button.backgroundColor = .systemGray6
-        button.contentHorizontalAlignment = .leading
+        button.backgroundColor = .systemGray
+        button.contentHorizontalAlignment = .left
         button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
         button.addTarget(self, action: #selector(chatModuleButtonSelected), for: .touchUpInside)
         return button
@@ -75,8 +75,8 @@ class HomeViewController: UIViewController {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle("Widgets", for: .normal)
-        button.backgroundColor = .systemGray6
-        button.contentHorizontalAlignment = .leading
+        button.backgroundColor = .systemGray
+        button.contentHorizontalAlignment = .left
         button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
         button.addTarget(self, action: #selector(widgetModuleButtonSelected), for: .touchUpInside)
         return button
@@ -86,8 +86,8 @@ class HomeViewController: UIViewController {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle("Chat & Widgets", for: .normal)
-        button.backgroundColor = .systemGray6
-        button.contentHorizontalAlignment = .leading
+        button.backgroundColor = .systemGray
+        button.contentHorizontalAlignment = .left
         button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
         button.addTarget(self, action: #selector(chatAndWidgetModuleButtonSelected), for: .touchUpInside)
         return button
@@ -101,10 +101,10 @@ class HomeViewController: UIViewController {
         view.addSubview(stackView)
         
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
-            stackView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 10),
-            stackView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -10),
-            stackView.bottomAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10)
+            stackView.topAnchor.constraint(equalTo: self.topLayoutGuide.bottomAnchor, constant: 10),
+            stackView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor, constant: 10),
+            stackView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor, constant: -10),
+            stackView.bottomAnchor.constraint(lessThanOrEqualTo: self.bottomLayoutGuide.topAnchor, constant: -10)
         ])
         
         stackView.addArrangedSubview(clientIDLabel)

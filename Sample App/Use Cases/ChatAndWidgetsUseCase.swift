@@ -51,16 +51,15 @@ class ChatAndWidgetsUseCase: UIViewController {
         self.view.addSubview(chatView)
         self.view.addSubview(widgetView)
         
-        let safeArea = self.view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
-            chatView.topAnchor.constraint(equalTo: safeArea.topAnchor),
-            chatView.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor),
-            chatView.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor),
-            chatView.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor),
-            widgetView.topAnchor.constraint(equalTo: safeArea.topAnchor),
-            widgetView.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor),
-            widgetView.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor),
-            widgetView.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor)
+            chatView.topAnchor.constraint(equalTo: topLayoutGuide.bottomAnchor),
+            chatView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            chatView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            chatView.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor),
+            widgetView.topAnchor.constraint(equalTo: topLayoutGuide.bottomAnchor),
+            widgetView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            widgetView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            widgetView.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor)
         ])
         
         // Add widgetViewController as child view controller

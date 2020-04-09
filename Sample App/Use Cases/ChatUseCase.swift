@@ -54,10 +54,10 @@ class ChatUseCase: UIViewController {
         chatViewController.didMove(toParent: self)
         
         NSLayoutConstraint.activate([
-            chatViewController.view.topAnchor.constraint(equalTo: view.topAnchor),
+            chatViewController.view.topAnchor.constraint(equalTo: topLayoutGuide.bottomAnchor),
             chatViewController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             chatViewController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            chatViewController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            chatViewController.view.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor)
         ])
     }
     
