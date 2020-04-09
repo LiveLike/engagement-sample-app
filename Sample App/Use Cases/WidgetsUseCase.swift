@@ -22,6 +22,16 @@ class WidgetsUseCase: UIViewController {
         return widgetView
     }()
     
+    var safeArea: UILayoutGuide {
+        get {
+            if #available(iOS 11.0, *) {
+                return self.view.safeAreaLayoutGuide
+            } else {
+                return self.view.layoutMarginsGuide
+            }
+        }
+    }
+    
     init(clientID: String, programID: String) {
         
         self.clientID = clientID
@@ -48,12 +58,11 @@ class WidgetsUseCase: UIViewController {
     
     private func setupUI() {
         self.view.addSubview(widgetView)
-        
-        let safeArea = self.view.safeAreaLayoutGuide
+
         NSLayoutConstraint.activate([
             widgetView.topAnchor.constraint(equalTo: safeArea.topAnchor),
-            widgetView.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor),
-            widgetView.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor),
+            widgetView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            widgetView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             widgetView.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor)
         ])
         

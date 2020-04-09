@@ -31,6 +31,16 @@ class WidgetChatSpoilerPreventionUseCase: UIViewController {
         return videoPlayerView
     }()
     
+    var safeArea: UILayoutGuide {
+        get {
+            if #available(iOS 11.0, *) {
+                return self.view.safeAreaLayoutGuide
+            } else {
+                return self.view.layoutMarginsGuide
+            }
+        }
+    }
+    
     init(clientID: String, programID: String) {
         
         self.clientID = clientID
@@ -71,7 +81,6 @@ class WidgetChatSpoilerPreventionUseCase: UIViewController {
         self.view.addSubview(chatViewController.view)
         self.view.addSubview(widgetViewController.view)
         
-        let safeArea = self.view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
             videoPlayerView.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 0.0),
             videoPlayerView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor, constant: 0.0),
