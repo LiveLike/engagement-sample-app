@@ -10,14 +10,22 @@ import UIKit
 typealias QuizSelection = (optionId: String, answerUrl: URL)
 
 class QuizWidgetViewController: WidgetController {
+
     // MARK: - Internal Properties
 
     let id: String
     let kind: WidgetKind
+    let interactionTimeInterval: TimeInterval?
     weak var delegate: WidgetEvents?
     var dismissSwipeableView: UIView {
         return self.view
     }
+    var height: CGFloat {
+        return coreWidgetView.bounds.height + 32
+    }
+    var widgetTitle: String?
+    var options: Set<WidgetOption>?
+    var customData: String?
 
     // MARK: - Private Stored Properties
 
@@ -39,16 +47,81 @@ class QuizWidgetViewController: WidgetController {
     private let additionalTimeAfterAnswerReveal: TimeInterval = 6
 
     // MARK: - Initializers
-
-    init(id: String, kind: WidgetKind, quizWidget: QuizWidgetView, quizVoteClient: QuizWidgetVoteClient, quizResultsClient: QuizWidgetResultsClient, eventRecorder: EventRecorder) {
+    
+    convenience init(payload: TextQuizCreated,
+                     quizWidget: QuizWidgetView,
+                     quizVoteClient: QuizWidgetVoteClient,
+                     quizResultsClient: QuizWidgetResultsClient,
+                     eventRecorder: EventRecorder)
+    {
+        let options = Set(payload.choices.map({
+            WidgetOption(id: $0.id,
+                         text: $0.description,
+                         image: nil,
+                         isCorrect: $0.isCorrect)
+        }))
+        
+        self.init(id: payload.id,
+                  kind: payload.kind,
+                  widgetView: quizWidget,
+                  voteClient: quizVoteClient,
+                  resultsClient: quizResultsClient,
+                  eventRecorder: eventRecorder,
+                  widgetTitle: payload.question,
+                  options: options,
+                  interactionTimeInterval: payload.timeout.timeInterval,
+                  metadata: payload.customData)
+    }
+    
+    convenience init(payload: ImageQuizCreated,
+                     quizWidget: QuizWidgetView,
+                     quizVoteClient: QuizWidgetVoteClient,
+                     quizResultsClient: QuizWidgetResultsClient,
+                     eventRecorder: EventRecorder)
+    {
+        let options = Set(payload.choices.map({
+            WidgetOption(id: $0.id,
+                         text: $0.description,
+                         image: nil,
+                         isCorrect: $0.isCorrect)
+        }))
+        
+        self.init(id: payload.id,
+                  kind: payload.kind,
+                  widgetView: quizWidget,
+                  voteClient: quizVoteClient,
+                  resultsClient: quizResultsClient,
+                  eventRecorder: eventRecorder,
+                  widgetTitle: payload.question,
+                  options: options,
+                  interactionTimeInterval: payload.timeout.timeInterval,
+                  metadata: payload.customData)
+    }
+    
+    private init(id: String,
+                 kind: WidgetKind,
+                 widgetView: QuizWidgetView,
+                 voteClient: QuizWidgetVoteClient,
+                 resultsClient: QuizWidgetResultsClient,
+                 eventRecorder: EventRecorder,
+                 widgetTitle: String,
+                 options: Set<WidgetOption>?,
+                 interactionTimeInterval: TimeInterval?,
+                 metadata: String?)
+    {
         self.id = id
         self.kind = kind
-        self.quizWidget = quizWidget
-        self.quizVoteClient = quizVoteClient
-        self.quizResultsClient = quizResultsClient
+        self.quizWidget = widgetView
+        self.quizVoteClient = voteClient
+        self.quizResultsClient = resultsClient
         self.eventRecorder = eventRecorder
+        self.widgetTitle = widgetTitle
+        self.options = options
+        self.interactionTimeInterval = interactionTimeInterval
+        self.customData = metadata
+        
         super.init(nibName: nil, bundle: nil)
-
+        
         self.quizWidget.didSelectChoice = { [weak self] in
             guard let self = self else { return }
             self.myQuizSelection = $0
@@ -99,6 +172,7 @@ extension QuizWidgetViewController {
             guard let self = self else { return }
             self.timerCompleted()
         }
+        delegate?.widgetInteractionDidBegin(widget: self)
         timeDisplayed = Date()
         eventRecorder.record(.widgetDisplayed(kind: kind.analyticsName,
                                               widgetId: id))
@@ -141,7 +215,9 @@ private extension QuizWidgetViewController {
                         widgetKind: self.kind.analyticsName,
                         firstTapTime: firstTapTime,
                         lastTapTime: lastTapTime,
-                        numberOfTaps: self.tapCount
+                        numberOfTaps: self.tapCount,
+                        interactionTimeInterval: self.interactionTimeInterval,
+                        widgetViewModel: self
                     )
                     self.delegate?.widgetInteractionDidComplete(properties: properties)
                 }

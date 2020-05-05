@@ -13,6 +13,7 @@ class ImageSliderView: UIView {
     private let maximumSize: Float = 54
     private let thumbImages: [UIImage]
     private let initialSliderValue: Float
+    private let timerAnimationFilepath: String
 
     let coreWidgetView = CoreWidgetView()
 
@@ -39,8 +40,8 @@ class ImageSliderView: UIView {
         return background
     }()
 
-    var timerView: LOTAnimationView = {
-        let lottieView = LOTAnimationView()
+    lazy var timerView: AnimationView = {
+        let lottieView = AnimationView(filePath: self.timerAnimationFilepath)
         lottieView.translatesAutoresizingMaskIntoConstraints = false
         lottieView.contentMode = .scaleAspectFit
         return lottieView
@@ -104,8 +105,8 @@ class ImageSliderView: UIView {
 
     private var averageAnimationLeadingConstraint: NSLayoutConstraint?
 
-    var avgIndicatorView: LOTAnimationView = {
-        let lottie = LOTAnimationView()
+    var avgIndicatorView: AnimationView = {
+        let lottie = AnimationView(name: "image-slider-avg", bundle: Bundle(for: ImageSliderView.self))
         lottie.translatesAutoresizingMaskIntoConstraints = false
         lottie.contentMode = .scaleAspectFit
         return lottie
@@ -130,9 +131,10 @@ class ImageSliderView: UIView {
 
     // MARK: - Init
 
-    init(thumbImages: [UIImage], initialSliderValue: Float) {
+    init(thumbImages: [UIImage], initialSliderValue: Float, timerAnimationFilepath: String) {
         self.thumbImages = thumbImages
         self.initialSliderValue = initialSliderValue
+        self.timerAnimationFilepath = timerAnimationFilepath
         super.init(frame: CGRect.zero)
         configureSlider()
         configureLayout()
@@ -206,6 +208,7 @@ class ImageSliderView: UIView {
 
             timerView.trailingAnchor.constraint(equalTo: titleView.trailingAnchor, constant: -10),
             timerView.heightAnchor.constraint(equalToConstant: 18),
+            timerView.widthAnchor.constraint(equalToConstant: 18),
             timerView.centerYAnchor.constraint(equalTo: titleView.centerYAnchor),
 
             bodyView.heightAnchor.constraint(equalToConstant: 60),

@@ -30,6 +30,7 @@ struct ImagePredictionFollowUp: Decodable {
     let url: URL
     var impressionUrl: URL?
     var rewardsUrl: URL?
+    let customData: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "imagePredictionId"
@@ -45,6 +46,7 @@ struct ImagePredictionFollowUp: Decodable {
         case rewardsUrl
         case url
         case programDateTime
+        case customData
     }
 
     init(from decoder: Decoder) throws {
@@ -63,6 +65,7 @@ struct ImagePredictionFollowUp: Decodable {
         url = try container.decode(URL.self, forKey: .url)
         programDateTime = try? container.decode(Date.self, forKey: .programDateTime)
         rewardsUrl = try? container.decode(URL.self, forKey: .rewardsUrl)
+        customData = try? container.decode(String.self, forKey: .customData)
     }
 }
 

@@ -25,4 +25,7 @@ struct ApplicationConfiguration: Decodable {
     let mixpanelToken: String?
     let analyticsProperties: [String: String]
     let pubnubOrigin: String?
+    let organizationId: String
+    let organizationName: String
+    
 }

@@ -18,9 +18,9 @@ public extension EngagementSDK {
         let storage = UserDefaultsAccessTokenStorage()
         storage.storeAccessToken(accessToken: livelikeAccessToken)
         
-        self.init(clientID: clientID,
-                  apiEndpointURL: EngagementSDK.prodAPIEndpoint,
-                  accessTokenStorage: storage)
+        var config = EngagementSDKConfig(clientID: clientID)
+        config.accessTokenStorage = storage
+        self.init(config: config)
     }
     
     /**
@@ -34,4 +34,28 @@ public extension EngagementSDK {
     static func generateAccessToken(clientID: String, completion: @escaping (String) -> Void) {
         generateAccessToken(apiEndpoint: prodAPIEndpoint, clientID: clientID, completion: completion)
     }
+    
+    /**
+     - Parameter clientID: Find more information regarding the Client ID in our [Basic Integration documentation](https://docs.livelike.com/ios/index.html#initialization)
+     - Note: This initializer will cause the SDK to use UserDefaults for storing the user access token.
+     */
+    @objc
+    @available(*, deprecated, message: "This method is replaced by init(config:).")
+    convenience init(clientID: String) {
+        let config = EngagementSDKConfig(clientID: clientID)
+        self.init(config: config)
+    }
+    
+    /**
+     - Parameter clientID: Find more information regarding the Client ID in our [Basic Integration documentation](https://docs.livelike.com/ios/index.html#initialization)
+     - Parameter accessTokenStorage: An object which the EngagementSDK uses to check for a stored access token between sessions, as well as to inform the storage of a newly generated token.
+     */
+    @objc
+    @available(*, deprecated, message: "This method is replaced by init(config:).")
+    convenience init(clientID: String, accessTokenStorage: AccessTokenStorage) {
+        var config = EngagementSDKConfig(clientID: clientID)
+        config.accessTokenStorage = accessTokenStorage
+        self.init(config: config)
+    }
+    
 }

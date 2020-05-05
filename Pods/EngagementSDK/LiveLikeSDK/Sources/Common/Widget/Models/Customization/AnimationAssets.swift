@@ -12,8 +12,4 @@ struct AnimationAssets {
     static func randomConfirmationEmojiAsset() -> String {
         return confirmationAnimationAssets.randomElement()!
     }
-
-    static var widgetTimer: String {
-        return "timer"
-    }
 }

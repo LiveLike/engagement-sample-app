@@ -15,7 +15,7 @@ class AlertWidgetTitleView: UIView {
         label.translatesAutoresizingMaskIntoConstraints = false
         label.numberOfLines = 0
         label.font = UIFont.systemFont(ofSize: 12.0, weight: .bold)
-        label.textAlignment = .center
+        label.textAlignment = .left
         label.textColor = #colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
         return label
     }()
@@ -47,11 +47,6 @@ class AlertWidgetTitleView: UIView {
     }
 
     private func configureView() {
-        livelike_cornerRadius = 4
-        livelike_shadowColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1)
-        livelike_shadowOpacity = 0.2
-        livelike_shadowRadius = 6
-        livelike_shadowOffset = CGSize(width: 0, height: 6)
         clipsToBounds = true
 
         addSubview(gradientView)

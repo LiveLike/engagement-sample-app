@@ -14,7 +14,6 @@ class PubSubWidgetClient: NSObject, WidgetClient {
     /// Internal
     var widgetListeners = ChannelListeners()
     /// Private
-    private var syncListerners = Listener<SyncMessagingObserver>()
     private var client: PubNub
     private let subscribeKey: String
     /// The `DispatchQueue` onto which the client will receive and dispatch events.
@@ -51,30 +50,6 @@ class PubSubWidgetClient: NSObject, WidgetClient {
     func removeAllListeners() {
         widgetListeners.removeAll()
         client.unsubscribeFromAll()
-    }
-}
-
-extension PubSubWidgetClient: SyncMessagingClient {
-    func subscribe(_ observer: SyncMessagingObserver, toChannel channel: String) {
-        client.subscribeToChannels([channel], withPresence: false)
-        syncListerners.addListener(observer)
-    }
-
-    func unSubcribe(_ observer: SyncMessagingObserver, fromChannel channel: String) {
-        client.unsubscribeFromChannels([channel], withPresence: false)
-        syncListerners.removeListener(observer)
-    }
-
-    func publish(message: String, channel: String) {
-        client.publish(message, toChannel: channel, withCompletion: nil)
-    }
-
-    func setPublishKey(_ publishKey: String, completion: @escaping () -> Void) {
-        let config = PNConfiguration(publishKey: publishKey, subscribeKey: subscribeKey)
-        client.copyWithConfiguration(config) { [weak self] updatedClient in
-            self?.client = updatedClient
-            completion()
-        }
     }
 }
 
@@ -121,6 +96,10 @@ private extension PubSubWidgetClient {
         case .imagePredictionFollowUpCreated:
             let imagePredictionFollowUp = try decoder.decode(ImagePredictionFollowUp.self, from: jsonData)
             let clientEvent = ClientEvent.imagePredictionFollowUp(imagePredictionFollowUp, nil)
+            return MessagingEventType.widget(clientEvent)
+        case .textPredictionResults, .imagePredictionResults:
+            let predictionResults = try decoder.decode(PredictionResults.self, from: jsonData)
+            let clientEvent = ClientEvent.textPredictionResults(predictionResults)
             return MessagingEventType.widget(clientEvent)
         case .imagePollCreated:
             let imagePollCreated = try decoder.decode(ImagePollCreated.self, from: jsonData)
@@ -170,11 +149,6 @@ private extension PubSubWidgetClient {
             let cheerMeterResults = try decoder.decode(CheerMeterResults.self, from: jsonData)
             let clientEvent = ClientEvent.cheerMeterResults(cheerMeterResults)
             return .widget(clientEvent)
-        case .syncSessionStatus:
-            let syncStatus = try decoder.decode(SyncSessionStatus.Get.self, from: jsonData)
-            return MessagingEventType.sync(syncStatus)
-        case .syncSessionUpdate:
-            throw MessagingClientError.invalidEvent(event: "\(event.rawValue)")
         }
     }
 }
@@ -186,12 +160,9 @@ extension PubSubWidgetClient: PNObjectEventListener {
             switch event {
             case let .widget(widgetEvent):
                 widgetListeners.publish(channel: message.data.channel) { $0.publish(event: widgetEvent) }
-            case let .sync(syncEvent):
-                syncListerners.publish { $0.didReceiveSyncingEvent(syncEvent) }
             }
         } catch {
             widgetListeners.publish(channel: message.data.channel) { $0.error(error) }
-            syncListerners.publish { $0.didReceiveError(error: error) }
         }
     }
 
@@ -199,11 +170,9 @@ extension PubSubWidgetClient: PNObjectEventListener {
         if status.isError {
             let status = ConnectionStatus.error(description: status.stringifiedCategory())
             widgetListeners.publish(channel: nil) { $0.connectionStatusDidChange(status) }
-            syncListerners.publish { $0.statusDidChange(status: status) }
         } else {
             let status = ConnectionStatus.connected(description: status.stringifiedCategory())
             widgetListeners.publish(channel: nil) { $0.connectionStatusDidChange(status) }
-            syncListerners.publish { $0.statusDidChange(status: status) }
         }
     }
 }

@@ -134,6 +134,10 @@ extension WidgetQueue: WidgetEvents {
     func actionHandler(event: WidgetEvent) {
         widgetEventListeners.publish { $0.actionHandler(event: event) }
     }
+    
+    func widgetInteractionDidBegin(widget: WidgetViewModel) {
+        widgetEventListeners.publish { $0.widgetInteractionDidBegin(widget: widget) }
+    }
 
     func widgetInteractionDidComplete(properties: WidgetInteractedProperties) {
         widgetEventListeners.publish { $0.widgetInteractionDidComplete(properties: properties) }

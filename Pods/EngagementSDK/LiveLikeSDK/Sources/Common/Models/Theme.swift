@@ -148,6 +148,9 @@ public class Theme: NSObject {
     /// Changes the distance between the chat message and the timestamp
     @objc public var chatMessageTimestampTopPadding: CGFloat
 
+    /// Changes the color of the loading indicator for chat.
+    @objc public var chatLoadingIndicatorColor: UIColor
+
     // MARK: Chat Sticker Keyboard
     /// Changes the primary color of the sticker keyboard
     @objc public var chatStickerKeyboardPrimaryColor: UIColor
@@ -178,7 +181,7 @@ public class Theme: NSObject {
     @objc public var quizWidget: QuizWidgetTheme
 
     /// Changes the properties of the prediction widget
-    @objc public var predictionWidget: PredictionWidgetTheme
+    public var predictionWidget: PredictionWidgetTheme
 
     /// Changes the properties of the alert widget
     @objc public var alertWidget: AlertWidgetTheme
@@ -264,6 +267,9 @@ public class Theme: NSObject {
      ]
      */
     @objc public var filepathsForLottieLosingAnimations: [String]
+    
+    /// Overrides the timer animation for widgets
+    public var filepathsForWidgetTimerLottieAnimation: String
     
     /// Set a custom view to be shown when a chat room has 0 messages.
     /// The constraints on this view will fill the container width and height.
@@ -352,9 +358,20 @@ public class Theme: NSObject {
                                      titleGradientRight: #colorLiteral(red: 1, green: 0.7058823529, blue: 0, alpha: 1),
                                      optionSelectBorderColor: #colorLiteral(red: 1, green: 0.7843137255, blue: 0, alpha: 1))
 
-        predictionWidget = PredictionWidgetTheme(titleGradientLeft: #colorLiteral(red: 0, green: 0.1960784314, blue: 0.3921568627, alpha: 1),
-                                                 titleGradientRight: #colorLiteral(red: 0, green: 0.5882352941, blue: 0.7843137255, alpha: 1),
-                                                 optionSelectBorderColor: #colorLiteral(red: 0, green: 0.7058823529, blue: 0.7843137255, alpha: 1))
+        predictionWidget = PredictionWidgetTheme(
+            titleGradientLeft: #colorLiteral(red: 0, green: 0.1960784314, blue: 0.3921568627, alpha: 1),
+            titleGradientRight: #colorLiteral(red: 0, green: 0.5882352941, blue: 0.7843137255, alpha: 1),
+            optionSelectBorderColor: #colorLiteral(red: 0, green: 0.7058823529, blue: 0.7843137255, alpha: 1),
+            optionGradientColors: ChoiceWidgetOptionColors(
+                borderColor: #colorLiteral(red: 0, green: 0.7058823529, blue: 0.7843137255, alpha: 1),
+                barGradientLeft: #colorLiteral(red: 0.1568627451, green: 0.3921568627, blue: 0.5490196078, alpha: 1),
+                barGradientRight: #colorLiteral(red: 0, green: 0.7058823529, blue: 0.7843137255, alpha: 1)
+            ),
+            lottieAnimationOnTimerCompleteFilepath: [
+                Bundle(for: EngagementSDK.self).path(forResource: "stay_tuned_1", ofType: "json"),
+                Bundle(for: EngagementSDK.self).path(forResource: "stay_tuned_2", ofType: "json")
+            ].compactMap({ $0 })
+        )
 
         alertWidget = AlertWidgetTheme(titleGradientLeft: #colorLiteral(red: 0.6235294118, green: 0.01568627451, blue: 0.1058823529, alpha: 1),
                                        titleGradientRight: #colorLiteral(red: 0.9607843137, green: 0.3176470588, blue: 0.3725490196, alpha: 1),
@@ -386,6 +403,7 @@ public class Theme: NSObject {
 
         filepathsForLottieWinningAnimations = Theme.defaultFilepathsForCorrectLottieAnimations
         filepathsForLottieLosingAnimations = Theme.defaultFilepathsForIncorrectLottieAnimations
+        filepathsForWidgetTimerLottieAnimation = Bundle(for: EngagementSDK.self).path(forResource: "timer", ofType: "json")!
         
         // MARK: Chat Cell Image Init
         chatImageWidth = 0.0
@@ -397,6 +415,8 @@ public class Theme: NSObject {
         chatMessageTimestampFont = UIFont.systemFont(ofSize: 8)
         chatMessageTimestampTextColor = UIColor(white: 1, alpha: 0.4)
         chatMessageTimestampTopPadding = 6.0
+
+        chatLoadingIndicatorColor = .white
     }
 }
 

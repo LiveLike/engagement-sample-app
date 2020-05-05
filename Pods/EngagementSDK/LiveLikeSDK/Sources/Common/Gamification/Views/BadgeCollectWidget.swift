@@ -14,13 +14,22 @@ class BadgeCollectWidget: WidgetController {
     var id: String = ""
 
     var kind = WidgetKind.gamification
+    let interactionTimeInterval: TimeInterval? = nil
 
     weak var delegate: WidgetEvents?
     var dismissSwipeableView: UIView {
         return self.view
     }
 
+    var height: CGFloat {
+        return coreWidgetView.bounds.height + 32
+    }
+    
     var coreWidgetView: CoreWidgetView = CoreWidgetView()
+    var widgetTitle: String?
+    var correctOptions: Set<WidgetOption>?
+    var options: Set<WidgetOption>?
+    var customData: String?
 
     private let badgeViewModel: BadgeViewModel
     private var gamificationModal: GamificationModal!
@@ -31,6 +40,7 @@ class BadgeCollectWidget: WidgetController {
     init(theme: Theme, badgeToCollect badge: BadgeViewModel, eventRecorder: EventRecorder) {
         self.eventRecorder = eventRecorder
         self.badgeViewModel = badge
+        self.widgetTitle = "Badge Collect"
         super.init(nibName: nil, bundle: nil)
 
         gamificationModal = GamificationModal(title: badge.name,

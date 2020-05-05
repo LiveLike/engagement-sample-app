@@ -42,6 +42,46 @@ public class ChatViewController: UIViewController {
         }
     }
 
+    private var chatSession: InternalChatSessionProtocol?
+    /// The current Chat Session being displayed if any
+    public var currentChatSession: ChatSession? {
+        return self.chatSession
+    }
+    
+    /// Removes the current chat session if there is one set.
+    public func clearChatSession() {
+        self.chatSession?.removeInternalDelegate(self)
+        self.chatSession = nil
+        self.chatAdapter = nil
+    }
+    
+    /// Sets the chat session to be displayed.
+    /// Replaces the current chat session if there is one set.
+    public func setChatSession(_ chatSession: ChatSession) {
+        self.clearChatSession()
+        guard let chatSession = chatSession as? InternalChatSessionProtocol else { return }
+        
+        let factory = MessageViewModelFactory(
+            stickerRepository: chatSession.stickerRepository,
+            channel: "",
+            reactionsFactory: chatSession.reactionsViewModelFactory
+        )
+
+        let adapter = ChatAdapter(
+            messageViewModelFactory: factory,
+            eventRecorder: chatSession.eventRecorder,
+            blockList: chatSession.blockList,
+            chatSession: chatSession
+        )
+        
+        chatSession.addInternalDelegate(self)
+        self.chatSession = chatSession
+        self.messageVC.chatSession = chatSession
+        self.chatAdapter = adapter
+        
+        self.chatSession(chatSession, didRecieveMessageHistory: chatSession.messages)
+    }
+
     /// A `ContentSession` used by the ChatController to link with the program on the CMS.
     @objc
     public weak var session: ContentSession? {
@@ -60,7 +100,6 @@ public class ChatViewController: UIViewController {
             eventRecorder = sessionImpl.eventRecorder
             superPropertyRecorder = sessionImpl.superPropertyRecorder
             peoplePropertyRecorder = sessionImpl.peoplePropertyRecorder
-            messageVC.session = sessionImpl
 
             firstly {
                 sessionImpl.whenRewards
@@ -157,7 +196,6 @@ public class ChatViewController: UIViewController {
         let messagesVC = MessageViewController()
         messagesVC.setTheme(theme)
         messagesVC.chatAdapter = chatAdapter
-        messagesVC.session = self.session as? InternalContentSession
         return messagesVC
     }()
 
@@ -368,25 +406,18 @@ public class ChatViewController: UIViewController {
     }
 
     func sendMessage(_ message: ChatInputMessage) {
-        guard let sessionImpl = session as? InternalContentSession else {
-            return
-        }
-        guard let nickname = sessionImpl.nicknameVendor.currentNickname else {
-            assertionFailure("Tried to send message before nickname is available.")
+        guard let chatSession = chatSession else {
             return
         }
 
-        sessionImpl.sendChatMessage(message)?.then { [weak self] chatMessageID in
+        let clientMessage = ClientMessage(
+            message: message.message,
+            imageURL: message.imageURL,
+            imageSize: message.imageSize
+        )
+        chatSession.sendMessage(clientMessage).then { [weak self] chatMessageID in
+    
             guard let self = self else { return }
-
-            self.didSendMessage(
-                ChatMessage(
-                    senderUsername: nickname,
-                    message: message.message,
-                    timestamp: Date()
-                )
-            )
-            
             guard let messageText = message.message else { return }
             
             let stickerIDs = messageText.stickerIDs
@@ -422,53 +453,12 @@ public class ChatViewController: UIViewController {
 
     // MARK: Chat history
 
-    func loadNewestMessages() {
-        guard let session = session as? InternalContentSession else { return }
-        guard let chatRoom = session.currentChatRoom else { return }
-        let limit = session.config.chatHistoryLimit
-
-        messageVC.isLoading(true)
-
-        firstly {
-            bindToSessionEvents(session: session)
-        }.then { _ in
-            chatRoom.loadNewestMessagesFromHistory(limit: limit)
-        }.always {
-            self.messageVC.isLoading(false)
-        }.catch { error in
-            log.error("Failed to load history: \(error.localizedDescription)")
-        }
-    }
-    
     func loadMoreHistory(){
-        guard let session = session as? InternalContentSession else { return }
-        guard let chatRoom = session.currentChatRoom else { return }
-        let limit = session.config.chatHistoryLimit
-        
+        guard let chatSession = chatSession else { return }
         messageVC.isLoading(true)
         
         firstly {
-            bindToSessionEvents(session: session)
-        }.then {
-            chatRoom.loadPreviousMessagesFromHistory(limit: limit)
-        }.always {
-            self.messageVC.isLoading(false)
-        }.catch { error in
-            log.error("Failed to load history: \(error.localizedDescription)")
-        }
-    }
-
-    func loadInitialHistory(){
-        guard let session = session as? InternalContentSession else { return }
-        guard let chatRoom = session.currentChatRoom else { return }
-        let limit = session.config.chatHistoryLimit
-
-        messageVC.isLoading(true)
-
-        firstly {
-            bindToSessionEvents(session: session)
-        }.then {
-            chatRoom.loadInitialHistory(limit: limit)
+            chatSession.loadPreviousMessagesFromHistory()
         }.always {
             self.messageVC.isLoading(false)
         }.catch { error in
@@ -500,6 +490,36 @@ public class ChatViewController: UIViewController {
             self.view.backgroundColor = theme.chatBodyColor
 
             log.info("Theme was applied to the ChatViewController")
+        }
+    }
+}
+
+extension ChatViewController: InternalChatSessionDelegate {
+    func chatSession(_ chatSession: ChatSession, didRecieveError error: Error) {
+        
+    }
+    
+    public func chatSession(_ chatSession: ChatSession, didRecieveNewMessage message: ChatMessage) {
+        DispatchQueue.main.async {
+            self.chatAdapter?.publish(newMessage: message)
+        }
+    }
+    
+    public func chatSession(_ chatSession: ChatSession, didRecieveMessageHistory messages: [ChatMessage]) {
+        DispatchQueue.main.async {
+            self.chatAdapter?.publish(messagesFromHistory: messages)
+        }
+    }
+    
+    public func chatSession(_ chatSession: ChatSession, didRecieveMessageUpdate message: ChatMessage) {
+        DispatchQueue.main.async {
+            self.chatAdapter?.publish(messageUpdated: message)
+        }
+    }
+    
+    public func chatSession(_ chatSession: ChatSession, didRecieveMessageDeleted messageID: ChatMessageID) {
+        DispatchQueue.main.async {
+            self.chatAdapter?.deleteMessage(messageId: messageID)
         }
     }
 }
@@ -546,18 +566,19 @@ private extension ChatViewController {
     }
 }
 
-extension ChatViewController: ChatSessionDelegate {
-    func chatSession(chatAdapterDidChange chatAdapter: ChatAdapter?) {
-        self.chatAdapter = chatAdapter
-        self.loadInitialHistory()
-        self.refreshStickers()
+extension ChatViewController: ContentSessionChatDelegate {
+    func chatSession(chatSessionDidChange chatSession: InternalChatSessionProtocol?) {
+        if let chatSession = chatSession {
+            self.setChatSession(chatSession)
+        } else {
+            self.clearChatSession()
+        }
     }
 
     func chatSession(pauseStatusDidChange pauseStatus: PauseStatus) {
         switch pauseStatus {
         case .paused:
-            // Don't need to do anything
-            break
+            self.chatAdapter?.didInteractWithMessageView = false // reset user interaction when paused
         case .unpaused:
             guard let session = session as? InternalContentSession else {
                 log.debug("Resume not necessary when session is nil.")

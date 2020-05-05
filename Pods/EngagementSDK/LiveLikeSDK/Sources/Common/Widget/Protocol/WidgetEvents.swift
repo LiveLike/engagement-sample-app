@@ -10,6 +10,7 @@ typealias MetaData = [String: String]
 
 protocol WidgetEvents: AnyObject {
     func actionHandler(event: WidgetEvent)
+    func widgetInteractionDidBegin(widget: WidgetViewModel)
     func widgetInteractionDidComplete(properties: WidgetInteractedProperties)
 }
 

@@ -17,6 +17,7 @@ struct CheerMeterCreated: Decodable {
     let question: String
     let options: [CheerOption]
     let timeout: Timeout
+    let customData: String?
 
     let subscribeChannel: String
 }

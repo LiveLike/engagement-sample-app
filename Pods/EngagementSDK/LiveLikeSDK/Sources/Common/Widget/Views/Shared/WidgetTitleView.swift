@@ -12,7 +12,7 @@ class WidgetTitleView: UIView {
     // MARK: Private Properties
 
     private let animationViewSize: CGFloat = 18.0
-    private var lottieView: LOTAnimationView?
+    private var lottieView: AnimationView?
     private var timeAnimationStarted: TimeInterval?
 
     // MARK: UI Properties
@@ -88,11 +88,13 @@ class WidgetTitleView: UIView {
         addSubview(animationView)
     }
 
-    func beginTimer(duration: Double, animationID: String, completion: (() -> Void)? = nil) {
-        let lottieView = LOTAnimationView(name: animationID, bundle: Bundle(for: WidgetTitleView.self))
+    func beginTimer(duration: Double, animationFilepath: String, completion: (() -> Void)? = nil) {
+        let lottieView = AnimationView(filePath: animationFilepath)
         lottieView.translatesAutoresizingMaskIntoConstraints = false
         lottieView.contentMode = .scaleAspectFit
-        lottieView.animationSpeed = lottieView.animationDuration / CGFloat(duration)
+        if let animationDuration = lottieView.animation?.duration, duration > 0 {
+            lottieView.animationSpeed = CGFloat(animationDuration / duration)
+        }
 
         animationView.addSubview(lottieView)
 
@@ -108,6 +110,7 @@ class WidgetTitleView: UIView {
 
         lottieView.play { finished in
             if finished {
+                lottieView.isHidden = true
                 completion?()
             }
         }

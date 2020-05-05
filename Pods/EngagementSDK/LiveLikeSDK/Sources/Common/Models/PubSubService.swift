@@ -14,8 +14,8 @@ protocol PubSubService {
     /// Fetch history for a channel that has not be subscribed to
     func fetchHistory(
         channel: String,
-        oldestMessageDate: Date?,
-        newestMessageDate: Date?,
+        oldestMessageDate: TimeToken?,
+        newestMessageDate: TimeToken?,
         limit: UInt,
         completion: @escaping (Result<PubSubHistoryResult, Error>) -> Void
     )

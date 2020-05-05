@@ -32,11 +32,11 @@ class ProgramChatReactionsVendor: ReactionVendor{
             self.programDetailVendor.getProgramDetails()
         }.then { program -> Promise<ReactionPacksResource> in
             guard let reactionPackURL = program.reactionPacksUrl else {
-                return Promise(error: NilError())
+                return Promise(error: ProgramChatReactionVendorError.invalidReactionPacksURL)
             }
             return self.loadReactionPack(atURL: reactionPackURL)
         }.then { reactionPacks -> Promise<[ReactionAsset]> in
-            guard let reactionPack = reactionPacks.results.first else { return Promise(error: NilError())}
+            guard let reactionPack = reactionPacks.results.first else { return Promise(error: ProgramChatReactionVendorError.emptyReactionPacksResource) }
             let reactionAssets = reactionPack.emojis.map({ ReactionAsset(reactionResource: $0) })
             return Promise(value: reactionAssets)
         }.then { reactionAssets in
@@ -66,5 +66,19 @@ fileprivate extension ReactionAsset {
         self.id = ReactionID(fromString: reactionResource.id)
         self.imageURL = reactionResource.file
         self.name = reactionResource.name
+    }
+}
+
+private enum ProgramChatReactionVendorError: LocalizedError {
+    case invalidReactionPacksURL
+    case emptyReactionPacksResource
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidReactionPacksURL:
+            return "Invalid Reaction Packs URL"
+        case .emptyReactionPacksResource:
+            return "Reaction Packs Resource is Empty"
+        }
     }
 }

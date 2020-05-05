@@ -9,19 +9,28 @@ import Lottie
 import UIKit
 
 class CheerMeterWidgetViewController: WidgetController {
+    
     // WidgetViewModel conformance
     var id: String
     var kind: WidgetKind
+    let interactionTimeInterval: TimeInterval?
     weak var delegate: WidgetEvents?
 
     var dismissSwipeableView: UIView {
         return self.view
     }
+    var widgetTitle: String?
+    var correctOptions: Set<WidgetOption>?
+    var options: Set<WidgetOption>?
+    var customData: String?
+    var height: CGFloat {
+        return coreWidgetView.bounds.height + 32
+    }
 
     private let tutorialDuration: TimeInterval = 5.0
     private let tapGameDuration: TimeInterval = 10.0
 
-    private let cheerMeter = CheerMeterWidgetView()
+    private lazy var cheerMeter = CheerMeterWidgetView(theme: self.theme)
     private let cheerMeterResults: ResultsView
     private let cheerMeterData: CheerMeterCreated
     private let leftCheerOption: CheerOption
@@ -68,6 +77,10 @@ class CheerMeterWidgetViewController: WidgetController {
         self.theme = theme
         self.eventRecorder = eventRecorder
         state = .sideSelection
+        self.widgetTitle = cheerMeterData.question
+        self.options = Set(cheerMeterData.options.map({ WidgetOption(id: $0.id, text: $0.description, image: nil)}))
+        self.interactionTimeInterval = cheerMeterData.timeout.timeInterval
+        self.customData = cheerMeterData.customData
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -115,6 +128,7 @@ class CheerMeterWidgetViewController: WidgetController {
                 self.state = .results
             }
         }
+        delegate?.widgetInteractionDidBegin(widget: self)
     }
 
     private func startResults() {
@@ -126,11 +140,15 @@ class CheerMeterWidgetViewController: WidgetController {
             self.voteClient.removeDelegate(self)
             
             if let firstTapTime = self.firstTapTime, let lastTapTime = self.lastTapTime {
-                let properties = WidgetInteractedProperties(widgetId: self.cheerMeterData.id,
-                                                            widgetKind: self.kind.analyticsName,
-                                                            firstTapTime: firstTapTime,
-                                                            lastTapTime: lastTapTime,
-                                                            numberOfTaps: self.myScore)
+                let properties = WidgetInteractedProperties(
+                    widgetId: self.cheerMeterData.id,
+                    widgetKind: self.kind.analyticsName,
+                    firstTapTime: firstTapTime,
+                    lastTapTime: lastTapTime,
+                    numberOfTaps: self.myScore,
+                    interactionTimeInterval: self.interactionTimeInterval,
+                    widgetViewModel: self
+                )
                 self.delegate?.widgetInteractionDidComplete(properties: properties)
             }
             guard let mySide = self.mySide else { return }
@@ -312,7 +330,7 @@ private extension CheerMeterWidgetViewController {
         }
 
         func playLose(completion: @escaping () -> Void) {
-            let lottie = LOTAnimationView(filePath: theme.randomIncorrectAnimationAsset())
+            let lottie = AnimationView(filePath: theme.randomIncorrectAnimationAsset())
             lottie.contentMode = .scaleAspectFit
 
             addSubview(lottie)
@@ -330,7 +348,7 @@ private extension CheerMeterWidgetViewController {
         }
 
         func playWin(winnerImage: UIImage, completion: @escaping () -> Void) {
-            let winLottie = LOTAnimationView(filePath: theme.randomCorrectAnimationAsset())
+            let winLottie = AnimationView(filePath: theme.randomCorrectAnimationAsset())
             winLottie.contentMode = .scaleAspectFit
 
             addSubview(winLottie)

@@ -31,6 +31,22 @@ enum DismissAction: String {
             return false
         }
     }
+    
+    /// Converts DismissAction to a WidgetDismissReason
+    var dismissReason: WidgetDismissReason {
+        switch self {
+        case .swipe:
+            return .userDismiss
+        case .tapX:
+            return .userDismiss
+        case .timeout:
+            return .timeExpired
+        case .integrator:
+            return .apiDismiss
+        case .complete:
+            return .timeExpired
+        }
+    }
 }
 
 enum InteractableState: String {

@@ -27,6 +27,7 @@ class ChatMessageActionPanelView: UIStackView {
     
     weak var chatMessageActionPanelDelegate: ChatMessageActionPanelDelegate?
     var messageViewModel: MessageViewModel?
+    var chatSession: InternalChatSessionProtocol?
     
     private let reactionsHolder: UIStackView = {
         let stackView: UIStackView = UIStackView(frame: .zero)
@@ -94,7 +95,8 @@ class ChatMessageActionPanelView: UIStackView {
 
 // MARK: - Public
 extension ChatMessageActionPanelView {
-    func setUp(reactions: ReactionButtonListViewModel){
+    func setUp(reactions: ReactionButtonListViewModel, chatSession: InternalChatSessionProtocol){
+        self.chatSession = chatSession
         self.spacing = 8.0
         setUpReactionsStack(reactions: reactions)
         setUpFlagHolder()
@@ -123,7 +125,7 @@ extension ChatMessageActionPanelView {
             reactionView.isMine = messageViewModel.chatReactions.isMine(forID: reactionView.reactionID)
         }
 
-        flagHolder.isHidden = !messageViewModel.isReportable
+        flagHolder.isHidden = !(chatSession?.isReportingEnabled ?? false)
         
     }
     

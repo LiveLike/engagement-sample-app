@@ -9,5 +9,4 @@ import Foundation
 
 enum MessagingEventType {
     case widget(ClientEvent)
-    case sync(SyncSessionStatus.Get)
 }

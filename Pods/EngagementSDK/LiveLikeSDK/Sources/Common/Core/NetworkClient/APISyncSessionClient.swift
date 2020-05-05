@@ -46,20 +46,8 @@ class APIAccessTokenGenerator: UserAccessTokenGenerator {
     }
 }
 
-protocol SyncSessionClient {
-    func setSessionSync(url: URL, userSessionId: String) -> Promise<SyncSession>
-}
-
 protocol StickerPackRetriever {
     func getStickerPack(programID: String) -> Promise<StickerPackResponse>?
-}
-
-class APISyncSessionClient: SyncSessionClient {
-    func setSessionSync(url: URL, userSessionId: String) -> Promise<SyncSession> {
-        let syncBody = SyncBody(sessionId: userSessionId)
-        let resource = Resource<SyncSession>(url: url, method: .post(syncBody))
-        return EngagementSDK.networking.load(resource)
-    }
 }
 
 struct LiveLikeAPI {

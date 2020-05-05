@@ -61,16 +61,14 @@ extension ChatAdapter {
             fallthrough // The blocking action implies reporting as well per IOSSDK-408 definition
             
         case let .reported(message: messageViewModel):
-            guard let messageReporter = self.messageReporter else { return }
-            
-            firstly {
-                messageReporter.report(messageViewModel: messageViewModel)
-                }.then {
-                    log.info("Message Reported for view model \(messageViewModel)")
-                }.catch {
-                    log.error("Failed to report message for view model \(messageViewModel) due to error \($0)")
+            self.chatSession.reportMessage(withID: messageViewModel.id) { result in
+                switch result {
+                case .success:
+                    log.info("Message Reported for message with id: \(messageViewModel.id.asString)")
+                case .failure(let error):
+                    log.error("Failed to report message with id: \(messageViewModel.id.asString) due to error \(error)")
+                }
             }
-            
         case .cancelled:
             break
         }

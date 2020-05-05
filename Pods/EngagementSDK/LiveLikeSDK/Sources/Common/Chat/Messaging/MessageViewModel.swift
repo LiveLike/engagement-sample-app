@@ -7,26 +7,18 @@
 
 import UIKit
 
-struct ChatMessageID: Equatable, Hashable {
+public struct ChatMessageID: Equatable, Hashable {
     private let internalId: AnyHashable
 
     var asString: String {
         return internalId.description
     }
 
-    var asInt64: Int64 {
-        guard let intID = Int64(internalId.description) else {
-            assertionFailure("Failed trying to convert chat message id \(internalId) to Int64")
-            return 0
-        }
-        return intID
-    }
-
     init(_ hashableID: AnyHashable) {
         self.internalId = hashableID
     }
 
-    static func == (lhs: ChatMessageID, rhs: ChatMessageID) -> Bool {
+    public static func == (lhs: ChatMessageID, rhs: ChatMessageID) -> Bool {
         return lhs.internalId == rhs.internalId
     }
 }
@@ -48,17 +40,13 @@ class MessageViewModel: Equatable {
     let stickerRepository: StickerRepository
     var profileImageUrl: URL?
     var bodyImageUrl: URL?
-
-    private let messageReporter: MessageReporter?
-
-    var isReportable: Bool {
-        return messageReporter != nil && !isLocalClient
-    }
     
     var bodyImageSize: CGSize?
     
     /// Used for debuging video player time
     var videoPlayerDebugTime: Date?
+    
+    var accessibilityLabel: String?
     
     init(id: ChatMessageID,
          message: String,
@@ -71,7 +59,6 @@ class MessageViewModel: Equatable {
          chatReactions: ReactionButtonListViewModel,
          stickerRepository: StickerRepository,
          profileImageUrl: URL?,
-         messageReporter: MessageReporter?,
          createdAt: Date,
          bodyImageUrl: URL?,
          bodyImageSize: CGSize?) {
@@ -86,7 +73,6 @@ class MessageViewModel: Equatable {
         self.chatReactions = chatReactions
         self.stickerRepository = stickerRepository
         self.profileImageUrl = profileImageUrl
-        self.messageReporter = messageReporter
         self.createdAt = createdAt
         self.bodyImageUrl = bodyImageUrl
         self.bodyImageSize = bodyImageSize
@@ -126,9 +112,10 @@ extension MessageViewModel {
         ]
 
         var attributedString = NSMutableAttributedString(string: isDeleted ? "Redacted" : message, attributes: attributes)
+        accessibilityLabel = ("\(username) \(attributedString.mutableString)")
         
         if let bodyImageUrl = bodyImageUrl {
-        
+            accessibilityLabel = ("\(username) Image")
             if Cache.shared.has(key: bodyImageUrl.absoluteString) {
                 Cache.shared.get(key: bodyImageUrl.absoluteString, completion: { (imageData: Data?) in
                     guard let imageData = imageData else {
@@ -148,9 +135,12 @@ extension MessageViewModel {
                 }
             }
         } else {
-            attributedString = attributedString.replaceStickerShortcodesInMessage(font: theme.fontPrimary, stickerRepository: stickerRepository)
+            let stickerMessage = attributedString.replaceStickerShortcodesInMessage(font: theme.fontPrimary, stickerRepository: stickerRepository)
+            attributedString = stickerMessage.attributedString
+            if let stickerLabel = stickerMessage.stickerLabel {
+                accessibilityLabel = ("\(username) Image: [\(stickerLabel)]")
+            }
         }
-        
         return attributedString
     }
 }

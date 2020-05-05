@@ -19,7 +19,7 @@ public extension ChatViewController {
             friendName: nil,
             badgeImageURL: nil
         )
-        let chatMessageType = ChatMessageType(
+        let chatMessageType = ChatMessage(
             id: ChatMessageID(UUID().uuidString),
             roomID: "room-id",
             message: message,

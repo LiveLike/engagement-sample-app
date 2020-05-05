@@ -79,8 +79,8 @@ class Analytics: EventRecorder {
                 self.incrementAppOpenCountProperty(superPropertyCache: mixpanelAnalytics)
                 complete(mixpanelAnalytics)
             } else {
-                error(NilError())
-                log.error("Will not initialize Mixpanel because no token available.")
+                error(AnalyticsError.noTokenProvidedForMixpanel)
+                log.error(AnalyticsError.noTokenProvidedForMixpanel)
             }
         })
     }
@@ -174,6 +174,17 @@ extension Analytics: IdentityRecorder {
             mixpanel.alias(alias: alias)
         }.catch {
             log.error($0.localizedDescription)
+        }
+    }
+}
+
+private enum AnalyticsError: LocalizedError {
+    case noTokenProvidedForMixpanel
+    
+    var errorDescription: String? {
+        switch self {
+        case .noTokenProvidedForMixpanel:
+        return "Will not initialize Mixpanel because no token available."
         }
     }
 }

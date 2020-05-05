@@ -70,7 +70,10 @@ class TextQuizWidgetView: VerticalChoiceWidget, QuizWidget {
     }
 
     func beginTimer(completion: @escaping () -> Void) {
-        titleView.beginTimer(duration: data.timeout.timeInterval, animationID: data.animationTimerAsset) {
+        titleView.beginTimer(
+            duration: data.timeout.timeInterval,
+            animationFilepath: theme.filepathsForWidgetTimerLottieAnimation
+        ) {
             completion()
         }
     }

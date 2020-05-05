@@ -8,19 +8,30 @@
 import UIKit
 
 class PollWidgetViewController: WidgetController {
+
     // MARK: Internal Properties
 
     let id: String
     let kind: WidgetKind
+    var interactionTimeInterval: TimeInterval?
     
     weak var delegate: WidgetEvents?
     var coreWidgetView: CoreWidgetView {
         return widgetView.coreWidgetView
     }
+    
+    var height: CGFloat {
+        return coreWidgetView.bounds.height + 32
+    }
 
     var dismissSwipeableView: UIView {
         return self.view
     }
+
+    var widgetTitle: String?
+    var correctOptions: Set<WidgetOption>?
+    var options: Set<WidgetOption>?
+    var customData: String?
 
     // MARK: Private Properties
 
@@ -47,8 +58,61 @@ class PollWidgetViewController: WidgetController {
     // MARK: State Properties
 
     private var widgetVote: WidgetVote?
+    
+    convenience init(payload: ImagePollCreated,
+                     pollWidgetView: PollWidgetView,
+                     pollVoteClient: PollWidgetVoteClient,
+                     pollResultsClient: PollWidgetResultsClient,
+                     eventRecorder: EventRecorder,
+                     options: Set<WidgetOption> = Set())
+    {
+        self.init(id: payload.id,
+                  kind: payload.kind,
+                  pollWidgetView: pollWidgetView,
+                  pollVoteClient: pollVoteClient,
+                  pollResultsClient: pollResultsClient,
+                  updateChannel: payload.subscribeChannel,
+                  eventRecorder: eventRecorder,
+                  interactionTimeInterval: payload.timeout.timeInterval,
+                  title: payload.question,
+                  options: Set(payload.options.map({ WidgetOption(id: $0.id, text: $0.description, image: nil)})),
+                  metadata: payload.customData)
+        
+    }
+    
+    convenience init(payload: TextPollCreated,
+                     pollWidgetView: PollWidgetView,
+                     pollVoteClient: PollWidgetVoteClient,
+                     pollResultsClient: PollWidgetResultsClient,
+                     eventRecorder: EventRecorder,
+                     options: Set<WidgetOption> = Set())
+    {
+        self.init(id: payload.id,
+                  kind: payload.kind,
+                  pollWidgetView: pollWidgetView,
+                  pollVoteClient: pollVoteClient,
+                  pollResultsClient: pollResultsClient,
+                  updateChannel: payload.subscribeChannel,
+                  eventRecorder: eventRecorder,
+                  interactionTimeInterval: payload.timeout.timeInterval,
+                  title: payload.question,
+                  options: Set(payload.options.map({ WidgetOption(id: $0.id, text: $0.description, image: nil)})),
+                  metadata: payload.customData)
+        
+    }
 
-    init(id: String, kind: WidgetKind, pollWidgetView: PollWidgetView, pollVoteClient: PollWidgetVoteClient, pollResultsClient: PollWidgetResultsClient, updateChannel: String, eventRecorder: EventRecorder) {
+    private init(id: String,
+                 kind: WidgetKind,
+                 pollWidgetView: PollWidgetView,
+                 pollVoteClient: PollWidgetVoteClient,
+                 pollResultsClient: PollWidgetResultsClient,
+                 updateChannel: String,
+                 eventRecorder: EventRecorder,
+                 interactionTimeInterval: TimeInterval,
+                 title: String = "",
+                 options: Set<WidgetOption> = Set(),
+                 metadata: String?)
+    {
         widgetView = pollWidgetView
         self.id = id
         self.pollResultsClient = pollResultsClient
@@ -56,6 +120,10 @@ class PollWidgetViewController: WidgetController {
         self.updateChannel = updateChannel
         self.kind = kind
         self.eventRecorder = eventRecorder
+        self.widgetTitle = title
+        self.options = options
+        self.interactionTimeInterval = interactionTimeInterval
+        self.customData = metadata
         super.init(nibName: nil, bundle: nil)
 
         configureVoteDebouncer()
@@ -72,7 +140,9 @@ class PollWidgetViewController: WidgetController {
             self.tapCount += 1
         }
 
-        self.pollResultsClient.didReceivePollResults = { [weak self] in self?.widgetView.updateResults(results: $0) }
+        self.pollResultsClient.didReceivePollResults = { [weak self] in
+            self?.widgetView.updateResults(results: $0)
+        }
 
         configure()
     }
@@ -106,7 +176,9 @@ class PollWidgetViewController: WidgetController {
                     widgetKind: self.kind.analyticsName,
                     firstTapTime: firstTapTime,
                     lastTapTime: lastTapTime,
-                    numberOfTaps: self.tapCount
+                    numberOfTaps: self.tapCount,
+                    interactionTimeInterval: self.interactionTimeInterval,
+                    widgetViewModel: self
                 )
                 self.delegate?.widgetInteractionDidComplete(properties: properties)
             }
@@ -117,6 +189,7 @@ class PollWidgetViewController: WidgetController {
                 self.delegate?.actionHandler(event: .dismiss(action: dismissAction))
             }
         }
+        delegate?.widgetInteractionDidBegin(widget: self)
 
         timeDisplayed = Date()
         eventRecorder.record(.widgetDisplayed(kind: kind.analyticsName,

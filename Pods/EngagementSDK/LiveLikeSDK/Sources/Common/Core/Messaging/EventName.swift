@@ -12,8 +12,10 @@ import Foundation
 enum EventName: String, Encodable {
     // Widget Events
     case textPredictionCreated = "text-prediction-created"
+    case textPredictionResults = "text-prediction-results"
     case textPredictionFollowUpCreated = "text-prediction-follow-up-updated"
     case imagePredictionCreated = "image-prediction-created"
+    case imagePredictionResults = "image-prediction-results"
     case imagePredictionFollowUpCreated = "image-prediction-follow-up-updated"
     case imagePollCreated = "image-poll-created"
     case imagePollResults = "image-poll-results"
@@ -28,7 +30,4 @@ enum EventName: String, Encodable {
     case imageSliderResults = "emoji-slider-results"
     case cheerMeterCreated = "cheer-meter-created"
     case cheerMeterResults = "cheer-meter-results"
-    // Syncing Events
-    case syncSessionStatus = "sync-session-status"
-    case syncSessionUpdate = "sync-session-update"
 }

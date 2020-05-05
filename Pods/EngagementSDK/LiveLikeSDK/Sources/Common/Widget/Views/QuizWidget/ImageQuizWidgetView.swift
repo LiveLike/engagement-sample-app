@@ -118,7 +118,7 @@ extension ImageQuizWidgetView {
 
 extension ImageQuizWidgetView {
     func beginTimer(completion: @escaping () -> Void) {
-        titleView.beginTimer(duration: data.timeout.timeInterval, animationID: data.animationTimerAsset) {
+        titleView.beginTimer(duration: data.timeout.timeInterval, animationFilepath: theme.filepathsForWidgetTimerLottieAnimation) {
             completion()
         }
     }

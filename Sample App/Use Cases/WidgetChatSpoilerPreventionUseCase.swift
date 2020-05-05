@@ -109,7 +109,7 @@ class WidgetChatSpoilerPreventionUseCase: UIViewController {
     }
     
     private func setupEngagementSDK() {
-        sdk = EngagementSDK(clientID: clientID)
+        sdk = EngagementSDK.init(config: EngagementSDKConfig(clientID: clientID))
         sdk.delegate = self
         session = sdk.contentSession(config: SessionConfiguration(programID: programID))
         session.delegate = self

@@ -70,7 +70,7 @@ extension GamificationViewManager: WidgetRendererDelegate {
 // hook into widget events
 extension GamificationViewManager: WidgetEvents {
     func actionHandler(event: WidgetEvent) {}
-
+    func widgetInteractionDidBegin(widget: WidgetViewModel) {}    
     func widgetInteractionDidComplete(properties: WidgetInteractedProperties) {
         rewards.getPointsReward(for: properties.widgetId)
     }

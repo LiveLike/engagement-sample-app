@@ -11,23 +11,20 @@ import UIKit
 class MessageViewModelFactory {
     private let stickerRepository: StickerRepository
     private let reactionsFactory: ReactionsViewModelFactory
-    private let messageReporter: MessageReporter?
     private let channel: String
     private var theme: Theme = Theme()
 
     init(
         stickerRepository: StickerRepository,
         channel: String,
-        reactionsFactory: ReactionsViewModelFactory,
-        messageReporter: MessageReporter?
+        reactionsFactory: ReactionsViewModelFactory
     ) {
         self.stickerRepository = stickerRepository
         self.channel = channel
         self.reactionsFactory = reactionsFactory
-        self.messageReporter = messageReporter
     }
 
-    func create(from chatMessage: ChatMessageType) -> Promise<MessageViewModel> {
+    func create(from chatMessage: ChatMessage) -> Promise<MessageViewModel> {
         let sender = chatMessage.sender
         let isLocalClient = sender.isLocalUser
 
@@ -46,7 +43,6 @@ class MessageViewModelFactory {
                 chatReactions: reactionsViewModel,
                 stickerRepository: self.stickerRepository,
                 profileImageUrl: chatMessage.profileImageUrl,
-                messageReporter: self.messageReporter,
                 createdAt: chatMessage.timestamp,
                 bodyImageUrl: chatMessage.bodyImageUrl,
                 bodyImageSize: chatMessage.bodyImageSize)
@@ -60,9 +56,8 @@ class MessageViewModelFactory {
             NSAttributedString.Key.foregroundColor: theme.messageTextColor
         ]
 
-        var attributedString = NSMutableAttributedString(string: messageString, attributes: attributes)
-        attributedString = attributedString.replaceStickerShortcodesInMessage(font: theme.fontPrimary, stickerRepository: stickerRepository)
-
-        return attributedString
+        let attributedString = NSMutableAttributedString(string: messageString, attributes: attributes)
+        let stickerContent = attributedString.replaceStickerShortcodesInMessage(font: theme.fontPrimary, stickerRepository: stickerRepository)
+        return stickerContent.attributedString
     }
 }

@@ -28,8 +28,8 @@ struct TextPredictionCreated: Decodable {
     let programDateTime: Date?
     var impressionUrl: URL?
     var rewardsUrl: URL?
+    var customData: String?
 
-    let animationTimerAsset: String = "timer"
     let animationConfirmationAsset: String = AnimationAssets.randomConfirmationEmojiAsset()
 
     enum CodingKeys: String, CodingKey {
@@ -47,6 +47,7 @@ struct TextPredictionCreated: Decodable {
         case rewardsUrl
         case url
         case programDateTime
+        case customData
     }
 
     init(from decoder: Decoder) throws {
@@ -66,5 +67,6 @@ struct TextPredictionCreated: Decodable {
         rewardsUrl = try? container.decode(URL.self, forKey: .rewardsUrl)
         url = try container.decode(URL.self, forKey: .url)
         programDateTime = try? container.decode(Date.self, forKey: .programDateTime)
+        customData = try? container.decode(String.self, forKey: .customData)
     }
 }

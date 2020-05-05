@@ -8,11 +8,20 @@
 import UIKit
 
 class WidgetUnpauseDialogViewController: WidgetController {
+    var widgetTitle: String?
+    var correctOptions: Set<WidgetOption>?
+    var options: Set<WidgetOption>?
     var id: String = ""
     var kind = WidgetKind.dismissToggle
+    var interactionTimeInterval: TimeInterval? = nil
+    var customData: String?
 
     weak var delegate: WidgetEvents?
 
+    var height: CGFloat {
+        return coreWidgetView.bounds.height + 32
+    }
+    
     var coreWidgetView: CoreWidgetView {
         return dismissWidgetView.coreWidgetView
     }
@@ -22,7 +31,7 @@ class WidgetUnpauseDialogViewController: WidgetController {
     }
 
     private var dismissWidgetView: DialogWidgetView = {
-        let view = DialogWidgetView()
+        let view = DialogWidgetView(lottieAnimationName: "emoji-hearteyes")
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
@@ -34,6 +43,7 @@ class WidgetUnpauseDialogViewController: WidgetController {
     init(widgetCrossSessionPauser: WidgetCrossSessionPauser, theme: Theme) {
         self.widgetCrossSessionPauser = widgetCrossSessionPauser
         self.theme = theme
+        self.widgetTitle = "Widget Pauser"
         super.init(nibName: nil, bundle: nil)
         configure()
         configureButtons()
@@ -46,7 +56,7 @@ class WidgetUnpauseDialogViewController: WidgetController {
     }
 
     func start() {
-        dismissWidgetView.lottieView.play()
+        dismissWidgetView.playEmojiAnimation()
         delay(10, closure: { [weak self] in
             self?.delegate?.actionHandler(event: .dismiss(action: .timeout))
         })
@@ -59,8 +69,6 @@ class WidgetUnpauseDialogViewController: WidgetController {
     }
 
     private func configure() {
-        dismissWidgetView.lottieView.setAnimation(named: "emoji-hearteyes", bundle: Bundle(for: WidgetUnpauseDialogViewController.self))
-        dismissWidgetView.lottieView.loopAnimation = true
         dismissWidgetView.foreverButton.isHidden = true
         view.addSubview(dismissWidgetView)
         dismissWidgetView.constraintsFill(to: view)

@@ -8,10 +8,11 @@
 import UIKit
 
 extension NSMutableAttributedString {
-    func replaceStickerShortcodesInMessage(font: UIFont, stickerRepository: StickerRepository) -> NSMutableAttributedString {
+    func replaceStickerShortcodesInMessage(font: UIFont, stickerRepository: StickerRepository) -> (attributedString: NSMutableAttributedString, stickerLabel: String?) {
         let message = string
         let controlMessage = string
-
+        var shortcode: String?
+        var stickerLabels: String?
         do {
             let regex = try NSRegularExpression(pattern: ":(.*?):", options: [])
             let regexRange = NSRange(location: 0, length: message.utf16.count)
@@ -22,9 +23,18 @@ extension NSMutableAttributedString {
                 let nsrange = match.range
                 let r = match.range(at: 1)
                 if let range = Range(r, in: message) {
-                    let shortcode = String(message[range])
+                    shortcode = String(message[range])
 
-                    if let imageURL = stickerRepository.get(id: shortcode)?.file {
+                    if let shortcode = shortcode, let imageURL = stickerRepository.get(id: shortcode)?.file {
+                        
+                        // compute sticker label for the accessibility label
+                        if stickerLabels == nil {
+                            stickerLabels = shortcode
+                        } else {
+                            stickerLabels?.append(", \(shortcode)")
+                        }
+                        
+                        // retrieve sticker image from the cache
                         Cache.shared.get(key: imageURL.absoluteString, completion: { (imageData: Data?) in
                             guard let imageData = imageData else {
                                 return log.error("STICKERS Cache found result for key \(imageURL.absoluteString) but it was nil")
@@ -48,6 +58,6 @@ extension NSMutableAttributedString {
             print(error)
         }
 
-        return self
+        return (self, stickerLabels)
     }
 }

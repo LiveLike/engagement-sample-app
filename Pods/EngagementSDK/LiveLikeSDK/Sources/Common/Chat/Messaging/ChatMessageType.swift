@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 
 /// The `UserMessage` struct represents the user **message**.
-struct ChatMessageType: Equatable, Hashable {
+@objc public class ChatMessage: NSObject {
     /// Unique message ID.
     var id: ChatMessageID
 
@@ -17,12 +17,12 @@ struct ChatMessageType: Equatable, Hashable {
     let roomID: String
 
     /// The message
-    let message: String
+    public let message: String
 
     /// Sender of the **message**. This is represented by `ChatUser` struct.
     let sender: ChatUser
 
-    var nickname: String {
+    public var nickname: String {
         return sender.nickName
     }
 
@@ -41,9 +41,9 @@ struct ChatMessageType: Equatable, Hashable {
     let bodyImageSize: CGSize?
 
     /// The timestamp of when this message was created
-    let timestamp: Date
+    public let timestamp: Date
 
-    let createdAt: TimeToken
+    public let createdAt: TimeToken
 
     init(
         id: ChatMessageID,
@@ -71,17 +71,22 @@ struct ChatMessageType: Equatable, Hashable {
         self.bodyImageSize = bodyImageSize
     }
 
-    static func == (lhs: ChatMessageType, rhs: ChatMessageType) -> Bool {
-        return lhs.id == rhs.id
+    public override var hash: Int {
+        var hasher = Hasher()
+        hasher.combine(id)
+        return hasher.finalize()
+
     }
 
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
+    public override func isEqual(_ other: Any?) -> Bool {
+        guard let other = other as? ChatMessage else { return false }
+        return self.id == other.id
     }
+
 }
 
-extension ChatMessageType {
-    init(
+extension ChatMessage {
+    convenience init(
         from chatPubnubMessage: PubSubChatPayload,
         channel: String,
         timetoken: TimeToken,
@@ -122,7 +127,7 @@ extension ChatMessageType {
             sender: chatUser,
             videoTimestamp: chatPubnubMessage.programDateTime?.timeIntervalSince1970,
             reactions: reactions,
-            timestamp: timetoken.date,
+            timestamp: timetoken.approximateDate,
             profileImageUrl: chatPubnubMessage.senderImageUrl,
             createdAt: timetoken,
             bodyImageUrl: nil,
@@ -130,7 +135,7 @@ extension ChatMessageType {
         )
     }
 
-    init(
+    convenience init(
         from chatPubnubMessage: PubSubImagePayload,
         channel: String,
         timetoken: TimeToken,
@@ -171,7 +176,7 @@ extension ChatMessageType {
             sender: chatUser,
             videoTimestamp: chatPubnubMessage.programDateTime?.timeIntervalSince1970,
             reactions: reactions,
-            timestamp: timetoken.date,
+            timestamp: timetoken.approximateDate,
             profileImageUrl: chatPubnubMessage.senderImageUrl,
             createdAt: timetoken,
             bodyImageUrl: chatPubnubMessage.imageUrl,

@@ -64,7 +64,11 @@ class Logger {
             if LogToFile {
                 Logger.writeMessageToFile(message: log)
             }
-            os_log("%{public}@", log)
+            #if DEBUG
+                print(log)
+            #else
+                os_log("%{public}@", log)
+            #endif
         }
     }
 

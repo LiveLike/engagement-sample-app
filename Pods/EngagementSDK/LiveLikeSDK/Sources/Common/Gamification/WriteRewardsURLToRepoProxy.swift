@@ -47,6 +47,8 @@ extension WriteRewardsURLToRepoProxy: WidgetProxy {
              .imageQuizResults,
              .textQuizResults,
              .imagePollResults,
+             .textPredictionResults,
+             .imagePredictionResults,
              .pointsTutorial,
              .badgeCollect:
             break

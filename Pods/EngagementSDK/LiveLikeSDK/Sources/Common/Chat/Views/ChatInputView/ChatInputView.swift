@@ -18,6 +18,7 @@ class ChatInputView: UIView {
             textField.isAccessibilityElement = true
             textField.onDeletion = { [weak self] in
                 guard let self = self else { return }
+                self.textField.accessibilityLabel = ""
                 if self.textField.isEmpty == true {
                     self.updateSendButtonVisibility()
                 }
@@ -58,7 +59,7 @@ class ChatInputView: UIView {
             if let chatInputSendButtonTint = theme.chatInputSendButtonTint {
                 sendButton.tintColor = chatInputSendButtonTint
             }
-            log.error("Failed to load `theme.chatInputSendButtonImage`")
+            log.info("There is no chatInputSendButtonImage set on Theme.")
             return
         }
         
@@ -103,6 +104,7 @@ class ChatInputView: UIView {
         } else if UIPasteboard.general.hasImages {
             if supportExternalImages {
                 if let image = UIPasteboard.general.image {
+                    textField.accessibilityLabel = "Image"
                     if let data = UIPasteboard.general.data(forPasteboardType: kUTTypeGIF as String) {
                         textField.imageAttachmentData = data
                     } else {
@@ -139,6 +141,7 @@ class ChatInputView: UIView {
     }
 
     @IBAction func sendButtonPressed() {
+        textField.accessibilityLabel = ""
         delegate?.chatInputSendPressed(message: ChatInputMessage(
             message: textField.text,
             image: textField.imageAttachmentData))

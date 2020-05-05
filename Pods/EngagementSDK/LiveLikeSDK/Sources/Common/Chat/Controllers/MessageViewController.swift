@@ -65,15 +65,15 @@ class MessageViewController: UIViewController {
     
     private var emptyChatCustomView: UIView?
 
-    weak var session: InternalContentSession? {
+    weak var chatSession: InternalChatSessionProtocol? {
         didSet {
-            guard let session = session else { return }
+            guard let chatSession = chatSession else { return }
             firstly {
-                session.reactionsVendor.getReactions()
+                chatSession.reactionsVendor.getReactions()
             }.then { reactions in
-                session.reactionsViewModelFactory.make(from: reactions)
+                chatSession.reactionsViewModelFactory.make(from: reactions)
             }.then { [weak self] reactionsViewModel in
-                self?.chatMessageActionPanelView.setUp(reactions: reactionsViewModel)
+                self?.chatMessageActionPanelView.setUp(reactions: reactionsViewModel, chatSession: chatSession)
             }.catch {
                 log.error($0.localizedDescription)
             }
@@ -192,6 +192,7 @@ class MessageViewController: UIViewController {
         tableLeadingConstraint?.constant = theme.chatLeadingMargin
         tableTrailingConstraint?.constant = theme.chatTrailingMargin
         chatMessageActionPanelView.setTheme(theme: theme)
+        activityIndicator.color = theme.chatLoadingIndicatorColor
 
         self.emptyChatCustomView?.removeFromSuperview()
         if let newEmptyChatCustomView = theme.emptyChatCustomView {
@@ -229,6 +230,7 @@ extension MessageViewController: ChatActionsDelegate {
     }
 
     func chatAdapter(_ chatAdapter: ChatAdapter, messageCountDidChange count: Int) {
+        self.isLoading(false)
         self.updateNoMessagesCustomView(messageCount: count)
     }
 
@@ -297,8 +299,8 @@ extension MessageViewController: ChatMessageActionPanelDelegate {
         )
 
         if reactionIsMine, let reactionVoteID = messageViewModel.chatReactions.myVoteID() {
-            session?.removeReactions(
-                reactionVoteID,
+            chatSession?.removeMessageReactions(
+                reaction: reactionVoteID,
                 fromMessageWithID: messageViewModel.id
             ).always {
                 self.canReact = true
@@ -310,10 +312,10 @@ extension MessageViewController: ChatMessageActionPanelDelegate {
             })
         } else {
             let reactionToRemove = messageViewModel.chatReactions.myVoteID()
-            session?.sendReaction(
-                messageID: messageViewModel.id,
-                reaction,
-                reactionToRemove: reactionToRemove
+            chatSession?.sendMessageReaction(
+                messageViewModel.id,
+                reaction: reaction,
+                reactionsToRemove: reactionToRemove
             ).always {
                 self.canReact = true
             }

@@ -8,10 +8,17 @@
 import UIKit
 
 struct ClientMessage {
-    let message: String?
-    let timeStamp: EpochTime? // represents player time source
-    let badge: Badge?
-    let reactions: ReactionVotes
-    let imageURL: URL?
-    let imageSize: CGSize?
+    var message: String?
+    var timeStamp: EpochTime? // represents player time source
+    var badge: Badge?
+    var reactions: ReactionVotes?
+    var imageURL: URL?
+    var imageSize: CGSize?
+    
+    init(message: String?, imageURL: URL?, imageSize: CGSize?) {
+        self.message = message
+        self.imageURL = imageURL
+        self.imageSize = imageSize
+    }
+    
 }

@@ -48,7 +48,7 @@ final class Cache: CacheProtocol {
                     return
                 }
                 guard let object = object else {
-                    log.error("Disk cache found object but it was nil")
+                    log.error(CacheError.nilObjectFoundInCache)
                     completion(nil)
                     return
                 }
@@ -70,7 +70,7 @@ extension Cache {
     func set<T>(object: T, key: String) -> Promise<T> where T: Cachable {
         return Promise { [weak self] fulfill, reject in
             guard let self = self else {
-                reject(NilError())
+                reject(CacheError.promiseRejectedDueToNilSelf)
                 return
             }
             self.set(object: object, key: key, completion: {
@@ -82,16 +82,30 @@ extension Cache {
     func get<T>(key: String) -> Promise<T> where T: Cachable {
         return Promise { [weak self] fulfill, reject in
             guard let self = self else {
-                reject(NilError())
+                reject(CacheError.promiseRejectedDueToNilSelf)
                 return
             }
             self.get(key: key, completion: { (object: T?) in
                 guard let object = object else {
-                    reject(NilError())
+                    reject(CacheError.nilObjectFoundInCache)
                     return
                 }
                 fulfill(object)
             })
+        }
+    }
+}
+
+private enum CacheError: LocalizedError {
+    case nilObjectFoundInCache
+    case promiseRejectedDueToNilSelf
+
+    var errorDescription: String? {
+        switch self {
+        case .nilObjectFoundInCache:
+            return "Disk cache found object but it was nil"
+        case .promiseRejectedDueToNilSelf:
+            return "Promise rejected due to self being nil"
         }
     }
 }
