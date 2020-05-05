@@ -31,7 +31,7 @@ class HomeViewController: UIViewController {
         textField.translatesAutoresizingMaskIntoConstraints = false
         textField.borderStyle = .roundedRect
         textField.placeholder = "Enter Client ID"
-        textField.addTarget(self, action: #selector(clientIDTextFieldEditingDidEnd), for: .editingDidEnd)
+        textField.addTarget(self, action: #selector(clientIDTextFieldEditingDidEnd), for: .editingChanged)
         return textField
     }()
     
@@ -48,7 +48,7 @@ class HomeViewController: UIViewController {
         textField.translatesAutoresizingMaskIntoConstraints = false
         textField.borderStyle = .roundedRect
         textField.placeholder = "Enter Program ID"
-        textField.addTarget(self, action: #selector(programIDTextFieldEditingDidEnd), for: .editingDidEnd)
+        textField.addTarget(self, action: #selector(programIDTextFieldEditingDidEnd), for: .editingChanged)
         return textField
     }()
     
