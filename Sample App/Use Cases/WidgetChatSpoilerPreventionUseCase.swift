@@ -14,11 +14,14 @@ import AVKit
 
 class WidgetChatSpoilerPreventionUseCase: UIViewController {
 
-    private var session: ContentSession?
+    private var sdk: EngagementSDK!
+    private var session: ContentSession!
+    
+    private let clientID: String
+    private let programID: String
+    
     private let widgetViewController = WidgetViewController()
     private let chatViewController = ChatViewController()
-    private var clientID: String
-    private var programID: String
     private let avPlayerViewController = AVPlayerViewController()
     
     /// ℹ️ The AVPlayer URL would be the same URL that is used as the source
@@ -106,17 +109,13 @@ class WidgetChatSpoilerPreventionUseCase: UIViewController {
     }
     
     private func setupEngagementSDK() {
-        
-        let sdk = EngagementSDK.init(clientID: clientID,
-                                     accessTokenStorage: self)
-        let config = SessionConfiguration(programID: programID)
-        session = sdk.contentSession(config: config, delegate: self)
+        sdk = EngagementSDK(clientID: clientID)
+        sdk.delegate = self
+        session = sdk.contentSession(config: SessionConfiguration(programID: programID))
+        session.delegate = self
         
         widgetViewController.session = session
         chatViewController.session = session
-        
-        session?.delegate = self
-        
     }
     
     private func addNotificationObservers() {
@@ -143,6 +142,20 @@ class WidgetChatSpoilerPreventionUseCase: UIViewController {
     }
 
 }
+
+// MARK: - EngagementSDKDelegate
+extension WidgetChatSpoilerPreventionUseCase: EngagementSDKDelegate {
+    func sdk(_ sdk: EngagementSDK, setupFailedWithError error: Error) {
+        let alert = UIAlertController(
+            title: "EngagementSDK Error",
+            message: error.localizedDescription,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+        present(alert, animated: true, completion: nil)
+    }
+}
+
 
 // MARK: - ContentSessionDelegate
 extension WidgetChatSpoilerPreventionUseCase: ContentSessionDelegate {

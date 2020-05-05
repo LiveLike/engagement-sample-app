@@ -10,10 +10,13 @@ import EngagementSDK
 
 class WidgetsUseCase: UIViewController {
 
-    private var session: ContentSession?
+    private var sdk: EngagementSDK!
+    private var session: ContentSession!
+    
+    private let clientID: String
+    private let programID: String
+    
     private let widgetViewController = WidgetViewController()
-    private var clientID: String
-    private var programID: String
     
     private let widgetView: UIView = {
         let widgetView = UIView()
@@ -74,16 +77,12 @@ class WidgetsUseCase: UIViewController {
     }
     
     private func setupEngagementSDK() {
-        
-        let sdk = EngagementSDK.init(clientID: clientID,
-                                     accessTokenStorage: self)
-        let config = SessionConfiguration(programID: programID)
-        session = sdk.contentSession(config: config, delegate: self)
-        EngagementSDK.logLevel = .verbose
+        sdk = EngagementSDK(clientID: clientID)
+        sdk.delegate = self
+        session = sdk.contentSession(config: SessionConfiguration(programID: programID))
+        session.delegate = self
         
         widgetViewController.session = session
-        session?.delegate = self
-        
     }
     
     private func addNotificationObservers() {
@@ -111,7 +110,20 @@ class WidgetsUseCase: UIViewController {
     
 }
 
-// MARK: - EngagementSDK ContentSessionDelegate
+// MARK: - EngagementSDKDelegate
+extension WidgetsUseCase: EngagementSDKDelegate {
+    func sdk(_ sdk: EngagementSDK, setupFailedWithError error: Error) {
+        let alert = UIAlertController(
+            title: "EngagementSDK Error",
+            message: error.localizedDescription,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+        present(alert, animated: true, completion: nil)
+    }
+}
+
+// MARK: - ContentSessionDelegate
 extension WidgetsUseCase: ContentSessionDelegate {
     func session(_ session: ContentSession, didChangeStatus status: SessionStatus) {
         print("Session status did change \(status)")
