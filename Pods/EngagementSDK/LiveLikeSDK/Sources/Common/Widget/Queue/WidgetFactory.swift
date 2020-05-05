@@ -41,11 +41,27 @@ class ClientEventWidgetFactory: WidgetFactory {
 
     func create(theme: Theme = .dark, widgetConfig: WidgetConfig) -> WidgetController? {
         switch event {
+            // MARK: Text Predictions
         case let .textPredictionCreated(payload):
-            let predictionClient = PredictionClient(accessToken: accessToken)
+            let predictionClient = PredictionClient(
+                accessToken: accessToken,
+                widgetClient: widgetMessagingOutput,
+                resultsChannel: payload.subscribeChannel
+            )
             let viewmodel = ChoiceWidgetViewModel.make(from: payload)
-            let widget = PredictionWidgetViewController(style: .text, kind: payload.kind, widgetData: viewmodel, voteRepo: voteRepo, theme: theme, predictionWidgetClient: predictionClient, eventRecorder: eventRecorder)
+            let widget = PredictionWidgetViewController(style: .text,
+                                                        kind: payload.kind,
+                                                        widgetData: viewmodel,
+                                                        voteRepo: voteRepo,
+                                                        theme: theme,
+                                                        predictionWidgetClient: predictionClient,
+                                                        eventRecorder: eventRecorder,
+                                                        title: payload.question,
+                                                        options: Set(payload.options.map({ WidgetOption(id: $0.id,
+                                                                                                        text: $0.description,
+                                                                                                        image: nil) })))
             return widget
+            // MARK: Text Predictions Follow Up
         case let .textPredictionFollowUp(payload, vote):
             guard let vote = vote else {
                 log.error("There is not vote associated to this textPredictionFollowUp widget.")
@@ -59,10 +75,19 @@ class ClientEventWidgetFactory: WidgetFactory {
                                                           kind: payload.kind,
                                                           correctOptionIds: payload.correctOptionsIds,
                                                           eventRecorder: eventRecorder,
-                                                          widgetConfig: widgetConfig)
+                                                          widgetConfig: widgetConfig,
+                                                          title: payload.question,
+                                                          options: Set(payload.options.map({ WidgetOption(id: $0.id,
+                                                                                                          text: $0.description,
+                                                                                                          image: nil) })))
             return widget
+            // MARK: Image Predictions
         case let .imagePredictionCreated(payload):
-            let predictionClient = PredictionClient(accessToken: accessToken)
+            let predictionClient = PredictionClient(
+                accessToken: accessToken,
+                widgetClient: widgetMessagingOutput,
+                resultsChannel: payload.subscribeChannel
+            )
             let viewmodel = ChoiceWidgetViewModel.make(from: payload)
             let widget = PredictionWidgetViewController(style: .image,
                                                         kind: payload.kind,
@@ -70,8 +95,13 @@ class ClientEventWidgetFactory: WidgetFactory {
                                                         voteRepo: voteRepo,
                                                         theme: theme,
                                                         predictionWidgetClient: predictionClient,
-                                                        eventRecorder: eventRecorder)
+                                                        eventRecorder: eventRecorder,
+                                                        title: payload.question,
+                                                        options: Set(payload.options.map({ WidgetOption(id: $0.id,
+                                                                                                        text: $0.description,
+                                                                                                        image: nil) })))
             return widget
+            // MARK: Image Prediction Follow Up
         case let .imagePredictionFollowUp(payload, vote):
             guard let vote = vote else {
                 log.error("There is not vote associated to this imagePredictionFollowUp widget.")
@@ -85,86 +115,125 @@ class ClientEventWidgetFactory: WidgetFactory {
                                                           kind: payload.kind,
                                                           correctOptionIds: payload.correctOptionsIds,
                                                           eventRecorder: eventRecorder,
-                                                          widgetConfig: widgetConfig)
+                                                          widgetConfig: widgetConfig,
+                                                          title: payload.question,
+                                                          options: Set(payload.options.map({ WidgetOption(id: $0.id,
+                                                                                                          text: $0.description,
+                                                                                                          image: nil) })))
             return widget
+            // MARK: Image Poll
         case let .imagePollCreated(payload):
             let pollWidgetClient = PollClient(widgetMessagingClient: widgetMessagingOutput, accessToken: accessToken)
             let choiceFactory = ChoiceWidgetOptionFactory()
-            let imagePollWidget = TextPollWidgetView(data: payload, theme: theme, choiceOptionFactory: choiceFactory, widgetConfig: widgetConfig)
-            let widget = PollWidgetViewController(id: payload.id,
-                                                  kind: payload.kind,
+            let imagePollWidget = TextPollWidgetView(data: payload,
+                                                     theme: theme,
+                                                     choiceOptionFactory: choiceFactory,
+                                                     widgetConfig: widgetConfig)
+            let widget = PollWidgetViewController(payload: payload,
                                                   pollWidgetView: imagePollWidget,
                                                   pollVoteClient: pollWidgetClient,
                                                   pollResultsClient: pollWidgetClient,
-                                                  updateChannel: payload.subscribeChannel,
                                                   eventRecorder: eventRecorder)
             return widget
+            // MARK: Text Poll
         case let .textPollCreated(payload):
             let pollWidgetClient = PollClient(widgetMessagingClient: widgetMessagingOutput, accessToken: accessToken)
             let choiceFactory = ChoiceWidgetOptionFactory()
-            let textPollWidget = TextPollWidgetView(data: payload, theme: theme, choiceOptionFactory: choiceFactory, widgetConfig: widgetConfig)
-            let widget = PollWidgetViewController(id: payload.id,
-                                                  kind: payload.kind,
+            let textPollWidget = TextPollWidgetView(data: payload,
+                                                    theme: theme,
+                                                    choiceOptionFactory: choiceFactory,
+                                                    widgetConfig: widgetConfig)
+            let widget = PollWidgetViewController(payload: payload,
                                                   pollWidgetView: textPollWidget,
                                                   pollVoteClient: pollWidgetClient,
                                                   pollResultsClient: pollWidgetClient,
-                                                  updateChannel: payload.subscribeChannel,
                                                   eventRecorder: eventRecorder)
             return widget
+            // MARK: Alert
         case let .alertCreated(payload):
             let widget = AlertWidgetViewController(widgetData: payload,
                                                    theme: theme,
                                                    kind: payload.kind,
                                                    eventRecorder: eventRecorder)
             return widget
+            // MARK: Text Quiz
         case let .textQuizCreated(payload):
-            let resultsClient = QuizClient(widgetMessagingClient: widgetMessagingOutput, updateChannel: payload.subscribeChannel, accessToken: accessToken)
+            let resultsClient = QuizClient(widgetMessagingClient: widgetMessagingOutput,
+                                           updateChannel: payload.subscribeChannel,
+                                           accessToken: accessToken)
             let textQuizWidget = TextQuizWidgetView(data: payload,
                                                     theme: theme,
                                                     widgetConfig: widgetConfig)
-            let widget = QuizWidgetViewController(id: payload.id,
-                                                  kind: payload.kind,
+            let widget = QuizWidgetViewController(payload: payload,
                                                   quizWidget: textQuizWidget,
                                                   quizVoteClient: resultsClient,
                                                   quizResultsClient: resultsClient,
                                                   eventRecorder: eventRecorder)
             return widget
+            // MARK: Image Quiz
         case let .imageQuizCreated(payload):
-            let resultsClient = QuizClient(widgetMessagingClient: widgetMessagingOutput, updateChannel: payload.subscribeChannel, accessToken: accessToken)
+            let resultsClient = QuizClient(widgetMessagingClient: widgetMessagingOutput,
+                                           updateChannel: payload.subscribeChannel,
+                                           accessToken: accessToken)
             let imageQuizWidget = ImageQuizWidgetView(data: payload,
                                                       cache: Cache.shared,
                                                       theme: theme,
                                                       widgetConfig: widgetConfig)
-            let widget = QuizWidgetViewController(id: payload.id,
-                                                  kind: payload.kind,
+            let widget = QuizWidgetViewController(payload: payload,
                                                   quizWidget: imageQuizWidget,
                                                   quizVoteClient: resultsClient,
                                                   quizResultsClient: resultsClient,
                                                   eventRecorder: eventRecorder)
             return widget
+            // MARK: Image Slider
         case let .imageSliderCreated(payload):
-            let imageSliderClient = ImageSliderClient(widgetMessagingClient: widgetMessagingOutput, updateChannel: payload.subscribeChannel, accessToken: accessToken)
+            let imageSliderClient = ImageSliderClient(widgetMessagingClient: widgetMessagingOutput,
+                                                      updateChannel: payload.subscribeChannel,
+                                                      accessToken: accessToken)
             let imageSliderWidget = ImageSliderViewController(imageSliderCreated: payload,
                                                               resultsClient: imageSliderClient,
                                                               imageSliderVoteClient: imageSliderClient,
                                                               theme: theme,
                                                               eventRecorder: eventRecorder,
-                                                              widgetConfig: widgetConfig)
+                                                              widgetConfig: widgetConfig,
+                                                              title: payload.question,
+                                                              options: Set(payload.options.map({ WidgetOption(id: $0.id,
+                                                                                                              text: nil,
+                                                                                                              image: nil) })))
             return imageSliderWidget
+            // MARK: Cheer Meter
         case let .cheerMeterCreated(payload):
             do {
-                let voteClient = LiveCheerMeterVoteClient(widgetMessagingClient: widgetMessagingOutput, subscribeChannel: payload.subscribeChannel, accessToken: accessToken)
-                return try CheerMeterWidgetViewController(cheerMeterData: payload, voteClient: voteClient, theme: theme, eventRecorder: eventRecorder)
+                let voteClient = LiveCheerMeterVoteClient(widgetMessagingClient: widgetMessagingOutput,
+                                                          subscribeChannel: payload.subscribeChannel,
+                                                          accessToken: accessToken)
+                return try CheerMeterWidgetViewController(cheerMeterData: payload,
+                                                          voteClient: voteClient,
+                                                          theme: theme,
+                                                          eventRecorder: eventRecorder)
             } catch {
                 log.error(error.localizedDescription)
                 return nil
             }
+            // MARK: Points Tutorial
         case let .pointsTutorial(awardsViewModel):
-            return GamificationTutorialWidget(theme: theme, awards: awardsViewModel, eventRecorder: self.eventRecorder)
+            return GamificationTutorialWidget(theme: theme,
+                                              awards: awardsViewModel,
+                                              eventRecorder: self.eventRecorder)
+            // MARK: Bagde Collection
         case let .badgeCollect(awardsViewModel):
             guard let badgeToCollect = awardsViewModel.newBadgeEarned else { return nil }
-            return BadgeCollectWidget(theme: theme, badgeToCollect: badgeToCollect, eventRecorder: self.eventRecorder)
-        case .textQuizResults, .imagePollResults, .imageQuizResults, .imageSliderResults, .cheerMeterResults:
+            return BadgeCollectWidget(theme: theme,
+                                      badgeToCollect: badgeToCollect,
+                                      eventRecorder: self.eventRecorder)
+            // MARK: Text Quiz Results
+        case .textQuizResults,
+             .imagePollResults,
+             .imageQuizResults,
+             .imageSliderResults,
+             .cheerMeterResults,
+             .textPredictionResults,
+             .imagePredictionResults:
             return nil
         }
     }

@@ -12,15 +12,24 @@ class AlertWidgetViewController: WidgetController {
 
     var id: String
     var kind: WidgetKind
+    var interactionTimeInterval: TimeInterval?
 
     weak var delegate: WidgetEvents?
     var coreWidgetView: CoreWidgetView {
         return alertWidget.coreWidgetView
     }
+    var height: CGFloat {
+        return coreWidgetView.bounds.height + 32
+    }
 
     var dismissSwipeableView: UIView {
         return self.view
     }
+
+    var widgetTitle: String?
+    var correctOptions: Set<WidgetOption>?
+    var options: Set<WidgetOption>?
+    var customData: String?
 
     // MARK: Private Properties
 
@@ -54,6 +63,8 @@ class AlertWidgetViewController: WidgetController {
         self.theme = theme
         self.kind = kind
         self.eventRecorder = eventRecorder
+        self.widgetTitle = widgetData.title
+        self.customData = widgetData.customData
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -135,7 +146,6 @@ class AlertWidgetViewController: WidgetController {
             alertWidget.titleView.titleLabel.text = theme.uppercaseTitleText ? title.uppercased() : title
             alertWidget.titleView.titleLabel.textColor = theme.widgetFontSecondaryColor
             alertWidget.titleView.titleLabel.font = theme.fontSecondary
-            alertWidget.titleView.gradientView.livelike_cornerRadius = theme.widgetCornerRadius / 2
             alertWidget.titleView.gradientView.livelike_startColor = theme.alertWidget.titleGradientLeft
             alertWidget.titleView.gradientView.livelike_endColor = theme.alertWidget.titleGradientRight
         } else {

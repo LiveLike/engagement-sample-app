@@ -9,8 +9,10 @@ import Foundation
 
 enum ClientEvent: CustomStringConvertible {
     case textPredictionCreated(TextPredictionCreated)
+    case textPredictionResults(PredictionResults)
     case textPredictionFollowUp(TextPredictionFollowUp, WidgetVote?)
     case imagePredictionCreated(ImagePredictionCreated)
+    case imagePredictionResults(PredictionResults)
     case imagePredictionFollowUp(ImagePredictionFollowUp, WidgetVote?)
     case imagePollCreated(ImagePollCreated)
     case imagePollResults(PollResults)
@@ -54,7 +56,12 @@ enum ClientEvent: CustomStringConvertible {
             return payload.programDateTime?.timeIntervalSince1970.rounded()
         case let .cheerMeterCreated(payload):
             return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case .textQuizResults, .imageQuizResults, .imageSliderResults, .cheerMeterResults:
+        case .textQuizResults,
+             .imageQuizResults,
+             .imageSliderResults,
+             .cheerMeterResults,
+             .textPredictionResults,
+             .imagePredictionResults:
             return nil
         case .pointsTutorial, .badgeCollect:
             return nil
@@ -99,6 +106,10 @@ enum ClientEvent: CustomStringConvertible {
             return "Points Tutorial"
         case .badgeCollect:
             return "Badge Collect"
+        case .textPredictionResults:
+            return "Text Prediction Results"
+        case .imagePredictionResults:
+            return "Image Prediction Results"
         }
     }
 
@@ -132,7 +143,9 @@ enum ClientEvent: CustomStringConvertible {
              .imagePollResults,
              .cheerMeterResults,
              .pointsTutorial,
-             .badgeCollect:
+             .badgeCollect,
+             .textPredictionResults,
+             .imagePredictionResults:
             return "undefined"
         }
     }

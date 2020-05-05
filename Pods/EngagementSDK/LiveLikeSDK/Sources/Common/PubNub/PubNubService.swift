@@ -53,123 +53,118 @@ class PubNubService: PubSubService {
 
     func fetchHistory(
         channel: String,
-        oldestMessageDate: Date?,
-        newestMessageDate: Date?,
+        oldestMessageDate: TimeToken?,
+        newestMessageDate: TimeToken?,
         limit: UInt,
         completion: @escaping (Result<PubSubHistoryResult, Error>) -> Void
     ) {
-
-        let startValue: NSNumber? = {
-            guard let date = newestMessageDate else { return nil }
-            return NSNumber(value: Int64(date.timeIntervalSince1970))
-        }()
-
-        let endValue: NSNumber? = {
-            guard let date = oldestMessageDate else { return nil }
-            return NSNumber(value: Int64(date.timeIntervalSince1970 + 1))
-        }()
-
-        self.pubnub.historyForChannel(
-            channel,
-            start: startValue,
-            end: endValue,
-            limit: limit,
-            reverse: false,
-            includeTimeToken: true
-        ) { (result, status) in
-            // TODO: use better errors
-            if let status = status {
-                if status.isError {
+         self.pubnub.history()
+            .channel(channel)
+            .start(optional: oldestMessageDate?.pubnubTimetoken)
+            .end(optional: newestMessageDate?.pubnubTimetoken)
+            .limit(limit)
+            .reverse(false)
+            .includeTimeToken(true)
+            .includeMessageActions(true)
+            .performWithCompletion { (result, status) in
+                if let status = status {
+                    if status.isError {
+                        //completion(.failure(Errors.pubnubStatusError(errorStatus: status)))
+                        return
+                    }
+                }
+                guard let result = result else {
+                    //completion(.failure(Errors.foundNoResultsFromHistoryRequest))
                     return
                 }
-            }
-            guard let result = result else {
-                // No reject
-                return
-            }
 
-            let decoder: JSONDecoder = {
-                let decoder = JSONDecoder()
-                decoder.keyDecodingStrategy = .convertFromSnakeCase
-                decoder.dateDecodingStrategy = .formatted(DateFormatter.iso8601Full)
-                return decoder
-            }()
+                let decoder: JSONDecoder = {
+                    let decoder = JSONDecoder()
+                    decoder.keyDecodingStrategy = .convertFromSnakeCase
+                    decoder.dateDecodingStrategy = .formatted(DateFormatter.iso8601Full)
+                    return decoder
+                }()
 
-            guard let channelResults = result.data.channels[channel] else {
-                return
-            }
-
-            let chatMessages: [PubSubChannelMessage] = channelResults.compactMap { historyMessage in
-                guard let historyMessageDict = historyMessage as? [String: Any] else {
-                    log.error("Failed to case historyMessage as [String: Any]")
-                    return nil
+                guard let channelResults = result.data.channels[channel] else {
+                    return //completion(.failure(Errors.foundNoResultsForChannel(channel: self._channel)))
                 }
 
-                guard let historyData = try? JSONSerialization.data(withJSONObject: historyMessageDict, options: .prettyPrinted) else {
-                    log.error("Failed to serialize historyMessageDict to json.")
-                    return nil
-                }
+                let chatMessages: [PubSubChannelMessage] = channelResults.compactMap { historyMessage in
+                    guard let historyMessageDict = historyMessage as? [String: Any] else {
+                        log.error("Failed to case historyMessage as [String: Any]")
+                        return nil
+                    }
 
-                guard let history = try? decoder.decode(PubNubHistoryMessage.self, from: historyData) else {
-                    log.error("Failed to decode historyData as PubNubHistoryMessage.")
-                    return nil
-                }
+                    guard let historyData = try? JSONSerialization.data(withJSONObject: historyMessageDict, options: .prettyPrinted) else {
+                        log.error("Failed to serialize historyMessageDict to json.")
+                        return nil
+                    }
 
-                guard let messageDict = historyMessageDict["message"] as? [String: Any] else {
-                    log.error("Failed to find 'message' value from historyMessageDict.")
-                    return nil
-                }
+                    guard let messageDict = historyMessageDict["message"] as? [String: Any] else {
+                        log.error("Failed to find 'message' value from historyMessageDict.")
+                        return nil
+                    }
 
-                var messageActions: [PubSubMessageAction] = []
-                history.actions?.forEach { typeKVP in
-                    let type = typeKVP.key
-                    typeKVP.value.forEach { preValueKVP in
-                        let value = preValueKVP.key
-                        preValueKVP.value.forEach { valueKVP in
-                            let actionTimetoken = valueKVP.actionTimetoken
-                            let uuid = valueKVP.uuid
-                            messageActions.append(
-                                PubSubMessageAction(
-                                    messageID: PubSubID(history.timetoken),
-                                    id: PubSubID(actionTimetoken),
-                                    sender: uuid,
-                                    type: type,
-                                    value: value,
-                                    timetoken: NSNumber(value: actionTimetoken),
-                                    messageTimetoken: NSNumber(value: history.timetoken)
-                                )
-                            )
+                    do {
+                        let history = try decoder.decode(PubNubHistoryMessage.self, from: historyData)
+                        var messageActions: [PubSubMessageAction] = []
+                        history.actions?.forEach { typeKVP in
+                            let type = typeKVP.key
+                            typeKVP.value.forEach { preValueKVP in
+                                let value = preValueKVP.key
+                                preValueKVP.value.forEach { valueKVP in
+                                    let actionTimetoken = valueKVP.actionTimetoken
+                                    let uuid = valueKVP.uuid
+                                    messageActions.append(
+                                        PubSubMessageAction(
+                                            messageID: PubSubID(history.timetoken),
+                                            id: PubSubID(actionTimetoken),
+                                            sender: uuid,
+                                            type: type,
+                                            value: value,
+                                            timetoken: NSNumber(value: actionTimetoken),
+                                            messageTimetoken: NSNumber(value: history.timetoken)
+                                        )
+                                    )
+                                }
+                            }
                         }
+                        
+                        return PubSubChannelMessage(
+                            pubsubID: PubSubID(history.timetoken),
+                            message: messageDict,
+                            createdAt: NSNumber(value: history.timetoken),
+                            messageActions: messageActions
+                        )
+                    } catch {
+                        log.error("Failed to decode historyData as PubNubHistoryMessage.\n \(error)")
+                        return nil
                     }
                 }
 
-                return PubSubChannelMessage(
-                    pubsubID: PubSubID(history.timetoken),
-                    message: messageDict,
-                    createdAt: NSNumber(value: history.timetoken),
-                    messageActions: messageActions
-                )
-            }
-
-            completion(
-                .success(
-                    PubSubHistoryResult(
-                        newestMessageTimetoken: Date(timeIntervalSince1970: TimeInterval(truncating: result.data.end)),
-                        oldestMessageTimetoken: Date(timeIntervalSince1970: TimeInterval(truncating: result.data.start)),
-                        messages: chatMessages
+                completion(
+                    .success(
+                        PubSubHistoryResult(
+                            newestMessageTimetoken: TimeToken(pubnubTimetoken: chatMessages.last!.createdAt),
+                            oldestMessageTimetoken: TimeToken(pubnubTimetoken: chatMessages.first!.createdAt),
+                            messages: chatMessages
+                        )
                     )
                 )
-            )
         }
+
     }
 
     enum Errors: LocalizedError {
         case failedToParseHistoryResultAsJsonData
+        case pubnubStatusError(errorStatus: PNErrorStatus)
 
         var errorDescription: String? {
             switch self {
             case .failedToParseHistoryResultAsJsonData:
                 return "Failed to parse the history result as json data."
+            case .pubnubStatusError(let errorStatus):
+                return errorStatus.errorData.information
             }
         }
     }

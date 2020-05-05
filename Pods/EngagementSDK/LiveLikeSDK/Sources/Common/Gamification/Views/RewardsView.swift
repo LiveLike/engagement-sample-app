@@ -108,6 +108,10 @@ struct AwardsViewModel {
                                previousBadge: BadgeViewModel(from: awardsProfile.previousBadge, rewards: rewards),
                                nextBadgeToUnlock: BadgeViewModel(from: awardsProfile.nextBadge, rewards: rewards),
                                newBadgeEarned: BadgeViewModel(from: newAwards.badges, rewards: rewards),
-                               rank: awardsProfile.rank, rewards: rewards)
+                               rank: awardsProfile.rank,
+                               rewards: rewards,
+                               customData: nil)
     }
+    
+    let customData: String?
 }

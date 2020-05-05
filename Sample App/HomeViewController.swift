@@ -56,6 +56,7 @@ class HomeViewController: UIViewController {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = "Use Cases"
+        label.font = UIFont.boldSystemFont(ofSize: 18.0)
         label.textAlignment = .left
         return label
     }()
@@ -64,7 +65,7 @@ class HomeViewController: UIViewController {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle("Chat", for: .normal)
-        button.backgroundColor = .systemGray
+        button.backgroundColor = .lightGray
         button.contentHorizontalAlignment = .left
         button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
         button.addTarget(self, action: #selector(chatModuleButtonSelected), for: .touchUpInside)
@@ -75,18 +76,18 @@ class HomeViewController: UIViewController {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle("Widgets", for: .normal)
-        button.backgroundColor = .systemGray
+        button.backgroundColor = .lightGray
         button.contentHorizontalAlignment = .left
         button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
         button.addTarget(self, action: #selector(widgetModuleButtonSelected), for: .touchUpInside)
         return button
     }()
     
-    private let chatWidgetModuleButton: UIButton = {
+    private let widgetChatSpoilerPreventionModule: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.setTitle("Chat & Widgets", for: .normal)
-        button.backgroundColor = .systemGray
+        button.setTitle("Widgets, Chat and Spoiler Prevention", for: .normal)
+        button.backgroundColor = .lightGray
         button.contentHorizontalAlignment = .left
         button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
         button.addTarget(self, action: #selector(chatAndWidgetModuleButtonSelected), for: .touchUpInside)
@@ -100,21 +101,24 @@ class HomeViewController: UIViewController {
     
         view.addSubview(stackView)
         
+        let safeArea = self.view.safeAreaLayoutGuide
+        
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: self.topLayoutGuide.bottomAnchor, constant: 10),
+            stackView.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 10),
             stackView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor, constant: 10),
             stackView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor, constant: -10),
-            stackView.bottomAnchor.constraint(lessThanOrEqualTo: self.bottomLayoutGuide.topAnchor, constant: -10)
+            stackView.bottomAnchor.constraint(lessThanOrEqualTo: safeArea.bottomAnchor, constant: -10)
         ])
         
         stackView.addArrangedSubview(clientIDLabel)
         stackView.addArrangedSubview(clientIDTextField)
         stackView.addArrangedSubview(programIDLabel)
         stackView.addArrangedSubview(programIDTextField)
+        stackView.addArrangedSubview(UIView(frame: CGRect(x: 0, y: 0, width: 100, height: 50)))
         stackView.addArrangedSubview(useCasesLabel)
         stackView.addArrangedSubview(chatModuleButton)
         stackView.addArrangedSubview(widgetModuleButton)
-        stackView.addArrangedSubview(chatWidgetModuleButton)
+        stackView.addArrangedSubview(widgetChatSpoilerPreventionModule)
         
         // Loads previous client id and program id from UserDefaults
         clientIDTextField.text = Defaults.activeClientID
@@ -164,9 +168,11 @@ class HomeViewController: UIViewController {
             return
         }
         
-        let chatWidgetsVC = ChatAndWidgetsUseCase(clientID: clientID, programID: programID)
-        chatWidgetsVC.modalPresentationStyle = .fullScreen
-        self.navigationController?.pushViewController(chatWidgetsVC, animated: true)
+        let widgetChatSpoilerPreventionUseCase = WidgetChatSpoilerPreventionUseCase(clientID: clientID,
+                                                                                    programID: programID)
+        
+        widgetChatSpoilerPreventionUseCase.modalPresentationStyle = .fullScreen
+        self.navigationController?.pushViewController(widgetChatSpoilerPreventionUseCase, animated: true)
     }
     
     @objc public func chatModuleButtonSelected() {

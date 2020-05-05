@@ -20,4 +20,6 @@ public protocol EngagementSDKDelegate: AnyObject {
      */
     @objc
     optional func sdk(_ sdk: EngagementSDK, setupFailedWithError error: Error)
+    
+    @objc optional func sdk(setupCompleted sdk: EngagementSDK)
 }

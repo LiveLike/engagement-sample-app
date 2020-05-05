@@ -10,10 +10,13 @@ import EngagementSDK
 
 class WidgetsUseCase: UIViewController {
 
-    private var session: ContentSession?
+    private var sdk: EngagementSDK!
+    private var session: ContentSession!
+    
+    private let clientID: String
+    private let programID: String
+    
     private let widgetViewController = WidgetViewController()
-    private var clientID: String
-    private var programID: String
     
     private let widgetView: UIView = {
         let widgetView = UIView()
@@ -39,16 +42,23 @@ class WidgetsUseCase: UIViewController {
         title = "Widgets"
         setupUI()
         setupEngagementSDK()
+        addNotificationObservers()
+    }
+    
+    deinit {
+        removeNSNotificationObservers()
     }
     
     private func setupUI() {
         self.view.addSubview(widgetView)
 
+        let safeArea = self.view.safeAreaLayoutGuide
+        
         NSLayoutConstraint.activate([
-            widgetView.topAnchor.constraint(equalTo: topLayoutGuide.bottomAnchor),
+            widgetView.topAnchor.constraint(equalTo: safeArea.topAnchor),
             widgetView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             widgetView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            widgetView.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor)
+            widgetView.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor)
         ])
         
         // Add widgetViewController as child view controller
@@ -67,21 +77,53 @@ class WidgetsUseCase: UIViewController {
     }
     
     private func setupEngagementSDK() {
-        
-        let sdk = EngagementSDK.init(clientID: clientID,
-                                     accessTokenStorage: self)
-        let config = SessionConfiguration(programID: programID)
-        session = sdk.contentSession(config: config, delegate: self)
-        EngagementSDK.logLevel = .verbose
+        sdk = EngagementSDK.init(config: EngagementSDKConfig(clientID: clientID))
+        sdk.delegate = self
+        session = sdk.contentSession(config: SessionConfiguration(programID: programID))
+        session.delegate = self
         
         widgetViewController.session = session
-        session?.delegate = self
-        
+    }
+    
+    private func addNotificationObservers() {
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(pauseSession),
+                                               name: UIApplication.willResignActiveNotification,
+                                               object: nil)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(resumeSession),
+                                               name: UIApplication.didBecomeActiveNotification,
+                                               object: nil)
+    }
+    
+    private func removeNSNotificationObservers() {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func pauseSession() {
+        session?.pause()
+    }
+    
+    @objc func resumeSession() {
+        session?.resume()
     }
     
 }
 
-// MARK: - EngagementSDK ContentSessionDelegate
+// MARK: - EngagementSDKDelegate
+extension WidgetsUseCase: EngagementSDKDelegate {
+    func sdk(_ sdk: EngagementSDK, setupFailedWithError error: Error) {
+        let alert = UIAlertController(
+            title: "EngagementSDK Error",
+            message: error.localizedDescription,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+        present(alert, animated: true, completion: nil)
+    }
+}
+
+// MARK: - ContentSessionDelegate
 extension WidgetsUseCase: ContentSessionDelegate {
     func session(_ session: ContentSession, didChangeStatus status: SessionStatus) {
         print("Session status did change \(status)")

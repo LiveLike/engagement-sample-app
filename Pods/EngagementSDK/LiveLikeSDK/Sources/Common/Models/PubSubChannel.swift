@@ -38,10 +38,14 @@ protocol PubSubChannel {
         completion: @escaping (Result<Bool, Error>) -> Void
     )
     func fetchHistory(
-        oldestMessageDate: Date?,
-        newestMessageDate: Date?,
+        oldestMessageDate: TimeToken?,
+        newestMessageDate: TimeToken?,
         limit: UInt,
         completion: @escaping (Result<PubSubHistoryResult, Error>) -> Void
+    )
+    func messageCount(
+        since timestamp: TimeToken,
+        completion: @escaping (Result<Int, Error>) -> Void
     )
     var pauseStatus: PauseStatus { get }
     /// Temporarily pauses the channel

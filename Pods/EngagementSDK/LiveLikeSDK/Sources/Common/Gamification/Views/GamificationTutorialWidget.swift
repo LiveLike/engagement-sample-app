@@ -9,21 +9,32 @@ import UIKit
 
 /// Wraps GamificationModal as a WidgetController to be presented like a widget
 class GamificationTutorialWidget: WidgetController {
-    private let widgetTitle: String = "EngagementSDK.gamification.TutorialWidget.title".localized()
+    var widgetTitle: String? = "EngagementSDK.gamification.TutorialWidget.title".localized()
     private let widgetMessage: String = "EngagementSDK.gamification.TutorialWidget.message".localized()
 
     var id: String = ""
 
     var kind = WidgetKind.gamification
+    let interactionTimeInterval: TimeInterval? = nil
 
     weak var delegate: WidgetEvents?
 
+    var height: CGFloat {
+        return coreWidgetView.bounds.height + 32
+    }
+    
     var coreWidgetView: CoreWidgetView = CoreWidgetView()
 
     var dismissSwipeableView: UIView {
         return self.view
     }
 
+    var correctOptions: Set<WidgetOption>?
+
+    var options: Set<WidgetOption>?
+
+    var customData: String?
+    
     private var gamificationModal: GamificationModal!
     private var rewardsView: RewardsView!
     private let awards: AwardsViewModel
@@ -45,6 +56,7 @@ class GamificationTutorialWidget: WidgetController {
                                               progressionMeter: pointsAndBadgeProgress,
                                               theme: theme,
                                               graphicLottieAnimation: "emoji-happy")
+        self.customData = awards.customData
     }
 
     required init?(coder aDecoder: NSCoder) {

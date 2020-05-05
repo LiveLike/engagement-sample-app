@@ -25,7 +25,6 @@ class TextPollWidgetView: VerticalChoiceWidget, PollWidget {
 
     private let question: String
     private let timeout: TimeInterval
-    private let timerAnimationAsset: String
     private let optionData: [OptionData]
     private let optionStyle: ChoiceWidgetOptionFactory.Style
 
@@ -36,7 +35,6 @@ class TextPollWidgetView: VerticalChoiceWidget, PollWidget {
     init(data: ImagePollCreated, theme: Theme, choiceOptionFactory: ChoiceWidgetOptionFactory, widgetConfig: WidgetConfig) {
         question = data.question
         timeout = data.timeout.timeInterval
-        timerAnimationAsset = data.animationTimerAsset
         pollTheme = theme.pollWidget
         self.theme = theme
         self.choiceOptionFactory = choiceOptionFactory
@@ -50,7 +48,6 @@ class TextPollWidgetView: VerticalChoiceWidget, PollWidget {
     init(data: TextPollCreated, theme: Theme, choiceOptionFactory: ChoiceWidgetOptionFactory, widgetConfig: WidgetConfig) {
         question = data.question
         timeout = data.timeout.timeInterval
-        timerAnimationAsset = data.animationTimerAsset
         pollTheme = theme.pollWidget
         self.theme = theme
         self.choiceOptionFactory = choiceOptionFactory
@@ -93,7 +90,7 @@ class TextPollWidgetView: VerticalChoiceWidget, PollWidget {
 
     func beginTimer(completion: @escaping () -> Void) {
         titleView.beginTimer(duration: timeout,
-                             animationID: timerAnimationAsset,
+                             animationFilepath: theme.filepathsForWidgetTimerLottieAnimation,
                              completion: completion)
     }
 

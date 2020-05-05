@@ -69,11 +69,11 @@ extension LogLevel {
         case .info:
             return "INFO"
         case .warning:
-            return "WARNING"
+            return "⚠️WARNING"
         case .error:
-            return "ERROR"
+            return "❌ERROR"
         case .severe:
-            return "SEVERE"
+            return "❌❌❌SEVERE"
         default:
             return ""
         }

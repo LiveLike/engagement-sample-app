@@ -60,26 +60,43 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
             }
     }
 
+    func messageCount(
+        since timestamp: TimeToken,
+        completion: @escaping (Result<Int, Error>) -> Void
+    ) {
+        self.pubnub.messageCounts()
+            .channels([_channel])
+            .timetokens([timestamp.pubnubTimetoken])
+            .performWithCompletion { [weak self] result, status in
+                guard let self = self else { return }
+                if let status = status {
+                    if status.isError{
+                        return completion(.failure(Errors.pubnubStatusError(errorStatus: status)))
+                    }
+                }
+
+                guard let result = result else {
+                    return completion(.failure(Errors.noMessageCountResult))
+                }
+
+                guard let count = result.data.channels[self._channel] else {
+                    return completion(.failure(Errors.noMessageCountForChannel(channel: self._channel)))
+                }
+
+                completion(.success(Int(truncating: count)))
+        }
+    }
+
     func fetchHistory(
-        oldestMessageDate: Date?,
-        newestMessageDate: Date?,
+        oldestMessageDate: TimeToken?,
+        newestMessageDate: TimeToken?,
         limit: UInt,
         completion: @escaping (Result<PubSubHistoryResult, Error>) -> Void
     ) {
-        let startValue: NSNumber? = {
-            guard let oldestMessageDate = oldestMessageDate else { return nil }
-            return NSNumber(value: oldestMessageDate.timeIntervalSince1970)
-        }()
-
-        let endValue: NSNumber? = {
-            guard let newestMessageDate = newestMessageDate else { return nil }
-            return NSNumber(value: newestMessageDate.timeIntervalSince1970)
-        }()
-
         self.pubnub.history()
             .channel(_channel)
-            .start(optional: startValue)
-            .end(optional: endValue)
+            .start(optional: oldestMessageDate?.pubnubTimetoken)
+            .end(optional: newestMessageDate?.pubnubTimetoken)
             .limit(limit)
             .reverse(false)
             .includeTimeToken(self.includeTimeToken)
@@ -118,52 +135,53 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
                         return nil
                     }
 
-                    guard let history = try? decoder.decode(PubNubHistoryMessage.self, from: historyData) else {
-                        log.error("Failed to decode historyData as PubNubHistoryMessage.")
-                        return nil
-                    }
-
                     guard let messageDict = historyMessageDict["message"] as? [String: Any] else {
                         log.error("Failed to find 'message' value from historyMessageDict.")
                         return nil
                     }
 
-                    var messageActions: [PubSubMessageAction] = []
-                    history.actions?.forEach { typeKVP in
-                        let type = typeKVP.key
-                        typeKVP.value.forEach { preValueKVP in
-                            let value = preValueKVP.key
-                            preValueKVP.value.forEach { valueKVP in
-                                let actionTimetoken = valueKVP.actionTimetoken
-                                let uuid = valueKVP.uuid
-                                messageActions.append(
-                                    PubSubMessageAction(
-                                        messageID: PubSubID(history.timetoken),
-                                        id: PubSubID(actionTimetoken),
-                                        sender: uuid,
-                                        type: type,
-                                        value: value,
-                                        timetoken: NSNumber(value: actionTimetoken),
-                                        messageTimetoken: NSNumber(value: history.timetoken)
+                    do {
+                        let history = try decoder.decode(PubNubHistoryMessage.self, from: historyData)
+                        var messageActions: [PubSubMessageAction] = []
+                        history.actions?.forEach { typeKVP in
+                            let type = typeKVP.key
+                            typeKVP.value.forEach { preValueKVP in
+                                let value = preValueKVP.key
+                                preValueKVP.value.forEach { valueKVP in
+                                    let actionTimetoken = valueKVP.actionTimetoken
+                                    let uuid = valueKVP.uuid
+                                    messageActions.append(
+                                        PubSubMessageAction(
+                                            messageID: PubSubID(history.timetoken),
+                                            id: PubSubID(actionTimetoken),
+                                            sender: uuid,
+                                            type: type,
+                                            value: value,
+                                            timetoken: NSNumber(value: actionTimetoken),
+                                            messageTimetoken: NSNumber(value: history.timetoken)
+                                        )
                                     )
-                                )
+                                }
                             }
                         }
+                        
+                        return PubSubChannelMessage(
+                            pubsubID: PubSubID(history.timetoken),
+                            message: messageDict,
+                            createdAt: NSNumber(value: history.timetoken),
+                            messageActions: messageActions
+                        )
+                    } catch {
+                        log.error("Failed to decode historyData as PubNubHistoryMessage.\n \(error)")
+                        return nil
                     }
-
-                    return PubSubChannelMessage(
-                        pubsubID: PubSubID(history.timetoken),
-                        message: messageDict,
-                        createdAt: NSNumber(value: history.timetoken),
-                        messageActions: messageActions
-                    )
                 }
 
                 completion(
                     .success(
                         PubSubHistoryResult(
-                            newestMessageTimetoken: Date(timeIntervalSince1970: TimeInterval(truncating: chatMessages.last!.createdAt)),
-                            oldestMessageTimetoken: Date(timeIntervalSince1970: TimeInterval(truncating: chatMessages.first!.createdAt)),
+                            newestMessageTimetoken: TimeToken(pubnubTimetoken: chatMessages.last!.createdAt),
+                            oldestMessageTimetoken: TimeToken(pubnubTimetoken: chatMessages.first!.createdAt),
                             messages: chatMessages
                         )
                     )
@@ -355,13 +373,15 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
         case failedToRemoveMessageAction
         case expectedPubSubIDInternalToBeNSNumber
         case foundNoAction
+        case noMessageCountResult
+        case noMessageCountForChannel(channel: String)
 
         var errorDescription: String? {
             switch self {
             case .failedToSerializeHistoryToJsonData:
                 return "Failed to serialize the PubNub history result as json data."
             case .pubnubStatusError(let errorStatus):
-                return errorStatus.description
+                return errorStatus.errorData.information
             case .foundNoResultsFromHistoryRequest:
                 return "Failed to find results for history request."
             case .foundNoResultsForChannel(let channel):
@@ -378,12 +398,16 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
                 return "Expected the pub sub id internal to be type NSNumber."
             case .foundNoAction:
                 return "Failed to receive an action"
+            case .noMessageCountResult:
+                return "Message count request returned nil result."
+            case .noMessageCountForChannel(let channel):
+                return "Message count for channel \(channel) not found in dictionary."
             }
         }
     }
 }
 
-private extension PNHistoryAPICallBuilder {
+extension PNHistoryAPICallBuilder {
     func start(optional start: NSNumber?) -> PNHistoryAPICallBuilder {
         guard let start = start else { return self }
         return self.start(start)

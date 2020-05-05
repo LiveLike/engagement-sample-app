@@ -13,6 +13,8 @@ struct WidgetInteractedProperties {
     var firstTapTime: Date
     var lastTapTime: Date
     var numberOfTaps: Int
+    var interactionTimeInterval: TimeInterval?
+    var widgetViewModel: WidgetViewModel
     
     // Gamification Properties
     var pointsEarned: Int = 0
@@ -21,11 +23,21 @@ struct WidgetInteractedProperties {
     var pointsInCurrentlevel: Int?
     var pointsToNextLevel: Int?
 
-    init(widgetId: String, widgetKind: String, firstTapTime: Date, lastTapTime: Date, numberOfTaps: Int) {
+    init(
+        widgetId: String,
+        widgetKind: String,
+        firstTapTime: Date,
+        lastTapTime: Date,
+        numberOfTaps: Int,
+        interactionTimeInterval: TimeInterval?,
+        widgetViewModel: WidgetViewModel
+    ) {
         self.widgetId = widgetId
         self.widgetKind = widgetKind
         self.firstTapTime = firstTapTime
         self.lastTapTime = lastTapTime
         self.numberOfTaps = numberOfTaps
+        self.interactionTimeInterval = interactionTimeInterval
+        self.widgetViewModel = widgetViewModel
     }
 }

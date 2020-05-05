@@ -12,11 +12,11 @@ class CheerMeterWidgetView: WidgetView {
     internal let coreWidgetView: CoreWidgetView
 
     private let titleLabel: UILabel
-    private let timerView: LOTAnimationView
+    private let timerView: AnimationView
     private let titleConstraints: HeaderViews.TitleConstraints
     private let leftChoiceImageView: UIImageView
     private let rightChoiceImageView: UIImageView
-    private let versusSeparatorView: LOTAnimationView
+    private let versusSeparatorView: AnimationView
 
     private let leftChoiceSelectionConstraints: [NSLayoutConstraint]
     private let leftChoiceCenterConstraints: [NSLayoutConstraint]
@@ -38,11 +38,12 @@ class CheerMeterWidgetView: WidgetView {
 
     private var choiceImageViewInCenter: UIImageView?
 
-    private var theme: Theme = Theme()
+    private var theme: Theme
     weak var delegate: CheerMeterWidgetViewDelegate?
 
-    init() {
-        let properties = constructViews()
+    init(theme: Theme) {
+        self.theme = theme
+        let properties = constructViews(timerLottieAnimationFilepath: self.theme.filepathsForWidgetTimerLottieAnimation)
 
         coreWidgetView = properties.coreWidgetView
         titleLabel = properties.headerViews.titleLabel
@@ -148,13 +149,18 @@ internal extension CheerMeterWidgetView {
     }
 
     var timerDuration: CGFloat {
-        get { return timerView.animationDuration / timerView.animationSpeed }
-        set { timerView.animationSpeed = timerView.animationDuration / newValue }
+        get { return CGFloat(timerView.animation?.duration ?? 0) / CGFloat(timerView.animationSpeed) }
+        set { timerView.animationSpeed = CGFloat(timerView.animation?.duration ?? 0) / newValue }
     }
 
-    func playTimerAnimation(completion: LOTAnimationCompletionBlock? = nil) {
+    func playTimerAnimation(completion: LottieCompletionBlock? = nil) {
         timerView.stop()
-        timerView.play(completion: completion)
+        timerView.isHidden = false
+        timerView.play { [weak self] finished in
+            guard let self = self else { return }
+            self.timerView.isHidden = true
+            completion?(finished)
+        }
     }
 
     var leftChoiceImage: UIImage? {
@@ -167,7 +173,7 @@ internal extension CheerMeterWidgetView {
         set { rightChoiceImageView.image = newValue }
     }
 
-    func playVersusAnimation(completion: LOTAnimationCompletionBlock? = nil) {
+    func playVersusAnimation(completion: LottieCompletionBlock? = nil) {
         versusSeparatorView.play(completion: completion)
     }
 
@@ -428,10 +434,10 @@ private struct ConstructedProperties {
     let tutorialViews: TutorialViews
 }
 
-private func constructViews() -> ConstructedProperties {
+private func constructViews(timerLottieAnimationFilepath: String) -> ConstructedProperties {
     let coreWidgetView = constraintBased { CoreWidgetView() }
 
-    let headerViews: HeaderViews = constructHeader()
+    let headerViews: HeaderViews = constructHeader(timerLottieAnimationFilepath: timerLottieAnimationFilepath)
     let (body, meter, interactionPanel, tutorialViews) = constructBody()
 
     coreWidgetView.headerView = headerViews.container
@@ -458,15 +464,14 @@ private struct HeaderViews {
     var container: UIView
     var titleLabel: UILabel
     var titleConstraints: TitleConstraints
-    var timerView: LOTAnimationView
+    var timerView: AnimationView
 }
 
-private func constructHeader() -> HeaderViews {
+private func constructHeader(timerLottieAnimationFilepath: String) -> HeaderViews {
     let titleLabel = constraintBased { UILabel(frame: .zero) }
     titleLabel.numberOfLines = 0
     let timerView = constraintBased {
-        LOTAnimationView(name: AnimationAssets.widgetTimer,
-                         bundle: Bundle(for: CheerMeterWidgetView.self))
+        AnimationView(filePath: timerLottieAnimationFilepath)
     }
 
     let container = constraintBased { UIView(frame: .zero) }
@@ -538,7 +543,7 @@ private struct InteractionViews {
     let container: UIView
     let leftChoiceImageView: UIImageView
     let rightChoiceImageView: UIImageView
-    let versusSeparatorView: LOTAnimationView
+    let versusSeparatorView: AnimationView
     let leftChoiceSelectionConstraints: [NSLayoutConstraint]
     let leftChoiceCenterConstraints: [NSLayoutConstraint]
     let rightChoiceSelectionConstraints: [NSLayoutConstraint]
@@ -556,8 +561,10 @@ private func constructInteractionViews() -> InteractionViews {
     let leftChoiceImageView = constraintBased { UIImageView(frame: .zero) }
     let rightChoiceImageView = constraintBased { UIImageView(frame: .zero) }
     let versusSeparatorView = constraintBased {
-        LOTAnimationView(name: "cheer-meter-versus",
-                         bundle: Bundle(for: CheerMeterWidgetView.self))
+        AnimationView(
+            name: "cheer-meter-versus",
+            bundle: Bundle(for: CheerMeterWidgetView.self)
+        )
     }
     let scoreLabel = constraintBased { UILabel(frame: .zero) }
     let scoreTitleLabel = constraintBased { UILabel(frame: .zero) }

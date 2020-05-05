@@ -11,9 +11,18 @@ class ImageSliderViewController: WidgetController {
     var id: String
     var kind: WidgetKind
     weak var delegate: WidgetEvents?
+    var widgetTitle: String?
+    let interactionTimeInterval: TimeInterval?
+    var correctOptions: Set<WidgetOption>?
+    var options: Set<WidgetOption>?
+    var customData: String?
     
     var coreWidgetView: CoreWidgetView {
         return imageSliderView.coreWidgetView
+    }
+    
+    var height: CGFloat {
+        return coreWidgetView.bounds.height + 32
     }
 
     var dismissSwipeableView: UIView {
@@ -51,7 +60,11 @@ class ImageSliderViewController: WidgetController {
         }
 
         let initialSliderValue = self.imageSliderCreated.initialMagnitude.number ?? 0
-        let imageSliderView = ImageSliderView(thumbImages: images, initialSliderValue: Float(initialSliderValue))
+        let imageSliderView = ImageSliderView(
+            thumbImages: images,
+            initialSliderValue: Float(initialSliderValue),
+            timerAnimationFilepath: self.theme.filepathsForWidgetTimerLottieAnimation
+        )
         imageSliderView.translatesAutoresizingMaskIntoConstraints = false
         imageSliderView.sliderView.addTarget(self, action: #selector(imageSliderViewValueChanged), for: .touchUpInside)
 
@@ -65,7 +78,10 @@ class ImageSliderViewController: WidgetController {
          imageSliderVoteClient: ImageSliderVoteClient,
          theme: Theme,
          eventRecorder: EventRecorder,
-         widgetConfig: WidgetConfig) {
+         widgetConfig: WidgetConfig,
+         title: String = "",
+         options: Set<WidgetOption> = Set()
+    ) {
         id = imageSliderCreated.id
         self.imageSliderCreated = imageSliderCreated
         self.resultsClient = resultsClient
@@ -74,6 +90,10 @@ class ImageSliderViewController: WidgetController {
         self.widgetConfig = widgetConfig
         voteClient = imageSliderVoteClient
         kind = imageSliderCreated.kind
+        self.widgetTitle = title
+        self.options = options
+        self.interactionTimeInterval = imageSliderCreated.timeout.timeInterval
+        self.customData = imageSliderCreated.customData
         super.init(nibName: nil, bundle: nil)
 
         /*
@@ -93,7 +113,9 @@ class ImageSliderViewController: WidgetController {
                     widgetKind: self.kind.analyticsName,
                     firstTapTime: firstTimeSliderChanged,
                     lastTapTime: lastTimeSliderChanged,
-                    numberOfTaps: self.sliderChangedCount
+                    numberOfTaps: self.sliderChangedCount,
+                    interactionTimeInterval: self.interactionTimeInterval,
+                    widgetViewModel: self
                 )
                 self.delegate?.widgetInteractionDidComplete(properties: widgetInteractedProperties)
             }
@@ -132,6 +154,7 @@ class ImageSliderViewController: WidgetController {
 
         imageSliderView.timerView.play { finished in
             if finished {
+                self.imageSliderView.timerView.isHidden = true
                 self.lockSlider()
 
                 if !self.widgetConfig.isAutoDismissEnabled {
@@ -164,16 +187,14 @@ class ImageSliderViewController: WidgetController {
                 }
             }
         }
+        delegate?.widgetInteractionDidBegin(widget: self)
     }
 
     // MARK: - Private Method
 
     private func configureView() {
-        imageSliderView.timerView.setAnimation(named: AnimationAssets.widgetTimer, bundle: Bundle(for: ImageSliderViewController.self))
-        imageSliderView.timerView.animationSpeed = imageSliderView.timerView.animationDuration / CGFloat(imageSliderCreated.timeout.timeInterval)
-
-        imageSliderView.avgIndicatorView.setAnimation(named: "image-slider-avg", bundle: Bundle(for: ImageSliderViewController.self))
-        imageSliderView.avgIndicatorView.animationSpeed = imageSliderView.timerView.animationDuration / CGFloat(averageAnimationSeconds)
+        imageSliderView.timerView.animationSpeed = CGFloat(imageSliderView.timerView.animation?.duration ?? 0) / CGFloat(imageSliderCreated.timeout.timeInterval)
+        imageSliderView.avgIndicatorView.animationSpeed = CGFloat(imageSliderView.timerView.animation?.duration ?? 0) / CGFloat(averageAnimationSeconds)
 
         imageSliderView.coreWidgetView.baseView.clipsToBounds = true
         imageSliderView.coreWidgetView.baseView.layer.cornerRadius = theme.widgetCornerRadius

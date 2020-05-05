@@ -14,9 +14,6 @@ final class ChatAdapter: NSObject {
 
     weak var actionsDelegate: ChatActionsDelegate?
 
-    // Internal Properties
-    weak var queue: ChatQueue?
-
     weak var tableView: UITableView? {
         didSet {
             guard let tableView = tableView else { return }
@@ -54,7 +51,7 @@ final class ChatAdapter: NSObject {
     }
 
     /// The messages waiting to be appended to the bottom of the table (new messages)
-    internal var messagesToAppend = [ChatMessageType]()
+    internal var messagesToAppend = [ChatMessage]()
     /// The messages waiting to be inserted to the top of the table (older messages from history)
     var messagesToInsert = [MessageViewModel]()
     var messagesToUpdate = [MessageViewModel]()
@@ -102,24 +99,22 @@ final class ChatAdapter: NSObject {
     var shouldScrollToNewestMessageOnArrival: Bool = true
 
     var updateTimer: DispatchSourceTimer?
-
-    init(queue: ChatQueue,
-         userID: ChatUser.ID,
-         messageReporter: MessageReporter?,
-         messageViewModelFactory: MessageViewModelFactory,
-         eventRecorder: EventRecorder,
-         cellFactory: @escaping ChatViewFactory = ChatAdapter.defaultViewFactory)
-    {
-        self.queue = queue
-        self.messageReporter = messageReporter
-        blockList = BlockList(for: userID)
+    
+    var chatSession: InternalChatSessionProtocol
+    
+    init(
+        messageViewModelFactory: MessageViewModelFactory,
+        eventRecorder: EventRecorder,
+        blockList: BlockList,
+        chatSession: InternalChatSessionProtocol
+    ) {
+        self.messageReporter = nil
         self.messageViewModelFactory = messageViewModelFactory
         self.eventRecorder = eventRecorder
-        chatViewFactory = cellFactory
-
+        self.chatViewFactory = ChatAdapter.defaultViewFactory
+        self.blockList = blockList
+        self.chatSession = chatSession
         super.init()
-        
-        queue.downStreamProxyInput = self
 
         updateTimer = DispatchSource.makeTimerSource(flags: [], queue: .main)
         updateTimer?.schedule(deadline: .now(), repeating: .milliseconds(200))
@@ -192,10 +187,9 @@ extension ChatAdapter {
 
 // MARK: - ChatProxyInput
 
-extension ChatAdapter: ChatProxyInput {
+extension ChatAdapter {
     func publish(
-        channel: String,
-        messagesFromHistory messages: [ChatMessageType]
+        messagesFromHistory messages: [ChatMessage]
     ) {
         firstly {
             Promises.all(messages.map({ messageViewModelFactory.create(from: $0)}))
@@ -217,8 +211,7 @@ extension ChatAdapter: ChatProxyInput {
     }
     
     func publish(
-        channel: String,
-        newestMessages messages: [ChatMessageType]
+        newestMessages messages: [ChatMessage]
     ) {
         let newMessages = messages.filter({ messageViewModel -> Bool in
             self.messagesDisplayed.contains(where: { $0.id == messageViewModel.id }) == false &&
@@ -239,7 +232,7 @@ extension ChatAdapter: ChatProxyInput {
         }
     }
     
-    func publish(newMessage message: ChatMessageType) {
+    func publish(newMessage message: ChatMessage) {
         guard
             self.messagesDisplayed.contains(where: { $0.id == message.id }) == false,
             self.messagesToAppend.contains(message) == false,
@@ -251,7 +244,7 @@ extension ChatAdapter: ChatProxyInput {
         self.messagesToAppend.append(message)
     }
 
-    func publish(messageUpdated message: ChatMessageType) {
+    func publish(messageUpdated message: ChatMessage) {
         firstly {
             messageViewModelFactory.create(from: message)
         }.then { messageViewModel in
@@ -291,7 +284,7 @@ extension ChatAdapter: ChatProxyInput {
         self.actionsDelegate?.actionPanelPrepareToBeShown(messageViewModel: messageViewModel)
     }
 
-    func deleteMessage(channel: String, messageId: ChatMessageID) {
+    func deleteMessage(messageId: ChatMessageID) {
         guard
             let indexOfDeletedMessage = self.messagesDisplayed.firstIndex(where: { $0.id == messageId })
         else {

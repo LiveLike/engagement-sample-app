@@ -91,10 +91,10 @@ class ActionConfirmationView: UIView {
 
     private func configureAnimationView() {
         addSubview(animationView)
-        let lottieView = LOTAnimationView(name: animationID, bundle: Bundle(for: ActionConfirmationView.self))
+        let lottieView = AnimationView(name: animationID, bundle: Bundle(for: ActionConfirmationView.self))
         lottieView.translatesAutoresizingMaskIntoConstraints = false
         lottieView.contentMode = .scaleAspectFit
-        lottieView.loopAnimation = true
+        lottieView.loopMode = .loop
 
         animationView.addSubview(lottieView)
         lottieView.constraintsFill(to: animationView)

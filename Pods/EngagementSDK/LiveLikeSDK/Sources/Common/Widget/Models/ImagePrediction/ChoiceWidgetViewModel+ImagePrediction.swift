@@ -21,10 +21,10 @@ extension ChoiceWidgetViewModel {
         let imagePredictionViewModel = ChoiceWidgetViewModel(id: imagePredictionCreated.id,
                                                              question: imagePredictionCreated.question,
                                                              timeout: imagePredictionCreated.timeout,
-                                                             options: options)
+                                                             options: options,
+                                                             customData: imagePredictionCreated.customData)
         imagePredictionViewModel.confirmationMessage = imagePredictionCreated.confirmationMessage
         imagePredictionViewModel.animationConfirmationAsset = imagePredictionCreated.animationConfirmationAsset
-        imagePredictionViewModel.animationTimerAsset = imagePredictionCreated.animationTimerAsset
 
         return imagePredictionViewModel
     }
@@ -49,7 +49,8 @@ extension ChoiceWidgetViewModel {
         let imagePredictionViewModel = ChoiceWidgetViewModel(id: imagePredictionFollowUp.id,
                                                              question: imagePredictionFollowUp.question,
                                                              timeout: imagePredictionFollowUp.timeout,
-                                                             options: options)
+                                                             options: options,
+                                                             customData: imagePredictionFollowUp.customData)
         imagePredictionViewModel.animationCorrectAsset = theme.randomCorrectAnimationAsset()
         imagePredictionViewModel.animationIncorrectAsset = theme.randomIncorrectAnimationAsset()
 

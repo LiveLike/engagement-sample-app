@@ -19,6 +19,7 @@ class ChatUseCase: UIViewController {
     
     private let chatViewController = ChatViewController()
     
+    
     init(
         clientID: String,
         programID: String
@@ -53,11 +54,13 @@ class ChatUseCase: UIViewController {
         addChild(chatViewController)
         chatViewController.didMove(toParent: self)
         
+        let safeArea = self.view.safeAreaLayoutGuide
+              
         NSLayoutConstraint.activate([
-            chatViewController.view.topAnchor.constraint(equalTo: topLayoutGuide.bottomAnchor),
+            chatViewController.view.topAnchor.constraint(equalTo: safeArea.topAnchor),
             chatViewController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             chatViewController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            chatViewController.view.bottomAnchor.constraint(equalTo: bottomLayoutGuide.topAnchor)
+            chatViewController.view.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor)
         ])
     }
     

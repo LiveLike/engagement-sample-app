@@ -8,13 +8,22 @@
 import UIKit
 
 class PredictionFollowUpViewController: WidgetController {
+    var widgetTitle: String?
+    var correctOptions: Set<WidgetOption>?
+    var options: Set<WidgetOption>?
+    var customData: String?
     var id: String
     var kind: WidgetKind
+    var interactionTimeInterval: TimeInterval?
     
     weak var delegate: WidgetEvents?
     weak var eventsDelegate: EngagementEventsDelegate?
     var coreWidgetView: CoreWidgetView {
         return widgetView.coreWidgetView
+    }
+    
+    var height: CGFloat {
+        return coreWidgetView.bounds.height + 32
     }
     
     var dismissSwipeableView: UIView {
@@ -84,7 +93,10 @@ class PredictionFollowUpViewController: WidgetController {
          kind: WidgetKind,
          correctOptionIds: [String],
          eventRecorder: EventRecorder,
-         widgetConfig: WidgetConfig) {
+         widgetConfig: WidgetConfig,
+         title: String = "",
+         options: Set<WidgetOption> = Set()
+    ) {
         self.widgetData = widgetData
         id = widgetData.id
         self.voteID = voteID
@@ -95,6 +107,10 @@ class PredictionFollowUpViewController: WidgetController {
         self.correctOptionIds = correctOptionIds
         self.eventRecorder = eventRecorder
         self.widgetConfig = widgetConfig
+        self.widgetTitle = title
+        self.options = options
+        self.interactionTimeInterval = widgetData.timeout
+        self.customData = widgetData.customData
         super.init(nibName: nil, bundle: nil)
     }
 

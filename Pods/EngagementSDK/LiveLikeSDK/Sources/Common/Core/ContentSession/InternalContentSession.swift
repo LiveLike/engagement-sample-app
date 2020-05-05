@@ -8,29 +8,28 @@
 import AVFoundation
 import UIKit
 
-typealias ChatMessagingOutput = ChatRoom & ChatProxyOutput
-typealias PlayerTimeSource = (() -> TimeInterval?)
-typealias ChatRoomAndQueue = (chatRoom: ChatRoom, chatQueue: ChatQueue)
+//typealias ChatMessagingOutput = ChatRoom & ChatProxyOutput
+public typealias PlayerTimeSource = (() -> TimeInterval?)
 
-protocol ChatSessionDelegate: AnyObject {
-    func chatSession(chatAdapterDidChange chatAdapter: ChatAdapter?)
+protocol ContentSessionChatDelegate: AnyObject {
+    func chatSession(chatSessionDidChange chatSession: InternalChatSessionProtocol?)
     func chatSession(pauseStatusDidChange pauseStatus: PauseStatus)
 }
 
 /// Concrete implementation of `ContentSession`
 class InternalContentSession: ContentSession {
+
     struct MessagingClients {
         var userId: String
 
         /// The `WidgetMessagingClient` to be used for this session
-        var widgetMessagingClient: (WidgetClient & SyncMessagingClient)?
+        var widgetMessagingClient: WidgetClient?
 
         var pubsubService: PubSubService?
     }
 
     var messagingClients: MessagingClients?
     var widgetChannel: String?
-    let syncSessionClient: SyncSessionClient
     let rewardsURLRepo = RewardsURLRepo()
 
     var status: SessionStatus = .uninitialized {
@@ -70,7 +69,6 @@ class InternalContentSession: ContentSession {
 
     private let chatHistoryLimitRange = 0 ... 200
     private let whenMessagingClients: Promise<InternalContentSession.MessagingClients>
-    private var syncCoordinator: SyncCoordinator?
     private let sdkInstance: EngagementSDK
     private let livelikeIDVendor: LiveLikeIDVendor
     let nicknameVendor: UserNicknameVendor
@@ -90,29 +88,53 @@ class InternalContentSession: ContentSession {
             }
         }
     }
-
-    private var currentChatAdapter: ChatAdapter? {
+    
+    weak var chatDelegate: ContentSessionChatDelegate? {
         didSet {
-            self.chatDelegate?.chatSession(chatAdapterDidChange: self.currentChatAdapter)
-            self.currentChatAdapter?.hideSnapToLive?(true)
-        }
-    }
-
-    weak var chatDelegate: ChatSessionDelegate? {
-        didSet {
-            if oldValue == nil, currentChatAdapter == nil {
+            if oldValue == nil, currentChatRoom == nil {
                 // Assume that this is the first time chatDelegate assigned
                 // Automatically join the program chat room
                 firstly {
-                    Promises.zip(self.whenProgramDetail, self.whenMessageReporter)
+                    Promises.zip(
+                        self.whenProgramDetail,
+                        self.whenMessageReporter
+                    )
                 }.then { (programDetail, messageReporter) -> Promise<Void> in
-                    guard let chatRoomResource = programDetail.defaultChatRoom else { return Promise(error: NilError()) }
-                    return self.enterChatRoom(chatRoomResource: chatRoomResource, messageReporter: messageReporter)
+                    guard let chatRoomResource = programDetail.defaultChatRoom else {
+                        return Promise(error: ContentSessionError.failedSettingsChatSessionDelegate)
+                    }
+                    
+                    return Promise { [weak self] fulfill, reject in
+                        guard let self = self else {
+                            reject(ContentSessionError.failedSettingsChatSessionDelegate)
+                            return
+                        }
+                        
+                        var chatConfig = ChatSessionConfig(roomID: chatRoomResource.id)
+                        chatConfig.syncTimeSource = self.playerTimeSource
+                        
+                        self.sdkInstance.connectChatRoom(
+                            config: chatConfig,
+                            reactionsVendor: self.reactionsVendor,
+                            messageReporter: messageReporter
+                        ) { result in
+                            switch result {
+                            case .success(let currentChatRoom):
+                                DispatchQueue.main.async {
+                                    self.chatDelegate?.chatSession(chatSessionDidChange: currentChatRoom as? InternalChatSessionProtocol)
+                                    fulfill(())
+                                }
+                            case .failure(let error):
+                                reject(error)
+                            }
+                        }
+                    }
                 }.catch {
                     log.error($0.localizedDescription)
                 }
+            } else {
+                self.chatDelegate?.chatSession(chatSessionDidChange: currentChatRoom)
             }
-            self.chatDelegate?.chatSession(chatAdapterDidChange: currentChatAdapter)
         }
     }
 
@@ -160,12 +182,11 @@ class InternalContentSession: ContentSession {
         }.then { messagingClients, livelikeID, programDetail, accessToken -> Promise<WidgetQueue> in
             
             guard let widgetClient = messagingClients.widgetMessagingClient else {
-                return Promise(error: NilError())
+                return Promise(error: ContentSessionError.missingWidgetClient)
             }
-            self.createSyncCoordinator(client: widgetClient, syncSessionsUrl: programDetail.syncSessionsUrl, userId: livelikeID.asString)
             
             guard let channel = programDetail.subscribeChannel else {
-                return Promise(error: NilError())
+                return Promise(error: ContentSessionError.missingSubscribeChannel)
             }
             
             self.widgetChannel = channel
@@ -219,16 +240,16 @@ class InternalContentSession: ContentSession {
     /// This allows us to remove it as a listener from the `WidgetMessagingClient`
     private var baseWidgetProxy: WidgetProxy?
     
-    var currentChatRoom: ChatRoom?
-
-    var currentChatRoomID: String? {
-        return currentChatRoom?.roomID
+    var currentChatRoom: InternalChatSessionProtocol? {
+        didSet {
+            self.chatDelegate?.chatSession(chatSessionDidChange: self.currentChatRoom)
+        }
     }
 
     /// A dictionary of all created rooms
-    private var chatRoomsByID: [String: ChatRoomAndQueue] = [:]
+    private var chatRoomsByID: [String: InternalChatSessionProtocol] = [:]
     /// A dictionary of whether a chat room is being created or not - keyed by room id
-    private var creatingChatRoomsByID: [String: Promise<ChatRoomAndQueue>] = [:]
+    private var creatingChatRoomsByID: [String: Promise<InternalChatSessionProtocol>] = [:]
 
     // MARK: -
     required init(sdkInstance: EngagementSDK,
@@ -237,7 +258,6 @@ class InternalContentSession: ContentSession {
                   livelikeIDVendor: LiveLikeIDVendor,
                   nicknameVendor: UserNicknameVendor,
                   userPointsVendor: UserPointsVendor,
-                  networkClient: SyncSessionClient,
                   programDetailVendor: ProgramDetailVendor,
                   stickerRepository: StickerRepository,
                   whenAccessToken: Promise<AccessToken>,
@@ -255,7 +275,6 @@ class InternalContentSession: ContentSession {
         self.userPointsVendor = userPointsVendor
         self.delegate = delegate
         programID = config.programID
-        syncSessionClient = networkClient
         self.sdkInstance = sdkInstance
         widgetPauseStatus = sdkInstance.widgetPauseStatus
         self.stickerRepository = stickerRepository
@@ -405,7 +424,6 @@ class InternalContentSession: ContentSession {
         }
         currentChatRoom?.disconnect()
         currentChatRoom = nil
-        syncCoordinator?.teardown()
     }
 
     func pause() {
@@ -447,86 +465,11 @@ class InternalContentSession: ContentSession {
             }
         }
     }
-
-    func startSyncSession() {
-        guard sessionIsValid else { return }
-        syncCoordinator?.startSyncingSession(playerTimeSource: playerTimeSource)
-    }
-
-    private func createSyncCoordinator(client: SyncMessagingClient, syncSessionsUrl: URL, userId: String) {
-        syncCoordinator = SyncCoordinator(
-            syncSessionClient: syncSessionClient,
-            syncMessagingClient: client,
-            syncSessionsUrl: syncSessionsUrl,
-            userSessionId: userId
-        )
-    }
 }
 
 // MARK: - Chat
 extension InternalContentSession {
-    /**
-     Send a message on the specified channel.
-     */
-    func sendChatMessage(_ message: ChatInputMessage) -> Promise<ChatMessageID>? {
-        guard sessionIsValid else { return nil }
 
-        let clientMessage = ClientMessage(message: message.message,
-                                          timeStamp: playerTimeSource?(),
-                                          badge: whenRewards.value?.lastEarnedBadge,
-                                          reactions: .empty,
-                                          imageURL: message.imageURL,
-                                          imageSize: message.imageSize)
-        return self.currentChatRoom?.sendMessage(clientMessage)
-    }
-    
-    func deleteMessage(messageID: ChatMessageID, message: String) {
-        guard sessionIsValid else { return  }
-        let clientMessage = ClientMessage(message: "",
-                                          timeStamp: nil,
-                                          badge: whenRewards.value?.lastEarnedBadge,
-                                          reactions: .empty,
-                                          imageURL: nil,
-                                          imageSize: nil)
-        self.currentChatRoom?.deleteMessage(clientMessage, messageID: messageID.asString)
-    }
-
-    func sendReaction(
-        messageID: ChatMessageID,
-        _ reaction: ReactionID,
-        reactionToRemove: ReactionVote.ID?
-    ) -> Promise<Void> {
-        guard let chatClient = self.currentChatRoom else { return Promise(error: NilError()) }
-        return firstly {
-            chatClient.sendMessageReaction(
-                messageID,
-                reaction: reaction,
-                reactionsToRemove: reactionToRemove
-            )
-        }.then {
-            log.verbose("Successfully sent reaction to chat message with id: \(messageID.asString)")
-        }.catch {
-            log.error($0.localizedDescription)
-        }
-    }
-
-    func removeReactions(
-        _ reaction: ReactionVote.ID,
-        fromMessageWithID messageID: ChatMessageID
-    ) -> Promise<Void> {
-        guard let chatClient = self.currentChatRoom else { return Promise(error: NilError()) }
-        return firstly {
-            chatClient.removeMessageReactions(
-                reaction: reaction,
-                fromMessageWithID: messageID
-            )
-        }.then {
-            log.verbose("Successfully removed reaction from chat message with id: \(messageID.asString)")
-        }.catch {
-            log.error($0.localizedDescription)
-        }
-    }
-    
     func pauseChat() {
         guard sessionIsValid else { return }
         guard chatPauseStatus == .unpaused else {
@@ -538,9 +481,8 @@ extension InternalContentSession {
         chatPauseStatus = .paused
         timeChatPauseStatusChanged = Date()
         self.chatRoomsByID.values.forEach { chatRoomAndQueue in
-            chatRoomAndQueue.chatRoom.pause()
+            chatRoomAndQueue.pause()
         }
-        self.currentChatAdapter?.didInteractWithMessageView = false // reset user interaction when paused
         log.info("Chat was paused.")
     }
     
@@ -555,237 +497,9 @@ extension InternalContentSession {
         chatPauseStatus = .unpaused
         timeChatPauseStatusChanged = Date()
         self.chatRoomsByID.values.forEach { chatRoomAndQueue in
-            chatRoomAndQueue.chatRoom.resume()
+            chatRoomAndQueue.resume()
         }
         log.info("Chat has resumed from pause.")
-    }
-    
-    public func enterChatRoom(roomID: String, completion: @escaping () -> Void, failure: @escaping (Error) -> Void) {
-        // Using nil reporter here because group chat does not support reporting
-        firstly {
-            self.getChatRoomResource(roomID: roomID)
-        }.then { chatRoomResource in
-            self.enterChatRoom(chatRoomResource: chatRoomResource, messageReporter: nil)
-        }.then {
-            completion()
-        }.catch {
-            log.error($0.localizedDescription)
-            failure($0)
-        }
-    }
-
-    private func enterChatRoom(chatRoomResource: ChatRoomResource, messageReporter: MessageReporter?) -> Promise<Void> {
-        return firstly {
-            Promises.zip(
-                self.livelikeIDVendor.whenLiveLikeID,
-                self.createChatRoom(chatRoomResource: chatRoomResource)
-            )
-        }.then { livelikeID, chatQueueAndRoom in
-            self.currentChatRoom = chatQueueAndRoom.chatRoom
-
-            let factory = MessageViewModelFactory(
-                stickerRepository: self.stickerRepository,
-                channel: "",
-                reactionsFactory: self.reactionsViewModelFactory,
-                messageReporter: messageReporter
-            )
-
-            let adapter = ChatAdapter(queue: chatQueueAndRoom.chatQueue,
-                                      userID: ChatUser.ID(idString: livelikeID.asString),
-                                      messageReporter: messageReporter,
-                                      messageViewModelFactory: factory,
-                                      eventRecorder: self.eventRecorder)
-            self.currentChatAdapter = adapter
-        }.asVoid()
-    }
-
-    private func getChatRoomResource(roomID: String) -> Promise<ChatRoomResource> {
-        return firstly {
-            self.appConfigVendor.whenApplicationConfig
-        }.then { (appConfig: ApplicationConfiguration) in
-            let stringToReplace = "{chat_room_id}"
-            guard appConfig.chatRoomDetailUrlTemplate.contains(stringToReplace) else {
-                return Promise(error: ContentSessionError.invalidChatRoomURLTemplate)
-            }
-            let urlTemplateFilled = appConfig.chatRoomDetailUrlTemplate.replacingOccurrences(of: stringToReplace, with: roomID)
-            guard let chatRoomURL = URL(string: urlTemplateFilled) else {
-                return Promise(error: ContentSessionError.invalidChatRoomURL)
-            }
-            let resource = Resource<ChatRoomResource>(get: chatRoomURL)
-            return EngagementSDK.networking.load(resource)
-        }
-    }
-
-    func joinChatRoom(roomID: String, completion: @escaping () -> Void, failure: @escaping (Error) -> Void) {
-        firstly {
-            self.getChatRoomResource(roomID: roomID)
-        }.then { chatRoomResource in
-            self.createChatRoom(chatRoomResource: chatRoomResource)
-        }.then { _ in
-            completion()
-        }.catch {
-            log.error($0.localizedDescription)
-            failure($0)
-        }
-    }
-
-    func leaveChatRoom(roomID: String, completion: @escaping () -> Void, failure: @escaping (Error) -> Void) {
-        if let chatRoom = chatRoomsByID[roomID] {
-            chatRoom.chatRoom.disconnect()
-            completion()
-        }
-        failure(NilError())
-    }
-
-    func getLatestChatMessages(
-        forRoom roomID: String,
-        since timestamp: Date,
-        completion: @escaping ([ChatMessage]) -> Void,
-        failure: @escaping (Error) -> Void) {
-
-        firstly {
-            Promises.zip(
-                whenMessagingClients,
-                getChatRoomResource(roomID: roomID),
-                livelikeIDVendor.whenLiveLikeID
-            )
-        }.then { messagingClients, chatRoomResource, livelikeID in
-            guard let pubsubService = messagingClients.pubsubService else { return }
-            guard let pubsubChatChannel = chatRoomResource.channels.chat.pubnub else { return }
-
-            let userID = ChatUser.ID(idString: livelikeID.asString)
-
-            pubsubService.fetchHistory(
-                channel: pubsubChatChannel,
-                oldestMessageDate: timestamp,
-                newestMessageDate: nil,
-                limit: 100
-            ) { result in
-                switch result {
-                case let .success(historyResult):
-                    var deletedMessageIDs = Set<ChatMessageID>()
-                    let processedHistory: [ChatMessageType] = historyResult.messages.compactMap { message in
-                        guard let payload = try? PubSubChatMessageDecoder.shared.decode(dict: message.message) else {
-                            assertionFailure()
-                            return nil
-                        }
-
-                        switch payload {
-                        case .messageCreated(let payload):
-                            return ChatMessageType(
-                                from: payload,
-                                channel: pubsubChatChannel,
-                                timetoken: TimeToken(pubnubTimetoken: message.createdAt),
-                                actions: message.messageActions,
-                                userID: userID
-                            )
-                        case .messageDeleted(let payload):
-                            deletedMessageIDs.insert(ChatMessageID(payload.id))
-                            return nil
-                        case .messageUpdated(_):
-                            return nil
-                        case .imageCreated(let payload):
-                            return ChatMessageType(
-                                from: payload,
-                                channel: pubsubChatChannel,
-                                timetoken: TimeToken(pubnubTimetoken: message.createdAt),
-                                actions: message.messageActions,
-                                userID: userID
-                            )
-                        case .imageDeleted(let payload):
-                            deletedMessageIDs.insert(ChatMessageID(payload.id))
-                            return nil
-                        }
-                    }
-
-                    let messagesToBeShown = processedHistory.filter { !deletedMessageIDs.contains($0.id) }
-
-                    let chatMessages = messagesToBeShown.map { chatMessage in
-                        return ChatMessage(
-                            senderUsername: chatMessage.nickname,
-                            message: chatMessage.message,
-                            timestamp: chatMessage.timestamp
-                        )
-                    }
-                    completion(chatMessages)
-                case let .failure(error):
-                    failure(error)
-                }
-            }
-        }.catch {
-            log.error($0.localizedDescription)
-            failure($0)
-        }
-    }
-
-    /// Factory method for a ChatMessageType
-    private func chatMessageType(
-        from chatPubnubMessage: PubSubChatMessage,
-        channel: String,
-        timetoken: TimeToken,
-        id: ChatMessageID,
-        actions: [PubSubMessageAction],
-        userID: ChatUser.ID
-    ) -> ChatMessageType {
-        let senderID = ChatUser.ID(idString: chatPubnubMessage.payload.senderId ?? "deleted_\(chatPubnubMessage.payload.id)")
-        let chatUser = ChatUser(
-            userId: senderID,
-            isActive: false,
-            isLocalUser: senderID == userID,
-            nickName: chatPubnubMessage.payload.senderNickname ?? "deleted_\(chatPubnubMessage.payload.id)",
-            friendDiscoveryKey: nil,
-            friendName: nil,
-            badgeImageURL: chatPubnubMessage.payload.badgeImageUrl
-        )
-
-        let reactions: ReactionVotes = {
-            var allVotes: [ReactionVote] = []
-
-            actions.forEach { action in
-                guard action.type == MessageActionType.reactionCreated.rawValue else { return }
-                let voteID = ReactionVote.ID(action.id)
-                let reactionID = ReactionID(fromString: action.value)
-                let reaction = ReactionVote(
-                    voteID: voteID,
-                    reactionID: reactionID,
-                    isMine: action.sender == userID.asString
-                )
-                allVotes.append(reaction)
-            }
-            return ReactionVotes(allVotes: allVotes)
-        }()
-
-        let message = ChatMessageType(
-            id: id,
-            roomID: channel,
-            message: chatPubnubMessage.payload.message ?? "deleted_\(chatPubnubMessage.payload.id)",
-            sender: chatUser,
-            videoTimestamp: chatPubnubMessage.payload.programDateTime?.timeIntervalSince1970,
-            reactions: reactions,
-            timestamp: timetoken.date,
-            profileImageUrl: chatPubnubMessage.payload.senderImageUrl,
-            createdAt: timetoken,
-            bodyImageUrl: nil,
-            bodyImageSize: nil
-        )
-
-        return message
-    }
-
-    func getChatMessageCount(
-        forRoom roomID: String,
-        since timestamp: Date,
-        completion: @escaping (Int) -> Void,
-        failure: @escaping (Error) -> Void
-    ) {
-        self.getLatestChatMessages(
-            forRoom: roomID,
-            since: timestamp,
-            completion: { messages in
-                completion(messages.count)
-            },
-            failure: failure
-        )
     }
 
     /// Updates the image that will represent the user in chat
@@ -796,7 +510,7 @@ extension InternalContentSession {
             whenMessagingClients
         }.then { _ in
             guard let chatClient = self.currentChatRoom else {
-                return Promise(error: NilError())
+                return Promise(error: ContentSessionError.missingChatRoom(placeOfError: "updating user chat room image"))
             }
             return chatClient.updateUserChatImage(url: url)
         }.then {
@@ -804,68 +518,6 @@ extension InternalContentSession {
         }.catch {
             failure($0)
         }
-    }
-
-    private func createChatRoom(chatRoomResource: ChatRoomResource) -> Promise<ChatRoomAndQueue> {
-        if let chatRoomAndQueue = chatRoomsByID[chatRoomResource.id] {
-            return Promise(value: chatRoomAndQueue)
-        }
-        
-        if let chatRoomAndQueueCreatingPromise = creatingChatRoomsByID[chatRoomResource.id] {
-            return chatRoomAndQueueCreatingPromise
-        }
-
-        let whenChatRoomCreated: Promise<ChatRoomAndQueue> = firstly {
-            Promises.zip(
-                self.whenMessagingClients,
-                self.livelikeIDVendor.whenLiveLikeID,
-                self.reactionsVendor.getReactions(),
-                self.nicknameVendor.whenInitialNickname
-            )
-        }.then { (messagingClients, livelikeID, availableReactions, nickname) in
-
-            let reactionChannel: PubSubChannel? = {
-                guard let reactionChannel = chatRoomResource.channels.reactions?.pubnub else { return nil }
-                return messagingClients.pubsubService?.subscribe(reactionChannel)
-            }()
-
-            guard let chatPubnubChannel = chatRoomResource.channels.chat.pubnub else {
-                return Promise(error: ContentSessionError.missingChatRoomResourceFields)
-            }
-            guard let chatChannel = messagingClients.pubsubService?.subscribe(chatPubnubChannel) else {
-                return Promise(error: ContentSessionError.missingChatService )
-            }
-
-            let imageUploader = ImageUploader(
-                uploadUrl: chatRoomResource.uploadUrl,
-                urlSession: EngagementSDK.networking.urlSession
-            )
-
-            let chatRoom = PubSubChatRoom(
-                roomID: chatRoomResource.id,
-                chatChannel: chatChannel,
-                reactionChannel: reactionChannel,
-                userID: ChatUser.ID(idString: livelikeID.asString),
-                nickname: self.nicknameVendor,
-                imageUploader: imageUploader
-            )
-            chatRoom.availableReactions = availableReactions.map({ $0.id })
-
-            let chatID = ChatUser.ID(idString: livelikeID.asString)
-            let chatQueue = chatRoom
-                .addProxy { SynchronizedChatProxy(playerTimeSource: self.playerTimeSource) }
-                .addProxy { ChatIntegratorHookProxy(delegate: self.delegate, session: self) }
-                .addProxy { ChatLoggerProxy(playerTimeSource: self.playerTimeSource) }
-                .addProxy { ChatQueue(userID: chatID) }
-
-            let chatRoomAndQueue: ChatRoomAndQueue = (chatRoom: chatRoom, chatQueue: chatQueue)
-            self.chatRoomsByID[chatRoomResource.id] = chatRoomAndQueue
-
-            return Promise(value: chatRoomAndQueue)
-        }
-        
-        self.creatingChatRoomsByID[chatRoomResource.id] = whenChatRoomCreated
-        return whenChatRoomCreated
     }
 
 }
@@ -942,6 +594,11 @@ enum ContentSessionError: LocalizedError {
     case invalidChatRoomURL
     case missingChatService
     case missingChatRoomResourceFields
+    case failedSettingsChatSessionDelegate
+    case failedLoadingInitialChat
+    case missingWidgetClient
+    case missingSubscribeChannel
+    case missingChatRoom(placeOfError: String)
 
     var errorDescription: String? {
         switch self {
@@ -953,6 +610,16 @@ enum ContentSessionError: LocalizedError {
             return "Failed to initalize Chat because of missing required fields on the chat room resource."
         case .missingChatService:
             return "Failed to initialize Chat because the service is missing."
+        case .failedSettingsChatSessionDelegate:
+            return "Failed setting the Chat Session Delegate"
+        case .missingWidgetClient:
+            return "Failed creating Widget Queue due to a missing Widget Client"
+        case .missingSubscribeChannel:
+            return "Failed creating Widget Queue due to a missing Subscribe Channel"
+        case .missingChatRoom(let placeOfError):
+            return "Failed \(placeOfError) due to a missing Chat Room"
+        case .failedLoadingInitialChat:
+            return "Failed loading initial history for chat"
         }
     }
 }

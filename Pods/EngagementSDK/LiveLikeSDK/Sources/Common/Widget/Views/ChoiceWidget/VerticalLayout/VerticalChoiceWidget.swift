@@ -63,7 +63,7 @@ class VerticalChoiceWidget: ChoiceWidgetView {
     }
 
     func playOverlayAnimation(animationFilepath: String) {
-        let lottieView = LOTAnimationView(filePath: animationFilepath)
+        let lottieView = AnimationView(filePath: animationFilepath)
         lottieView.isUserInteractionEnabled = false
         lottieView.contentMode = .scaleAspectFit
         lottieView.sizeToFit()

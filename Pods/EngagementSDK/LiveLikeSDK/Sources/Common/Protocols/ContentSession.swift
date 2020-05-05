@@ -23,10 +23,7 @@ public protocol ContentSession {
      A unique ID to identify the content currently being played.
      */
     var programID: String { get }
-
-    /// A unique ID to identify the chat room that is currently entered
-    var currentChatRoomID: String? { get }
-
+    
     /**
      The status of the `ContentSession`
      */
@@ -55,17 +52,42 @@ public protocol ContentSession {
     func close()
 
     func install(plugin: Plugin)
+    
+    /// Sets an image for the user's chat messages in the current chat room
+    func updateUserChatRoomImage(url: URL, completion: @escaping () -> Void, failure: @escaping (Error) -> Void)
+
+    // MARK: - Unavailable
+    
+    /// A unique ID to identify the chat room that is currently entered
+    @available(iOS, unavailable, message: "Moved to ChatSession")
+    var currentChatRoomID: String? { get }
+
+    /// The set of chat room IDs that are currently joined
+    @available(iOS, unavailable, message: "Moved to ChatSession")
+    var joinedChatRoomIDs: Set<String> { get }
 
     /// Joins and displays the room on a ChatViewController
+    @available(iOS, unavailable, message: "Moved to ChatSession")
     func enterChatRoom(roomID: String, completion: @escaping () -> Void, failure: @escaping (Error) -> Void)
 
     /// Leave a room to stop receiving updates
+    @available(iOS, unavailable, message: "Moved to ChatSession")
     func leaveChatRoom(roomID: String, completion: @escaping () -> Void, failure: @escaping (Error) -> Void)
 
     /// Join the room to begin receiving updates
+    @available(iOS, unavailable, message: "Moved to ChatSession")
     func joinChatRoom(roomID: String, completion: @escaping () -> Void, failure: @escaping (Error) -> Void)
 
     /// Returns a list of chat messages with and since a given timestamp
+    @available(iOS, unavailable, message: "Moved to ChatSession")
+    func getLatestChatMessages(
+        forRoom roomID: String,
+        startTimetoken timetoken: TimeToken,
+        completion: @escaping ([ChatMessage]) -> Void,
+        failure: @escaping (Error) -> Void
+    )
+
+    @available(iOS, unavailable, message: "Moved to ChatSession")
     func getLatestChatMessages(
         forRoom roomID: String,
         since timestamp: Date,
@@ -76,17 +98,22 @@ public protocol ContentSession {
     /// Provides the count of chat messages
     /// - Parameters:
     ///   - roomID: The id of the room
-    ///   - timestamp: The timestamp to start counting from
+    ///   - timetoken: The timetoken of the earliest message to start counting from
     ///   - completion: Completion block that returns the count of chat messages
     ///   - failure: Failure block
+    @available(iOS, unavailable, message: "Moved to Chat Session")
+    func getChatMessageCount(
+        forRoom roomID: String,
+        startTimetoken timetoken: TimeToken,
+        completion: @escaping (Int) -> Void,
+        failure: @escaping (Error) -> Void
+    )
+
+    @available(iOS, unavailable, message: "Moved to Chat Session")
     func getChatMessageCount(
         forRoom roomID: String,
         since timestamp: Date,
         completion: @escaping (Int) -> Void,
         failure: @escaping (Error) -> Void
     )
-
-    /// Sets an image for the user's chat messages in the current chat room
-    func updateUserChatRoomImage(url: URL, completion: @escaping () -> Void, failure: @escaping (Error) -> Void)
-
 }

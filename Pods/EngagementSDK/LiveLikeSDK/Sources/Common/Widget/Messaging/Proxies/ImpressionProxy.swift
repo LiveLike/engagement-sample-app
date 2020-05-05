@@ -49,6 +49,8 @@ class ImpressionProxy: WidgetProxy {
              .imageQuizResults,
              .imageSliderResults,
              .cheerMeterResults,
+             .textPredictionResults,
+             .imagePredictionResults,
              .pointsTutorial,
              .badgeCollect:
             break

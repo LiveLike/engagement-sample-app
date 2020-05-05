@@ -94,7 +94,7 @@ class AlertWidgetContentView: UIView {
         addSubview(imageView)
 
         let constraints = [
-            heightAnchor.constraint(lessThanOrEqualToConstant: 150),
+            heightAnchor.constraint(lessThanOrEqualToConstant: 90),
             textLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -24),
             textLabel.topAnchor.constraint(equalTo: topAnchor, constant: 24),
             textLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),

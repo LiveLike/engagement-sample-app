@@ -21,19 +21,29 @@ public enum WidgetPresentationDecision: Int {
     case `defer`
 }
 
+public enum WidgetDismissReason {
+    /// The user has dismissed the widget
+    case userDismiss
+    
+    /// The `dismissWidget()` method was called on the WidgetViewController
+    case apiDismiss
+
+    /// The widget has expired
+    case timeExpired
+}
+
 /**
  A delegate which is informed when a widget will be and has been displayed or dismissed.
  Can also be used to control presentation discarding and deferral of specific widgets.
  */
-@objc(LLWidgetPresentationDelegate)
-public protocol WidgetPresentationDelegate {
+public protocol WidgetPresentationDelegate: AnyObject {
     /**
      Asks the delegate whether to present the widget represented by the given `WidgetViewModel`.
 
      - parameter widget: A ViewModel containing useful information regarding the widget that is ready for presentation.
      - returns: A decision on whether to immediately `present`, permanently `discard`, or `defer` the decision.
      */
-    @objc optional func shouldPresent(widget: WidgetViewModel) -> WidgetPresentationDecision
+    func shouldPresent(widget: WidgetViewModel) -> WidgetPresentationDecision
 
     /**
      Informs the delegate that a widget will be presented.
@@ -41,14 +51,14 @@ public protocol WidgetPresentationDelegate {
      - parameter widget: Information regarding the widget that will be presented
      - parameter view: The view the widget will be presented inside of
      */
-    @objc optional func willPresent(widget: WidgetViewModel, in view: UIView)
+    func willPresent(widget: WidgetViewModel, in view: UIView)
 
     /**
      Informs the delegate that a widget will be dismissed.
 
      - parameter widget: Information regarding the widget that will be dismissed
      */
-    @objc optional func willDismiss(widget: WidgetViewModel, in view: UIView)
+    func willDismiss(widget: WidgetViewModel, in view: UIView, reason: WidgetDismissReason)
 
     /**
      Informs the delegate that a widget has been presented.
@@ -56,12 +66,20 @@ public protocol WidgetPresentationDelegate {
      - parameter widget: Information regarding the widget that was presented
      - parameter view: The view the widget was presented inside of
      */
-    @objc optional func didPresent(widget: WidgetViewModel, in view: UIView)
+    func didPresent(widget: WidgetViewModel, in view: UIView)
 
     /**
      Informs the delegate that a widget has been dismissed.
 
      - parameter widget: Information regarding the widget that was dismissed
      */
-    @objc optional func didDismiss(widget: WidgetViewModel)
+    func didDismiss(widget: WidgetViewModel, reason: WidgetDismissReason)
+    
+    /// Informs the delegate that the interaction has started for the widget
+    /// - Parameter widget: The widget data
+    func didBeginInteraction(widget: WidgetViewModel)
+    
+    /// Informs the delegate that the interaction has ended for the widget
+    /// - Parameter widget: The widget data
+    func didEndInteraction(widget: WidgetViewModel)
 }

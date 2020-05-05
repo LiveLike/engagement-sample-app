@@ -136,7 +136,7 @@ class GamificationModal: PassthroughView {
     ///   - theme: theme
     ///   - actionButtonTitle: optional - text of the action button
     ///   - actionButtonHandler: optional - completion handler for the action button
-    private init(title: String,
+    private init(title: String?,
                  message: String,
                  progressionMeter: UIView?,
                  theme: Theme,
@@ -172,7 +172,7 @@ class GamificationModal: PassthroughView {
         applyTheme(theme: theme)
     }
 
-    convenience init(title: String,
+    convenience init(title: String?,
                      message: String,
                      progressionMeter: UIView?,
                      theme: Theme,
@@ -192,15 +192,19 @@ class GamificationModal: PassthroughView {
                   graphicView: imageView)
     }
 
-    convenience init(title: String, message: String, progressionMeter: UIView?, theme: Theme, graphicLottieAnimation: String) {
+    convenience init(title: String?,
+                     message: String,
+                     progressionMeter: UIView?,
+                     theme: Theme,
+                     graphicLottieAnimation: String) {
         
         let lottieContainer = UIView()
         lottieContainer.translatesAutoresizingMaskIntoConstraints = false
         
-        let lottieView = LOTAnimationView(name: graphicLottieAnimation, bundle: Bundle(for: GamificationModal.self))
+        let lottieView = AnimationView(name: graphicLottieAnimation, bundle: Bundle(for: GamificationModal.self))
         lottieView.translatesAutoresizingMaskIntoConstraints = false
         lottieView.contentMode = .scaleAspectFit
-        lottieView.loopAnimation = true
+        lottieView.loopMode = .loop
         lottieView.play()
         
         lottieContainer.addSubview(lottieView)

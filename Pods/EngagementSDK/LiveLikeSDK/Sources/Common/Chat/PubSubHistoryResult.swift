@@ -8,7 +8,7 @@
 import Foundation
 
 struct PubSubHistoryResult {
-    var newestMessageTimetoken: Date
-    var oldestMessageTimetoken: Date
+    var newestMessageTimetoken: TimeToken
+    var oldestMessageTimetoken: TimeToken
     var messages: [PubSubChannelMessage]
 }

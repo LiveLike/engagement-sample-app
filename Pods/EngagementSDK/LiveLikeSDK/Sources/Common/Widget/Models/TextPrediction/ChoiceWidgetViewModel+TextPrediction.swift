@@ -26,7 +26,11 @@ extension ChoiceWidgetViewModel {
             return optionViewModel
         }
 
-        let viewModel = ChoiceWidgetViewModel(id: textPredictionFollowUp.id, question: textPredictionFollowUp.question, timeout: textPredictionFollowUp.timeout, options: followUpOptions)
+        let viewModel = ChoiceWidgetViewModel(id: textPredictionFollowUp.id,
+                                              question: textPredictionFollowUp.question,
+                                              timeout: textPredictionFollowUp.timeout,
+                                              options: followUpOptions,
+                                              customData: nil)
         viewModel.animationCorrectAsset = theme.randomCorrectAnimationAsset()
         viewModel.animationIncorrectAsset = theme.randomIncorrectAnimationAsset()
         return viewModel
@@ -42,8 +46,12 @@ extension ChoiceWidgetViewModel {
                                                               isSelectable: true)
             return optionViewModel
         }
-        let viewModel = ChoiceWidgetViewModel(id: textPredictionCreated.id, question: textPredictionCreated.question, timeout: textPredictionCreated.timeout, options: followUpOptions)
-        viewModel.animationTimerAsset = textPredictionCreated.animationTimerAsset
+        let viewModel = ChoiceWidgetViewModel(id: textPredictionCreated.id,
+                                              question: textPredictionCreated.question,
+                                              timeout: textPredictionCreated.timeout,
+                                              options: followUpOptions,
+                                              customData: textPredictionCreated.customData)
+
         viewModel.animationConfirmationAsset = textPredictionCreated.animationConfirmationAsset
         viewModel.confirmationMessage = textPredictionCreated.confirmationMessage
         return viewModel

@@ -18,8 +18,7 @@ struct TextQuizCreated: Decodable {
     var kind: WidgetKind
     var impressionUrl: URL?
     var rewardsUrl: URL?
-
-    let animationTimerAsset: String = "timer"
+    var customData: String?
 }
 
 struct TextQuizChoice: Decodable {

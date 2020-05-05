@@ -48,16 +48,13 @@ class AlertWidget: WidgetView {
     }
 
     private func configure() {
-        coreWidgetView.headerView = nil
+        coreWidgetView.headerView = titleView
         coreWidgetView.contentView = contentView
         coreWidgetView.footerView = linkView
 
         addSubview(coreWidgetView)
-        addSubview(titleView)
 
         NSLayoutConstraint.activate([
-            titleView.leadingAnchor.constraint(equalTo: coreWidgetView.leadingAnchor, constant: -6),
-            titleView.topAnchor.constraint(equalTo: coreWidgetView.topAnchor, constant: -12),
             contentView.heightAnchor.constraint(greaterThanOrEqualToConstant: 90)
         ])
     }

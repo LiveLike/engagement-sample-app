@@ -44,7 +44,6 @@ public class WidgetViewController: UIViewController {
      A delegate which is informed when a widget will be and has been displayed or dismissed.
      Can also be used to control presentation discarding and deferral of specific widgets.
      */
-    @objc
     public weak var widgetPresentationDelegate: WidgetPresentationDelegate?
 
     var widgetRendererListeners: Listener<WidgetRendererDelegate> = Listener<WidgetRendererDelegate>()
@@ -226,7 +225,7 @@ public class WidgetViewController: UIViewController {
     }
 
     /// The next deferred widget which can be presented or discarded via calls to `presentDeferredWidget()` or `discardDeferredWidget()`
-    @objc public var nextDeferredWidget: WidgetViewModel? {
+    public var nextDeferredWidget: WidgetViewModel? {
         return deferredWidgets.first?.viewModelSnapshot
     }
 
@@ -307,7 +306,7 @@ extension WidgetViewController: WidgetRenderer {
 
     private func displayWidget(_ widget: WidgetController) {
         let presentationDecision = widgetPresentationDelegate?
-            .shouldPresent?(widget: widget.viewModelSnapshot)
+            .shouldPresent(widget: widget.viewModelSnapshot)
             ?? .present
 
         switch presentationDecision {
@@ -342,12 +341,12 @@ extension WidgetViewController: WidgetRenderer {
             isCurrentWidgetShowing = true
             animateIn(coreWidgetView: widget.coreWidgetView,
                       beforeAnimating: {
-                        widgetPresentationDelegate?.willPresent?(widget: widget.viewModelSnapshot, in: view)
+                        widgetPresentationDelegate?.willPresent(widget: widget.viewModelSnapshot, in: view)
             },
                       completion: {
                         self.delegate?.engagementEvent(.didDisplayWidget)
+                        self.widgetPresentationDelegate?.didPresent(widget: widget.viewModelSnapshot, in: self.view)
                         widget.start()
-                        self.widgetPresentationDelegate?.didPresent?(widget: widget.viewModelSnapshot, in: self.view)
             })
         case .hidden:
             // Start the widget without showing it
@@ -372,7 +371,7 @@ extension WidgetViewController: WidgetRenderer {
         delegate?.engagementEvent(.willDismissWidget)
         widgetRendererListeners.publish { $0.widgetWillStopRendering(widget: currentWidget.viewModelSnapshot) }
         currentWidget.willDismiss(dismissAction: dismissAction)
-        widgetPresentationDelegate?.willDismiss?(widget: currentWidget.viewModelSnapshot, in: currentWidget.view.superview!)
+        widgetPresentationDelegate?.willDismiss(widget: currentWidget.viewModelSnapshot, in: currentWidget.view.superview!, reason: dismissAction.dismissReason)
     }
 
     private func dismissWidget(direction: Direction, dismissAction: DismissAction) {
@@ -383,7 +382,7 @@ extension WidgetViewController: WidgetRenderer {
         animateOut(direction: direction, coreWidgetView: currentWidget.coreWidgetView, completion: {
             self.delegate?.engagementEvent(.didDismissWidget)
             self.widgetRendererListeners.publish { $0.widgetDidStopRendering(widget: currentWidget.viewModelSnapshot, dismissAction: dismissAction) }
-            self.widgetPresentationDelegate?.didDismiss?(widget: currentWidget.viewModelSnapshot)
+            self.widgetPresentationDelegate?.didDismiss(widget: currentWidget.viewModelSnapshot, reason: dismissAction.dismissReason)
             self.removeWidget()
         })
     }
@@ -403,9 +402,15 @@ extension WidgetViewController: WidgetEvents {
             }
         }
     }
+    
+    func widgetInteractionDidBegin(widget: WidgetViewModel) {
+        widgetEventListeners.publish { $0.widgetInteractionDidBegin(widget: widget) }
+        widgetPresentationDelegate?.didBeginInteraction(widget: widget)
+    }
 
     func widgetInteractionDidComplete(properties: WidgetInteractedProperties) {
         widgetEventListeners.publish { $0.widgetInteractionDidComplete(properties: properties) }
+        widgetPresentationDelegate?.didEndInteraction(widget: properties.widgetViewModel)
     }
 }
 

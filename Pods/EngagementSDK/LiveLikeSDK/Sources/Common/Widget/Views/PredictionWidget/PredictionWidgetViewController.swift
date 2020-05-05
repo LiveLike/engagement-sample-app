@@ -10,6 +10,7 @@ import UIKit
 
 /// Game logic for prediction widgets
 class PredictionWidgetViewController: WidgetController {
+
     // MARK: Properties
 
     var id: String
@@ -21,14 +22,23 @@ class PredictionWidgetViewController: WidgetController {
         return predictionWidgetView.coreWidgetView
     }
     
+    var height: CGFloat {
+        return coreWidgetView.bounds.height + 32
+    }
+    
     var dismissSwipeableView: UIView {
         return self.view
     }
 
+    var widgetTitle: String?
+    var correctOptions: Set<WidgetOption>?
+    var options: Set<WidgetOption>?
+    var customData: String?
+    var interactionTimeInterval: TimeInterval?
+
     // MARK: Private Properties
 
-    private var currentSelectionId: String?
-    private var didSelectResponse: Bool = false
+    private var currentSelection: ChoiceWidgetOption?
     private let widgetData: ChoiceWidgetViewModel
     private let voteRepo: WidgetVotes?
     private let predictionTheme: PredictionWidgetTheme
@@ -36,7 +46,9 @@ class PredictionWidgetViewController: WidgetController {
     private let style: ChoiceWidgetViewType
     private let predictionWidgetClient: PredictionVoteClient
     private var choiceWidgetOptions = [ChoiceWidgetOptionButton]()
-
+    private var latestResults: PredictionResults?
+    private var canShowResults: Bool = false
+    
     // MARK: Analytics
 
     private let eventRecorder: EventRecorder
@@ -87,7 +99,10 @@ class PredictionWidgetViewController: WidgetController {
          voteRepo: WidgetVotes?,
          theme: Theme,
          predictionWidgetClient: PredictionVoteClient,
-         eventRecorder: EventRecorder) {
+         eventRecorder: EventRecorder,
+         title: String = "",
+         options: Set<WidgetOption> = Set()
+    ) {
         self.widgetData = widgetData
         id = widgetData.id
         self.voteRepo = voteRepo
@@ -97,7 +112,23 @@ class PredictionWidgetViewController: WidgetController {
         self.kind = kind
         self.style = style
         self.eventRecorder = eventRecorder
+        self.widgetTitle = title
+        self.options = options
+        self.interactionTimeInterval = widgetData.timeout
+        self.customData = widgetData.customData
         super.init(nibName: nil, bundle: nil)
+        
+        self.predictionWidgetClient.didRecieveResults = { [weak self] results in
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.latestResults = results
+
+                if self.canShowResults {
+                    self.updateResults(results: results)
+                }
+            }
+            
+        }
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -108,7 +139,10 @@ class PredictionWidgetViewController: WidgetController {
         super.loadView()
         view.addSubview(predictionWidgetView)
         predictionWidgetView.constraintsFill(to: view)
-        predictionWidgetView.titleView.beginTimer(duration: widgetData.timeout, animationID: widgetData.animationTimerAsset!) { [weak self] in
+        predictionWidgetView.titleView.beginTimer(
+            duration: widgetData.timeout,
+            animationFilepath: theme.filepathsForWidgetTimerLottieAnimation
+        ) { [weak self] in
             self?.interactableState = .closedToInteraction
             self?.widgetWillDismiss(action: .timeout)
         }
@@ -119,21 +153,39 @@ class PredictionWidgetViewController: WidgetController {
         eventsDelegate?.engagementEvent(.didDisplayWidget)
         eventRecorder.record(.widgetDisplayed(kind: kind.analyticsName,
                                               widgetId: widgetData.id))
+        delegate?.widgetInteractionDidBegin(widget: self)
     }
 
     private func onOptionSelected(_ option: ChoiceWidgetOption) {
-        didSelectResponse = true
         let now = Date()
         if firstTapTime == nil {
             firstTapTime = now
         }
         lastTapTime = now
         tapCount += 1
-        currentSelectionId = option.id
+        currentSelection = option
 
         deselectAllOptions()
         option.setBorderColor(predictionTheme.optionSelectBorderColor)
         option.isSelected = true
+    }
+    
+    private func updateResults(results: PredictionResults) {
+        let totalVotes = results.options.map{ $0.voteCount }.reduce(0, +)
+        
+        guard totalVotes > 0 else { return }
+        
+        self.choiceWidgetOptions.forEach { option in
+            guard let optionResult = results.options.first(where: { $0.id == option.id }) else { return }
+            let progress: CGFloat = CGFloat(optionResult.voteCount) / CGFloat(totalVotes)
+            option.setProgress(progress)
+            
+            if let currentSelection = self.currentSelection, currentSelection.id == option.id {
+                option.setColors(self.theme.predictionWidget.optionGradientColors)
+            } else {
+                option.setColors(self.theme.neutralOptionColors)
+            }
+        }
     }
 
     private func deselectAllOptions() {
@@ -145,43 +197,60 @@ class PredictionWidgetViewController: WidgetController {
 
     // Logic before the widget will animate away
     private func widgetWillDismiss(action: DismissAction) {
-        if didSelectResponse {
-            // Send vote
-            if let voteUrl = self.widgetData.options.first(where: { $0.id == currentSelectionId })?.voteUrl {
-                firstly {
-                    predictionWidgetClient.vote(url: voteUrl)
-                }.then { [weak self] vote in
-                    guard let self = self else { return }
-                    guard let voteRepo = self.voteRepo else { return }
-                    log.debug("Successfully submitted prediction.")
-                    voteRepo.addVote(vote, forId: self.widgetData.id)
-                    if let firstTapTime = self.firstTapTime, let lastTapTime = self.lastTapTime {
-                        let properties = WidgetInteractedProperties(
-                            widgetId: self.widgetData.id,
-                            widgetKind: self.kind.analyticsName,
-                            firstTapTime: firstTapTime,
-                            lastTapTime: lastTapTime,
-                            numberOfTaps: self.tapCount
-                        )
-                        self.delegate?.widgetInteractionDidComplete(properties: properties)
-                    }
-                }.catch { error in
-                        log.error("Error: \(error.localizedDescription)")
-                }
-            }
-
-            // dismiss immediately if user triggered dismissal
-            if action.userDismissed {
-                delegate?.actionHandler(event: .dismiss(action: action))
-            } else {
-                // show confirmation message then dismiss
-                showActionConfirmation { [weak self] in
-                    guard let self = self else { return }
-                    self.delegate?.actionHandler(event: .dismiss(action: action))
-                }
-            }
-        } else {
+        guard let selectedOption = self.currentSelection else {
             delegate?.actionHandler(event: .dismiss(action: action))
+            return
+        }
+        
+        guard let selectionWidgetData = self.widgetData.options.first(where: { $0.id == selectedOption.id}) else {
+            log.error("Couldn't find widget data for option with id \(selectedOption.id)")
+            delegate?.actionHandler(event: .dismiss(action: action))
+            return
+        }
+        
+        // Send vote
+        firstly {
+            predictionWidgetClient.vote(url: selectionWidgetData.voteUrl)
+        }.then { [weak self] vote in
+            guard let self = self else { return }
+            guard let voteRepo = self.voteRepo else { return }
+            self.canShowResults = true
+            log.debug("Successfully submitted prediction.")
+            voteRepo.addVote(vote, forId: self.widgetData.id)
+            
+            // show progress on all options with latest results
+            if let latestResults = self.latestResults {
+                self.updateResults(results: latestResults)
+            }
+            
+            if let firstTapTime = self.firstTapTime, let lastTapTime = self.lastTapTime {
+                let properties = WidgetInteractedProperties(
+                    widgetId: self.widgetData.id,
+                    widgetKind: self.kind.analyticsName,
+                    firstTapTime: firstTapTime,
+                    lastTapTime: lastTapTime,
+                    numberOfTaps: self.tapCount,
+                    interactionTimeInterval: self.interactionTimeInterval,
+                    widgetViewModel: self
+                )
+                self.delegate?.widgetInteractionDidComplete(properties: properties)
+            }
+        }.catch { error in
+                log.error("Error: \(error.localizedDescription)")
+        }
+
+        // dismiss immediately if user triggered dismissal
+        if action.userDismissed {
+            delegate?.actionHandler(event: .dismiss(action: action))
+        } else {
+            // show confirmation message then dismiss
+            if let animationFilepath = self.theme.predictionWidget.lottieAnimationOnTimerCompleteFilepaths.randomElement() {
+                predictionWidgetView.playOverlayAnimation(animationFilepath: animationFilepath)
+            }
+            delay(6) { [weak self] in
+                guard let self = self else { return }
+                self.delegate?.actionHandler(event: .dismiss(action: action))
+            }
         }
     }
 
@@ -200,18 +269,6 @@ class PredictionWidgetViewController: WidgetController {
             }
             properties.interactableState = interactableState
             eventRecorder.record(.widgetUserDismissed(properties: properties))
-        }
-    }
-
-    private func showActionConfirmation(completion: (() -> Void)?) {
-        if let confirmationMessage = widgetData.confirmationMessage, let confirmationAsset = widgetData.animationConfirmationAsset {
-            let actionConfirmationView = ActionConfirmationView(title: confirmationMessage, animationID: confirmationAsset, duration: 5.0) {
-                completion?()
-            }
-            actionConfirmationView.customize(theme: theme)
-            predictionWidgetView.coreWidgetView.alpha = 0.2
-            predictionWidgetView.addSubview(actionConfirmationView)
-            actionConfirmationView.constraintsFill(to: predictionWidgetView.coreWidgetView)
         }
     }
 }

@@ -28,6 +28,7 @@ struct ImageSliderCreated: Decodable {
     var programDateTime: Date?
     var options: [ImageSliderOption]
     var rewardsUrl: URL?
+    var customData: String?
 }
 
 struct ImageSliderOption: Decodable {

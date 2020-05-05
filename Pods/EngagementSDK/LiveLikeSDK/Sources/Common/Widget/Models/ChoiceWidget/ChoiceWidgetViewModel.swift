@@ -17,12 +17,18 @@ class ChoiceWidgetViewModel {
     var animationCorrectAsset: String?
     var animationIncorrectAsset: String?
     var animationTimerAsset: String?
+    var customData: String?
 
-    init(id: String, question: String, timeout: TimeInterval, options: [ChoiceWidgetOptionViewModel]) {
+    init(id: String,
+         question: String,
+         timeout: TimeInterval,
+         options: [ChoiceWidgetOptionViewModel],
+         customData: String?) {
         self.id = id
         self.question = question
         self.timeout = timeout
         self.options = options
+        self.customData = customData
     }
 }
 

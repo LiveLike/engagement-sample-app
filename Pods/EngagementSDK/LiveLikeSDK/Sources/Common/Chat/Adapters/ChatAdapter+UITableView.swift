@@ -189,7 +189,7 @@ extension ChatAdapter: UITableViewDataSource {
         cell.contentView.addSubview(cellView)
         cellView.constraintsFill(to: cell.contentView)
         cell.selectableView = cellView
-        cell.accessibilityLabel = "\(messageViewModel.username), \(messageViewModel.message)"
+        cell.accessibilityLabel = messageViewModel.accessibilityLabel
         return cell
     }
 }
@@ -197,10 +197,6 @@ extension ChatAdapter: UITableViewDataSource {
 // MARK: - UITableViewDelegate
 
 extension ChatAdapter: UITableViewDelegate {
-    func tableView(_ tableView: UITableView, estimatedHeightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 400
-    }
-    
     func tableView(_ tableView: UITableView, willSelectRowAt indexPath: IndexPath) -> IndexPath? {
         if
             let selectedIndexPath = tableView.indexPathForSelectedRow,
@@ -274,7 +270,9 @@ extension ChatAdapter: UITableViewDelegate {
     
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         isDragging = decelerate
-
+        if scrollView.contentOffset.y <= 0 {
+            didScrollToTop?()
+        }
         self.scrollToMostRecentCompletion?()
         self.scrollToMostRecentCompletion = nil
     }
@@ -288,11 +286,6 @@ extension ChatAdapter: UITableViewDelegate {
         
         refreshSnapToLiveVisiblity()
         
-        // check if scrolled to top
-        if scrollView.contentOffset.y == 0 {
-            didScrollToTop?()
-        }
-
         if scrollView.contentOffset.y >= (scrollView.contentSize.height - scrollView.frame.size.height) {
             //you reached end of the table
             self.shouldScrollToNewestMessageOnArrival = true

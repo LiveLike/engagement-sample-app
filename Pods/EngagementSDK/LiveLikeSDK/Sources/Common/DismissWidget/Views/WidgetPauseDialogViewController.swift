@@ -8,11 +8,22 @@
 import UIKit
 
 class WidgetPauseDialogViewController: WidgetController {
+    
+    var widgetTitle: String?
+    var correctOptions: Set<WidgetOption>?
+    var options: Set<WidgetOption>?
+    var customData: String?
+
     var id: String = ""
     var kind = WidgetKind.dismissToggle
+    var interactionTimeInterval: TimeInterval? = nil
 
     weak var delegate: WidgetEvents?
 
+    var height: CGFloat {
+        return coreWidgetView.bounds.height + 32
+    }
+    
     var coreWidgetView: CoreWidgetView {
         return dismissWidgetView.coreWidgetView
     }
@@ -22,7 +33,7 @@ class WidgetPauseDialogViewController: WidgetController {
     }
 
     private var dismissWidgetView: DialogWidgetView = {
-        let view = DialogWidgetView()
+        let view = DialogWidgetView(lottieAnimationName: "emoji-stunning")
         return view
     }()
 
@@ -40,6 +51,7 @@ class WidgetPauseDialogViewController: WidgetController {
         self.theme = theme
         self.trigger = trigger
         self.eventRecorder = eventRecorder
+        self.widgetTitle = "Pause Widget"
         super.init(nibName: nil, bundle: nil)
         view.addSubview(dismissWidgetView)
         dismissWidgetView.constraintsFill(to: view)
@@ -53,7 +65,7 @@ class WidgetPauseDialogViewController: WidgetController {
     }
 
     func start() {
-        dismissWidgetView.lottieView.play()
+        dismissWidgetView.playEmojiAnimation()
         delay(10, closure: { [weak self] in
             self?.delegate?.actionHandler(event: .dismiss(action: .timeout))
         })

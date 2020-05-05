@@ -26,10 +26,12 @@ class DialogWidgetView: UIView {
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
-
-    var lottieView: LOTAnimationView = {
-        let image = LOTAnimationView(name: "emoji-stunning", bundle: Bundle(for: DialogWidgetView.self))
-        image.loopAnimation = true
+    
+    private let lottieAnimationName: String
+    
+    private lazy var lottieView: AnimationView = {
+        let image = AnimationView(name: self.lottieAnimationName, bundle: Bundle(for: DialogWidgetView.self))
+        image.loopMode = .loop
         image.translatesAutoresizingMaskIntoConstraints = false
         return image
     }()
@@ -54,7 +56,8 @@ class DialogWidgetView: UIView {
         return button
     }()
 
-    init() {
+    init(lottieAnimationName: String) {
+        self.lottieAnimationName = lottieAnimationName
         super.init(frame: .zero)
         configureLayout()
     }
@@ -62,6 +65,10 @@ class DialogWidgetView: UIView {
     required init?(coder aDecoder: NSCoder) {
         assertionFailure("init(coder:) has not been implemented")
         return nil
+    }
+    
+    func playEmojiAnimation() {
+        self.lottieView.play()
     }
 
     private func configureLayout() {
