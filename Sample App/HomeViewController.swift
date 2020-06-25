@@ -94,6 +94,17 @@ class HomeViewController: UIViewController {
         return button
     }()
     
+    private let createEnterChatRoomModule: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle("Create / Join Chat Rooms", for: .normal)
+        button.backgroundColor = .lightGray
+        button.contentHorizontalAlignment = .left
+        button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
+        button.addTarget(self, action: #selector(createEnterChatRoomButtonSelected ), for: .touchUpInside)
+        return button
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -119,6 +130,7 @@ class HomeViewController: UIViewController {
         stackView.addArrangedSubview(chatModuleButton)
         stackView.addArrangedSubview(widgetModuleButton)
         stackView.addArrangedSubview(widgetChatSpoilerPreventionModule)
+        stackView.addArrangedSubview(createEnterChatRoomModule)
         
         // Loads previous client id and program id from UserDefaults
         clientIDTextField.text = Defaults.activeClientID
@@ -190,6 +202,24 @@ class HomeViewController: UIViewController {
         navigationController?.pushViewController(chatModule, animated: true)
     }
     
+    @objc func createEnterChatRoomButtonSelected() {
+        guard let clientID = Defaults.activeClientID, !clientID.isEmpty else {
+            presentInvalidClientIDAlert()
+            return
+        }
+        
+        guard let programID = Defaults.activeProgramID, !programID.isEmpty else {
+            presentInvalidProgramIDAlert()
+            return
+        }
+        
+        let createEnterChatRoomUseCase = CreateEnterChatRoomUseCase(clientID: clientID,
+                                                                            programID: programID)
+        
+        createEnterChatRoomUseCase.modalPresentationStyle = .fullScreen
+        self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)
+    }
+    
     private func presentInvalidClientIDAlert() {
         let alert = UIAlertController(
             title: "Invalid Client ID",
@@ -210,5 +240,49 @@ class HomeViewController: UIViewController {
         present(alert, animated: true, completion: nil)
     }
 
+}
+
+extension UIView {
+    var safeTopAnchor: NSLayoutYAxisAnchor {
+        if #available(iOS 11.0, *) {
+            return self.safeAreaLayoutGuide.topAnchor
+        }
+        return topAnchor
+    }
+
+    var safeLeftAnchor: NSLayoutXAxisAnchor {
+        if #available(iOS 11.0, *) {
+            return self.safeAreaLayoutGuide.leftAnchor
+        }
+        return leftAnchor
+    }
+
+    var safeRightAnchor: NSLayoutXAxisAnchor {
+        if #available(iOS 11.0, *) {
+            return self.safeAreaLayoutGuide.rightAnchor
+        }
+        return rightAnchor
+    }
+
+    var safeBottomAnchor: NSLayoutYAxisAnchor {
+        if #available(iOS 11.0, *) {
+            return self.safeAreaLayoutGuide.bottomAnchor
+        }
+        return bottomAnchor
+    }
+
+    var safeTrailingAnchor: NSLayoutXAxisAnchor {
+        if #available(iOS 11.0, *) {
+            return self.safeAreaLayoutGuide.trailingAnchor
+        }
+        return trailingAnchor
+    }
+
+    var safeLeadingAnchor: NSLayoutXAxisAnchor {
+        if #available(iOS 11.0, *) {
+            return self.safeAreaLayoutGuide.leadingAnchor
+        }
+        return leadingAnchor
+    }
 }
 

@@ -29,25 +29,21 @@ protocol UserAccessTokenGenerator {
 }
 
 class APIAccessTokenGenerator: UserAccessTokenGenerator {
-    private let applicationConfigVendor: ApplicationConfigVendor
+    private let livelikeRestAPIService: LiveLikeRestAPIServicable
 
-    init(applicationConfigVendor: ApplicationConfigVendor) {
-        self.applicationConfigVendor = applicationConfigVendor
+    init(livelikeRestAPIService: LiveLikeRestAPIServicable) {
+        self.livelikeRestAPIService = livelikeRestAPIService
     }
 
     func generate() -> Promise<AccessToken> {
         return firstly {
-            applicationConfigVendor.whenApplicationConfig
+            livelikeRestAPIService.whenApplicationConfig
         }.then { appConfig in
             LiveLikeAPI.requestAccessTokenResource(url: appConfig.profileUrl)
         }.then { accessTokenResource in
             Promise(value: AccessToken(fromString: accessTokenResource.accessToken))
         }
     }
-}
-
-protocol StickerPackRetriever {
-    func getStickerPack(programID: String) -> Promise<StickerPackResponse>?
 }
 
 struct LiveLikeAPI {

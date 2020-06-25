@@ -20,12 +20,29 @@ class QuizWidgetViewController: WidgetController {
     var dismissSwipeableView: UIView {
         return self.view
     }
-    var height: CGFloat {
-        return coreWidgetView.bounds.height + 32
-    }
     var widgetTitle: String?
     var options: Set<WidgetOption>?
     var customData: String?
+    var userDidInteract: Bool = false
+    var previousState: WidgetState?
+    var currentState: WidgetState = .ready {
+        willSet {
+            previousState = self.currentState
+        }
+        didSet {
+            delegate?.widgetDidEnterState(widget: self, state: currentState)
+            switch currentState {
+            case .ready:
+                break
+            case .interacting:
+                enterInteractingState()
+            case .results:
+                enterResultsState()
+            case .finished:
+                enterFinishedState()
+            }
+        }
+    }
 
     // MARK: - Private Stored Properties
 
@@ -124,6 +141,7 @@ class QuizWidgetViewController: WidgetController {
         
         self.quizWidget.didSelectChoice = { [weak self] in
             guard let self = self else { return }
+            self.userDidInteract = true
             self.myQuizSelection = $0
             let now = Date()
             if self.firstTapTime == nil {
@@ -151,6 +169,7 @@ extension QuizWidgetViewController {
         super.viewDidLoad()
         view.addSubview(quizWidget)
         quizWidget.constraintsFill(to: view)
+        quizWidget.isUserInteractionEnabled = false
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -162,20 +181,34 @@ extension QuizWidgetViewController {
 // MARK: - WidgetViewModel
 
 extension QuizWidgetViewController {
-    var coreWidgetView: CoreWidgetView {
-        return quizWidget.coreWidgetView
-    }
-
-    func start() {
-        // begin timer
-        quizWidget.beginTimer { [weak self] in
+    
+    func moveToNextState() {
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.timerCompleted()
+            switch self.currentState {
+            case .ready:
+                self.currentState = .interacting
+            case .interacting:
+                self.currentState = .results
+            case .results:
+                self.currentState = .finished
+            case .finished:
+                break
+            }
         }
-        delegate?.widgetInteractionDidBegin(widget: self)
-        timeDisplayed = Date()
-        eventRecorder.record(.widgetDisplayed(kind: kind.analyticsName,
-                                              widgetId: id))
+    }
+    
+    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) {
+        quizWidget.showCloseButton {
+            completion(self)
+        }
+    }
+    
+    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
+        quizWidget.beginTimer(seconds: seconds) { [weak self] in
+            guard let self = self else { return }
+            completion(self)
+        }
     }
 
     func willDismiss(dismissAction: DismissAction) {
@@ -192,6 +225,7 @@ extension QuizWidgetViewController {
             }
             properties.interactableState = interactableState
             eventRecorder.record(.widgetUserDismissed(properties: properties))
+            currentState = .finished
         }
     }
 }
@@ -199,41 +233,57 @@ extension QuizWidgetViewController {
 // MARK: - Private APIs
 
 private extension QuizWidgetViewController {
-    func timerCompleted() {
+    
+    // MARK: Handle States
+    
+    func enterInteractingState() {
+        quizWidget.isUserInteractionEnabled = true
+        timeDisplayed = Date()
+        eventRecorder.record(.widgetDisplayed(kind: kind.analyticsName,
+                                              widgetId: id))
+        self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
+    }
+    
+    func enterResultsState() {
         quizResultsClient.subscribe()
         quizWidget.lockSelection()
         interactableState = .closedToInteraction
-
-        if let myQuizSelection = self.myQuizSelection {
-            firstly {
-                self.quizVoteClient.vote(url: myQuizSelection.answerUrl)
-            }.then { _ in
-                self.quizWidget.revealAnswer(myOptionId: myQuizSelection.optionId)
-                if let firstTapTime = self.firstTapTime, let lastTapTime = self.lastTapTime {
-                    let properties = WidgetInteractedProperties(
-                        widgetId: self.id,
-                        widgetKind: self.kind.analyticsName,
-                        firstTapTime: firstTapTime,
-                        lastTapTime: lastTapTime,
-                        numberOfTaps: self.tapCount,
-                        interactionTimeInterval: self.interactionTimeInterval,
-                        widgetViewModel: self
-                    )
-                    self.delegate?.widgetInteractionDidComplete(properties: properties)
+        
+        guard let myQuizSelection = self.myQuizSelection else {
+            self.delegate?.widgetStateCanComplete(widget: self, state: .results)
+            return
+        }
+        
+        self.quizVoteClient.vote(url: myQuizSelection.answerUrl) { [weak self] result in
+            guard let self = self else { return }
+            self.quizWidget.revealAnswer(myOptionId: myQuizSelection.optionId) {
+                switch result {
+                case .success:
+                    log.debug("Successfully submitted answer.")
+                case .failure(let error):
+                    log.error("Failed to submit answer: \(error.localizedDescription)")
                 }
-                log.debug("Successfully submitted answer.")
-            }.catch { error in
-                log.error("Failed to submit answer: \(error.localizedDescription)")
+                self.delegate?.widgetStateCanComplete(widget: self, state: .results)
             }
         }
-
-        startDismissTimer()
     }
-
-    func startDismissTimer() {
-        quizWidget.beginCloseTimer(duration: additionalTimeAfterAnswerReveal) { [weak self] dismissAction in
-            guard let self = self else { return }
-            self.delegate?.actionHandler(event: .dismiss(action: dismissAction))
-        }
+    
+    func enterFinishedState() {
+        quizWidget.stopAnswerRevealAnimation()
+        self.delegate?.widgetStateCanComplete(widget: self, state: .finished)
+    }
+    
+    func createWidgetInteractedProperties() -> WidgetInteractedProperties {
+        return WidgetInteractedProperties(
+            widgetId: self.id,
+            widgetKind: self.kind.analyticsName,
+            firstTapTime: self.firstTapTime,
+            lastTapTime: self.lastTapTime,
+            numberOfTaps: self.tapCount,
+            interactionTimeInterval: self.interactionTimeInterval,
+            widgetViewModel: self,
+            previousState: previousState ?? .interacting,
+            currentState: currentState
+        )
     }
 }

@@ -11,6 +11,11 @@ struct ChatRoomResource: Decodable {
     var id: String
     var channels: Channels
     var uploadUrl: URL
+    var title: String?
+    var reportMessageUrl: URL
+    var stickerPacksUrl: URL
+    var reactionPacksUrl: URL
+    var membershipsUrl: URL
 
     struct Channels: Decodable {
         var chat: Channel
@@ -21,4 +26,10 @@ struct ChatRoomResource: Decodable {
     struct Channel: Decodable {
         var pubnub: String?
     }
+}
+
+/// Used as a return object when calling `getChatRoomInfo()`
+public struct ChatRoomInfo {
+    public let id: String
+    public let title: String?
 }

@@ -32,6 +32,26 @@ class PollWidgetViewController: WidgetController {
     var correctOptions: Set<WidgetOption>?
     var options: Set<WidgetOption>?
     var customData: String?
+    var userDidInteract: Bool = false
+    var previousState: WidgetState?
+    var currentState: WidgetState = .ready {
+        willSet {
+            previousState = self.currentState
+        }
+        didSet {
+            self.delegate?.widgetDidEnterState(widget: self, state: currentState)
+            switch currentState {
+            case .ready:
+                break
+            case .interacting:
+                self.enterInteractingState()
+            case .results:
+                self.enterResultsState()
+            case .finished:
+                self.enterFinishedState()
+            }
+        }
+    }
 
     // MARK: Private Properties
 
@@ -41,7 +61,7 @@ class PollWidgetViewController: WidgetController {
     private var updateChannel: String
     private var widgetVotePromise: Promise<WidgetVote>?
     private let debouncer = Debouncer<PollSelection>(delay: 0.5)
-
+    
     // MARK: Analytics
 
     private let eventRecorder: EventRecorder
@@ -127,11 +147,13 @@ class PollWidgetViewController: WidgetController {
         super.init(nibName: nil, bundle: nil)
 
         configureVoteDebouncer()
+        widgetView.setOptionsLocked(true)
+        pollResultsClient.subscribeToUpdateChannel(self.updateChannel)
 
         widgetView.onSelectionAction = { [weak self] selection in
             guard let self = self else { return }
+            self.userDidInteract = true
             self.debouncer.call(value: selection)
-            self.pollResultsClient.subscribeToUpdateChannel(self.updateChannel)
             let now = Date()
             if self.firstTapTime == nil {
                 self.firstTapTime = now
@@ -143,16 +165,15 @@ class PollWidgetViewController: WidgetController {
         self.pollResultsClient.didReceivePollResults = { [weak self] in
             self?.widgetView.updateResults(results: $0)
         }
-
-        configure()
     }
 
     required init?(coder aDecoder: NSCoder) {
         assertionFailure("init(coder:) has not been implemented")
         return nil
     }
-
-    private func configure() {
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
         view.addSubview(widgetView)
         widgetView.constraintsFill(to: view)
     }
@@ -164,36 +185,65 @@ class PollWidgetViewController: WidgetController {
         pollResultsClient.unsubscribeFromUpdateChannel(updateChannel)
     }
 
-    func start() {
-        widgetView.beginTimer { [weak self] in
+    func moveToNextState() {
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.widgetView.lockSelections()
-            self.interactableState = .closedToInteraction
-            if let firstTapTime = self.firstTapTime, let lastTapTime = self.lastTapTime {
-                // Analytics
-                let properties = WidgetInteractedProperties(
-                    widgetId: self.id,
-                    widgetKind: self.kind.analyticsName,
-                    firstTapTime: firstTapTime,
-                    lastTapTime: lastTapTime,
-                    numberOfTaps: self.tapCount,
-                    interactionTimeInterval: self.interactionTimeInterval,
-                    widgetViewModel: self
-                )
-                self.delegate?.widgetInteractionDidComplete(properties: properties)
-            }
-            self.widgetView.revealResults()
-            self.pollResultsClient.subscribeToUpdateChannel(self.updateChannel)
-            self.widgetView.beginCloseTimer(duration: self.additionalTimeToViewResults) { [weak self] dismissAction in
-                guard let self = self else { return }
-                self.delegate?.actionHandler(event: .dismiss(action: dismissAction))
+            switch self.currentState {
+            case .ready:
+                self.currentState = .interacting
+            case .interacting:
+                self.currentState = .results
+            case .results:
+                self.currentState = .finished
+            case .finished:
+                break
             }
         }
-        delegate?.widgetInteractionDidBegin(widget: self)
+    }
+    
+    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) {
+        self.widgetView.showCloseButton { [weak self] in
+            guard let self = self else { return }
+            completion(self)
+        }
+    }
+    
+    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
+        self.widgetView.beginTimer(seconds: seconds) { [weak self] in
+            guard let self = self else { return }
+            completion(self)
+        }
+    }
 
-        timeDisplayed = Date()
-        eventRecorder.record(.widgetDisplayed(kind: kind.analyticsName,
-                                              widgetId: id))
+    private func enterInteractingState() {
+        self.widgetView.setOptionsLocked(false)
+        self.widgetView.revealResults()
+        self.interactableState = .closedToInteraction
+        if let firstTapTime = self.firstTapTime, let lastTapTime = self.lastTapTime {
+            // Analytics
+            let properties = WidgetInteractedProperties(
+                widgetId: self.id,
+                widgetKind: self.kind.analyticsName,
+                firstTapTime: firstTapTime,
+                lastTapTime: lastTapTime,
+                numberOfTaps: self.tapCount,
+                interactionTimeInterval: self.interactionTimeInterval,
+                widgetViewModel: self,
+                previousState: .interacting,
+                currentState: .finished
+            )
+        }
+        
+        self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
+    }
+    
+    private func enterResultsState() {
+        self.widgetView.setOptionsLocked(true)
+        self.delegate?.widgetStateCanComplete(widget: self, state: .results)
+    }
+    
+    private func enterFinishedState() {
+        self.delegate?.widgetStateCanComplete(widget: self, state: .finished)
     }
 
     func willDismiss(dismissAction: DismissAction) {

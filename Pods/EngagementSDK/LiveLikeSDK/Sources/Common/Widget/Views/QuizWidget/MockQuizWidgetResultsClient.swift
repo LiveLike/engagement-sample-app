@@ -11,6 +11,10 @@ class MockQuizWidgetResultsClient: QuizWidgetResultsClient, QuizWidgetVoteClient
     func vote(url: URL) -> Promise<QuizVote> {
         return Promise()
     }
+    
+    func vote(url: URL, completion: @escaping (Result<QuizVote, Error>) -> Void) {
+        completion(.success(QuizVote(id: "", url: URL(string: "")!, choiceId: "", isCorrect: true)))
+    }
 
     var didReceiveResults: ((QuizResults) -> Void)?
 

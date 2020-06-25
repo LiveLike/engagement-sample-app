@@ -51,7 +51,7 @@ extension ChatUser {
         private let idString: String
 
         init(idString: String) {
-            self.idString = idString
+            self.idString = idString.lowercased()
         }
 
         var asString: String {

@@ -23,6 +23,8 @@ class VerticalChoiceWidget: ChoiceWidgetView {
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
+    
+    private var lottieView: AnimationView = AnimationView()
 
     var stackView: UIStackView = {
         let stackView = UIStackView.verticalStackView()
@@ -40,15 +42,14 @@ class VerticalChoiceWidget: ChoiceWidgetView {
     }
 
     private func configure() {
+        addSubview(coreWidgetView)
+        coreWidgetView.constraintsFill(to: self)
+        
         stackViewContainer.addSubview(stackView)
         stackView.constraintsFill(to: stackViewContainer)
 
-        coreWidgetView.baseView.clipsToBounds = true
-
         coreWidgetView.headerView = titleView
         coreWidgetView.contentView = stackViewContainer
-
-        addSubview(coreWidgetView)
     }
 
     func populateStackView(options: [ChoiceWidgetOptionButton]) {
@@ -62,8 +63,8 @@ class VerticalChoiceWidget: ChoiceWidgetView {
         }
     }
 
-    func playOverlayAnimation(animationFilepath: String) {
-        let lottieView = AnimationView(filePath: animationFilepath)
+    func playOverlayAnimation(animationFilepath: String, completion:(() -> Void)?) {
+        lottieView = AnimationView(filePath: animationFilepath)
         lottieView.isUserInteractionEnabled = false
         lottieView.contentMode = .scaleAspectFit
         lottieView.sizeToFit()
@@ -74,11 +75,16 @@ class VerticalChoiceWidget: ChoiceWidgetView {
         lottieView.play { finished in
             if finished {
                 UIView.animate(withDuration: 0.33, animations: {
-                    lottieView.alpha = 0.0
+                    self.lottieView.alpha = 0.0
                 }, completion: { _ in
-                    lottieView.removeFromSuperview()
+                    self.lottieView.removeFromSuperview()
+                    completion?()
                 })
             }
         }
+    }
+    
+    func stopOverlayAnimation() {
+        lottieView.stop()
     }
 }

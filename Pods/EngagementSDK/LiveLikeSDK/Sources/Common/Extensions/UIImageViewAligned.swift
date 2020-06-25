@@ -45,8 +45,11 @@ class UIImageViewAligned: GIFImageView {
 
     override var image: UIImage? {
         set {
-            realImageView?.image = newValue
-            setNeedsLayout()
+            runOnMainThread { [weak self] in
+                guard let self = self else { return }
+                self.realImageView?.image = newValue
+                self.setNeedsLayout()
+            }
         }
         get {
             return realImageView?.image
@@ -55,8 +58,11 @@ class UIImageViewAligned: GIFImageView {
 
     override var highlightedImage: UIImage? {
         set {
-            realImageView?.highlightedImage = newValue
-            setNeedsLayout()
+            runOnMainThread { [weak self] in
+                guard let self = self else { return }
+                self.realImageView?.highlightedImage = newValue
+                self.setNeedsLayout()
+            }
         }
         get {
             return realImageView?.highlightedImage
@@ -253,5 +259,15 @@ class UIImageViewAligned: GIFImageView {
 
     private func getInspectableProperty(_ alignment: UIImageViewAlignmentMask) -> Bool {
         return self.alignment.contains(alignment)
+    }
+    
+    private func runOnMainThread(completion: @escaping () -> Void ) {
+        if Thread.isMainThread {
+            completion()
+        } else {
+            DispatchQueue.main.async {
+                completion()
+            }
+        }
     }
 }

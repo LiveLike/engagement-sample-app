@@ -15,4 +15,5 @@ enum NetworkClientError: Error {
     case decodingError(Error)
     case forbidden
     case unauthorized
+    case badDeleteResponseType
 }

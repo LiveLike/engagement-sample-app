@@ -13,15 +13,7 @@ class AlertWidgetViewController: WidgetController {
     var id: String
     var kind: WidgetKind
     var interactionTimeInterval: TimeInterval?
-
     weak var delegate: WidgetEvents?
-    var coreWidgetView: CoreWidgetView {
-        return alertWidget.coreWidgetView
-    }
-    var height: CGFloat {
-        return coreWidgetView.bounds.height + 32
-    }
-
     var dismissSwipeableView: UIView {
         return self.view
     }
@@ -30,11 +22,33 @@ class AlertWidgetViewController: WidgetController {
     var correctOptions: Set<WidgetOption>?
     var options: Set<WidgetOption>?
     var customData: String?
+    var userDidInteract: Bool = false
+    var previousState: WidgetState?
+    var currentState: WidgetState = .ready {
+        willSet {
+            previousState = self.currentState
+        }
+        didSet {
+            self.delegate?.widgetDidEnterState(widget: self, state: currentState)
+            switch currentState {
+            case .ready:
+                break
+            case .interacting:
+                enterInteractingState()
+            case .results:
+                break
+            case .finished:
+                enterFinishedState()
+            }
+        }
+    }
 
     // MARK: Private Properties
 
     private lazy var alertWidget: AlertWidget = {
-        AlertWidget(type: self.type)
+        let widget = AlertWidget(type: self.type)
+        widget.translatesAutoresizingMaskIntoConstraints = false
+        return widget
     }()
 
     private lazy var type: AlertWidgetViewType = {
@@ -73,27 +87,42 @@ class AlertWidgetViewController: WidgetController {
         return nil
     }
 
-    override func loadView() {
-        super.loadView()
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
         setupCommonView()
         setupView(for: type)
         view.addSubview(alertWidget)
         alertWidget.constraintsFill(to: view)
-    }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
         addGestures(to: alertWidget.coreWidgetView)
+        alertWidget.isUserInteractionEnabled = false
     }
 
-    func start() {
-        delay(widgetData.timeout.timeInterval, closure: { [weak self] in
-            self?.delegate?.actionHandler(event: .dismiss(action: .timeout))
-        })
-        eventRecorder.record(.widgetDisplayed(kind: kind.stringValue, widgetId: widgetData.id))
+    func moveToNextState() {
+        DispatchQueue.main.async { [weak self] in
+        guard let self = self else { return }
+            switch self.currentState {
+            case .ready:
+                self.currentState = .interacting
+            case .interacting:
+                self.currentState = .finished
+            case .results:
+                break
+            case .finished:
+                break
+            }
+        }
     }
-
+    
+    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) { }
+    
+    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
+        delay(widgetData.timeout.timeInterval) { [weak self] in
+            guard let self = self else { return }
+            completion(self)
+        }
+    }
+    
     func willDismiss(dismissAction: DismissAction) {
         if dismissAction.userDismissed {
             let properties = WidgetDismissedProperties(widgetId: widgetData.id,
@@ -102,6 +131,7 @@ class AlertWidgetViewController: WidgetController {
                                                        numberOfTaps: 0,
                                                        dismissSecondsSinceStart: Date().timeIntervalSince(timeDisplayed))
             eventRecorder.record(.widgetUserDismissed(properties: properties))
+            currentState = .finished
         }
     }
 
@@ -131,8 +161,7 @@ class AlertWidgetViewController: WidgetController {
 
     private func setupImageView() {
         guard let url = widgetData.imageUrl else { return }
-
-        alertWidget.contentView.imageView.setImage(key: url.absoluteString)
+        alertWidget.contentView.imageView.setImage(url: url)
     }
 
     private func setupTextView() {
@@ -162,9 +191,21 @@ class AlertWidgetViewController: WidgetController {
             alertWidget.coreWidgetView.footerView = nil
         }
     }
+    
+    // MARK: Handle States
+    private func enterInteractingState() {
+        alertWidget.isUserInteractionEnabled = true
+        self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
+        eventRecorder.record(.widgetDisplayed(kind: kind.stringValue, widgetId: widgetData.id))
+    }
+    
+    private func enterFinishedState() {
+        alertWidget.isUserInteractionEnabled = false
+        self.delegate?.widgetStateCanComplete(widget: self, state: .finished)
+    }
 }
 
-// MARK: Gestures
+// MARK: - Gestures
 
 extension AlertWidgetViewController {
     private func addGestures(to view: UIView) {

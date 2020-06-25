@@ -20,6 +20,7 @@ protocol InternalChatSessionDelegate: ChatSessionDelegate {
 
 /// A connection to a chat room
 public protocol ChatSession: AnyObject {
+    var title: String? { get }
     var roomID: String { get }
     /// Disconnects from client but does not remove list of connected channels.
     func pause()
@@ -48,9 +49,10 @@ public protocol ChatSession: AnyObject {
 protocol InternalChatSessionProtocol: ChatSession {
     var blockList: BlockList { get }
     var eventRecorder: EventRecorder { get }
-    var stickerRepository: StickerRepository { get }
     var reactionsViewModelFactory: ReactionsViewModelFactory { get }
     var isReportingEnabled: Bool { get }
+    var stickerRepository: StickerRepository { get }
+    var recentlyUsedStickers: LimitedArray<Sticker> { get set }
 
     var reactionsVendor: ReactionVendor { get }
     
@@ -66,10 +68,6 @@ protocol InternalChatSessionProtocol: ChatSession {
     ///   - clientMessage: The message text.
     ///   - completion: callback indicating the message was sent
     func sendMessage(_ clientMessage: ClientMessage) -> Promise<ChatMessageID>
-
-    /// Updates an already posted message
-    @discardableResult
-    func updateMessage(_ clientMessage: ClientMessage, messageID: String) -> Promise<ChatMessageID>
     
     /// Deletes an already posted message
     @discardableResult

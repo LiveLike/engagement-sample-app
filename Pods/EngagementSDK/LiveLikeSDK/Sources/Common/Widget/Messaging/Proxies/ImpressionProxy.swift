@@ -18,17 +18,17 @@ class ImpressionProxy: WidgetProxy {
         self.accessToken = accessToken
     }
 
-    func publish(event: ClientEvent) {
+    func publish(event: WidgetProxyPublishData) {
         var impressionUrl: URL?
 
-        switch event {
+        switch event.clientEvent {
         case let .textPredictionCreated(payload):
             impressionUrl = payload.impressionUrl
-        case let .textPredictionFollowUp(payload, _):
+        case let .textPredictionFollowUp(payload):
             impressionUrl = payload.impressionUrl
         case let .imagePredictionCreated(payload):
             impressionUrl = payload.impressionUrl
-        case let .imagePredictionFollowUp(payload, _):
+        case let .imagePredictionFollowUp(payload):
             impressionUrl = payload.impressionUrl
         case let .imagePollCreated(payload):
             impressionUrl = payload.impressionUrl

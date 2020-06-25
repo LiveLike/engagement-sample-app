@@ -16,15 +16,27 @@ class ImageSliderViewController: WidgetController {
     var correctOptions: Set<WidgetOption>?
     var options: Set<WidgetOption>?
     var customData: String?
-    
-    var coreWidgetView: CoreWidgetView {
-        return imageSliderView.coreWidgetView
+    var userDidInteract: Bool = false
+    var previousState: WidgetState?
+    var currentState: WidgetState = .ready {
+        willSet {
+            previousState = self.currentState
+        }
+        didSet {
+            self.delegate?.widgetDidEnterState(widget: self, state: currentState)
+            switch currentState {
+            case .ready:
+                break
+            case .interacting:
+                enterInteractingState()
+            case .results:
+                enterResultsState()
+            case .finished:
+                enterFinishedState()
+            }
+        }
     }
     
-    var height: CGFloat {
-        return coreWidgetView.bounds.height + 32
-    }
-
     var dismissSwipeableView: UIView {
         return self.imageSliderView.titleView
     }
@@ -33,13 +45,13 @@ class ImageSliderViewController: WidgetController {
     private let additionalResultsSeconds: Double = 5
 
     private let imageSliderCreated: ImageSliderCreated
-    private let cache: Cache = Cache.shared
     private let voteClient: ImageSliderVoteClient
     private let theme: Theme
     private let widgetConfig: WidgetConfig
     private var resultsClient: ImageSliderResultsClient
     private var whenVotingLocked = Promise<Float>()
     private var latestAverageMagnitude: Float?
+    private var closeButtonAction: (() -> Void)?
 
     // MARK: Analytics Properties
 
@@ -50,18 +62,11 @@ class ImageSliderViewController: WidgetController {
     private var timeDisplayed = Date()
 
     private lazy var imageSliderView: ImageSliderView = {
-        var images = [UIImage]()
-        for option in self.imageSliderCreated.options {
-            self.cache.get(key: option.imageUrl.absoluteString) { (data: Data?) in
-                guard let data = data else { return }
-                guard let image = UIImage.decode(data) else { return }
-                images.append(image)
-            }
-        }
+        var imageUrls = self.imageSliderCreated.options.map({ $0.imageUrl })
 
         let initialSliderValue = self.imageSliderCreated.initialMagnitude.number ?? 0
         let imageSliderView = ImageSliderView(
-            thumbImages: images,
+            thumbImageUrls: imageUrls,
             initialSliderValue: Float(initialSliderValue),
             timerAnimationFilepath: self.theme.filepathsForWidgetTimerLottieAnimation
         )
@@ -108,16 +113,17 @@ class ImageSliderViewController: WidgetController {
             
             // widget interacted analytics
             if let firstTimeSliderChanged = self.firstTimeSliderChanged, let lastTimeSliderChanged = self.lastTimeSliderChanged {
-                let widgetInteractedProperties = WidgetInteractedProperties(
+                _ = WidgetInteractedProperties(
                     widgetId: self.imageSliderCreated.id,
                     widgetKind: self.kind.analyticsName,
                     firstTapTime: firstTimeSliderChanged,
                     lastTapTime: lastTimeSliderChanged,
                     numberOfTaps: self.sliderChangedCount,
                     interactionTimeInterval: self.interactionTimeInterval,
-                    widgetViewModel: self
+                    widgetViewModel: self,
+                    previousState: .interacting,
+                    currentState: .finished
                 )
-                self.delegate?.widgetInteractionDidComplete(properties: widgetInteractedProperties)
             }
 
             // if user didn't recieve latest average magnitude from server then use their magnitude as average
@@ -128,7 +134,8 @@ class ImageSliderViewController: WidgetController {
             self.playAverageAnimation {
                 self.imageSliderView.showResultsTrack()
                 delay(self.additionalResultsSeconds) { [weak self] in
-                    self?.delegate?.actionHandler(event: .dismiss(action: .timeout))
+                    guard let self = self else { return }
+                    self.delegate?.widgetStateCanComplete(widget: self, state: .results)
                 }
             }
         }.catch {
@@ -144,58 +151,45 @@ class ImageSliderViewController: WidgetController {
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
+        enterReadyState()
         configureView()
     }
-
-    func start() {
-        // widget displayed analytics
-        eventRecorder.record(.widgetDisplayed(kind: kind.analyticsName,
-                                              widgetId: imageSliderCreated.id))
-
-        imageSliderView.timerView.play { finished in
-            if finished {
-                self.imageSliderView.timerView.isHidden = true
-                self.lockSlider()
-
-                if !self.widgetConfig.isAutoDismissEnabled {
-                    // play results early if auto dismiss disabled
-                    self.whenVotingLocked.fulfill(self.latestAverageMagnitude ?? 0.5)
-                } else if self.sliderChangedCount == 0 {
-                    // return early if user didn't change slider
-                    self.delegate?.actionHandler(event: .dismiss(action: .timeout))
-                }
-
-                if self.widgetConfig.isManualDismissButtonEnabled {
-                    self.imageSliderView.closeButton.isHidden = false
-                }
-                
-                // vote
-                let magnitude = self.imageSliderView.sliderView.value
-                log.info("Submitting vote with magnitude: \(magnitude)")
-                
-                firstly {
-                    self.voteClient.vote(url: self.imageSliderCreated.voteUrl, magnitude: magnitude)
-                }.then { _ in
-                    log.info("Successfully submitted image slider vote.")
-                }.catch { _ in
-                    log.error("Failed to submit image slider vote.")
-                }.always { [weak self] in 
-                    // Delay needed to wait for a more accurate result from server
-                    delay(2.0) {
-                        self?.whenVotingLocked.fulfill(magnitude)
-                    }
-                }
+    
+    func moveToNextState() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            switch self.currentState {
+            case .ready:
+                self.currentState = .interacting
+            case .interacting:
+                self.currentState = .results
+            case .results:
+                self.currentState = .finished
+            case .finished:
+                break
             }
         }
-        delegate?.widgetInteractionDidBegin(widget: self)
     }
-
+    
+    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) {
+        self.closeButtonAction = {
+            completion(self)
+        }
+        self.imageSliderView.closeButton.isHidden = false
+    }
+    
+    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
+        imageSliderView.timerView.animationSpeed = CGFloat(imageSliderView.timerView.animation?.duration ?? 0) / CGFloat(seconds)
+        imageSliderView.timerView.play { [weak self] _ in
+            guard let self = self else { return }
+            completion(self)
+        }
+    }
+    
     // MARK: - Private Method
 
     private func configureView() {
-        imageSliderView.timerView.animationSpeed = CGFloat(imageSliderView.timerView.animation?.duration ?? 0) / CGFloat(imageSliderCreated.timeout.timeInterval)
         imageSliderView.avgIndicatorView.animationSpeed = CGFloat(imageSliderView.timerView.animation?.duration ?? 0) / CGFloat(averageAnimationSeconds)
-
         imageSliderView.coreWidgetView.baseView.clipsToBounds = true
         imageSliderView.coreWidgetView.baseView.layer.cornerRadius = theme.widgetCornerRadius
         imageSliderView.bodyView.backgroundColor = theme.widgetBodyColor
@@ -241,10 +235,11 @@ class ImageSliderViewController: WidgetController {
     }
 
     @objc private func closeButtonSelected() {
-        delegate?.actionHandler(event: .dismiss(action: .tapX))
+        closeButtonAction?()
     }
 
     @objc private func imageSliderViewValueChanged() {
+        self.userDidInteract = true
         // update analytics properties
         let now = Date()
         if firstTimeSliderChanged == nil {
@@ -264,6 +259,57 @@ class ImageSliderViewController: WidgetController {
                 completion()
             }
         }
+    }
+    
+    // MARK: Handle States
+    
+    private func enterReadyState() {
+        imageSliderView.isUserInteractionEnabled = false
+        imageSliderView.timerView.isHidden = true
+    }
+    
+    private func enterInteractingState() {
+        imageSliderView.isUserInteractionEnabled = true
+        imageSliderView.timerView.isHidden = false
+        
+        // widget displayed analytics
+        eventRecorder.record(.widgetDisplayed(kind: kind.analyticsName,
+                                              widgetId: imageSliderCreated.id))
+        self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
+    }
+    
+    private func enterResultsState() {
+        let magnitude = self.imageSliderView.sliderView.value
+        log.info("Submitting vote with magnitude: \(magnitude)")
+        self.imageSliderView.timerView.isHidden = true
+        self.lockSlider()
+
+        // can complete results if user did not interact
+        guard self.sliderChangedCount > 0 else {
+            self.delegate?.widgetStateCanComplete(widget: self, state: .results)
+            return
+        }
+        
+        firstly {
+            self.voteClient.vote(url: self.imageSliderCreated.voteUrl, magnitude: magnitude)
+        }.then { _ in
+            log.info("Successfully submitted image slider vote.")
+        }.catch { _ in
+            log.error("Failed to submit image slider vote.")
+        }.always { [weak self] in
+            guard let self = self else { return }
+            
+            // Delay needed to wait for a more accurate result from server
+            delay(2.0) { [weak self] in
+                guard let self = self else { return }
+                let magnitude = self.imageSliderView.sliderView.value
+                self.whenVotingLocked.fulfill(magnitude)
+            }
+        }
+    }
+    
+    private func enterFinishedState() {
+        self.delegate?.widgetStateCanComplete(widget: self, state: .finished)
     }
 }
 

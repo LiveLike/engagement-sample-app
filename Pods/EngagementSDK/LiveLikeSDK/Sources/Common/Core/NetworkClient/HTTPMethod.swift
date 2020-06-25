@@ -11,6 +11,7 @@ enum HttpMethod<Body> {
     case get
     case post(Body)
     case patch(Body)
+    case delete(Body)
 
     var method: String {
         switch self {
@@ -20,6 +21,8 @@ enum HttpMethod<Body> {
             return "POST"
         case .patch:
             return "PATCH"
+        case .delete:
+            return "DELETE"
         }
     }
 }

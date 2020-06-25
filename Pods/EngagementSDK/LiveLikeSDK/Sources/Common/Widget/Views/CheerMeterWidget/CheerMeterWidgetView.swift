@@ -24,19 +24,26 @@ class CheerMeterWidgetView: WidgetView {
     private let rightChoiceCenterConstraints: [NSLayoutConstraint]
     private let versusSeparatorViewCenterXConstraint: NSLayoutConstraint
     private let scoreLabel: UILabel
-    private let scoreTitleLabel: UILabel
     private let tutorialContainer: UIView
     private let tutorialInstructionLabel: UILabel
     private let countdownLabel: UILabel
     private let handImageView: UIImageView
     private let pulseCircleView: CircleShapeView
+    
+    private let leftPulseCircleView: CircleShapeView
+    private let rightPulseCircleView: CircleShapeView
+    
     private let powerBar: CheerMeterPowerBar
 
     private let defaultChoiceTransform: CGAffineTransform = .identity
     private let zoomedChoiceTransform: CGAffineTransform = CGAffineTransform(scaleX: 1.3, y: 1.3)
     private let shrinkedChoiceTransform: CGAffineTransform = CGAffineTransform(scaleX: 0.8, y: 0.8)
 
-    private var choiceImageViewInCenter: UIImageView?
+    var choiceImageViewInCenter: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
 
     private var theme: Theme
     weak var delegate: CheerMeterWidgetViewDelegate?
@@ -58,16 +65,21 @@ class CheerMeterWidgetView: WidgetView {
         rightChoiceCenterConstraints = properties.interactionViews.rightChoiceCenterConstraints
         versusSeparatorViewCenterXConstraint = properties.interactionViews.versusSeparatorViewCenterXConstraint
         scoreLabel = properties.interactionViews.scoreLabel
-        scoreTitleLabel = properties.interactionViews.scoreTitleLabel
         tutorialContainer = properties.tutorialViews.container
         tutorialInstructionLabel = properties.tutorialViews.instructionLabel
         countdownLabel = properties.tutorialViews.countdownLabel
         handImageView = properties.tutorialViews.handImageView
         pulseCircleView = properties.tutorialViews.pulseCircleView
+        
         powerBar = properties.meter
+        
+        leftPulseCircleView = properties.interactionViews.leftPulseCircleView
+        rightPulseCircleView = properties.interactionViews.rightPulseCircleView
 
         super.init(frame: .zero)
+        
         addSubview(coreWidgetView)
+        coreWidgetView.constraintsFill(to: self)
 
         configureSelectionGestures()
     }
@@ -119,10 +131,6 @@ internal extension CheerMeterWidgetView {
     }
 
     func applyTheme(_ theme: Theme) {
-        guard self.theme != theme else {
-            return
-        }
-
         self.theme = theme
 
         coreWidgetView.headerView?.backgroundColor = theme.cheerMeter.titleBackgroundColor
@@ -137,7 +145,6 @@ internal extension CheerMeterWidgetView {
         coreWidgetView.contentView?.backgroundColor = theme.widgetBodyColor
 
         applyText(titleText, to: .title)
-        applyText(scoreTitle, to: .scoreTitle)
         applyText(instructionText, to: .instruction)
 
         countdownLabel.font = theme.cheerMeter.scoreAndCountdownFont
@@ -162,6 +169,20 @@ internal extension CheerMeterWidgetView {
             completion?(finished)
         }
     }
+    
+    func scoreLabelFadeInOut() {
+        firstly {
+            UIView.animate(duration: 0.2) {
+                self.scoreLabel.alpha = 1
+            }
+        }.then { _ in
+            UIView.animate(duration: 0.2) {
+                self.scoreLabel.alpha = 0
+            }
+        }.catch { error in
+            log.error(error)
+        }
+    }
 
     var leftChoiceImage: UIImage? {
         get { return leftChoiceImageView.image }
@@ -176,15 +197,16 @@ internal extension CheerMeterWidgetView {
     func playVersusAnimation(completion: LottieCompletionBlock? = nil) {
         versusSeparatorView.play(completion: completion)
     }
+    
+    func fadeOutVersusAnimation() {
+        UIView.animate(withDuration: 0.1) {
+            self.versusSeparatorView.alpha = 0
+        }
+    }
 
     var score: String {
         get { return scoreLabel.text ?? "" }
         set { scoreLabel.text = newValue }
-    }
-
-    var scoreTitle: String {
-        get { return scoreTitleLabel.text ?? "" }
-        set { applyText(newValue, to: .scoreTitle) }
     }
 
     var leftChoiceScore: Int {
@@ -201,15 +223,23 @@ internal extension CheerMeterWidgetView {
         get { return tutorialInstructionLabel.text ?? "" }
         set { applyText(newValue, to: .instruction) }
     }
-
+    
+    func setLeftCircleFeedbackProperties(fillColor: UIColor, strokeColor: UIColor) {
+        leftPulseCircleView.fillColor = fillColor.cgColor
+        leftPulseCircleView.strokeColor = strokeColor.cgColor
+    }
+    
+    func setRightCircleFeedbackProperties(fillColor: UIColor, strokeColor: UIColor) {
+        rightPulseCircleView.fillColor = fillColor.cgColor
+        rightPulseCircleView.strokeColor = strokeColor.cgColor
+    }
+    
     func setCircleFeedbackProperties(fillColor: UIColor, strokeColor: UIColor) {
         pulseCircleView.fillColor = fillColor.cgColor
         pulseCircleView.strokeColor = strokeColor.cgColor
     }
 
     func showScores() {
-        scoreLabel.isHidden = false
-        scoreTitleLabel.isHidden = false
         powerBar.shouldUpdateWidths = true
     }
 }
@@ -228,8 +258,7 @@ enum CheerMeterWidgetViewButtons {
 extension CheerMeterWidgetView {
     func playTapGameOverAnimation(completion: @escaping () -> Void) {
         UIView.animate(withDuration: 0.2, animations: {
-            self.coreWidgetView.alpha = 0.2
-            self.choiceImageViewInCenter?.alpha = 0
+            self.choiceImageViewInCenter.alpha = 0
         }, completion: { complete in
             if complete {
                 completion()
@@ -255,9 +284,14 @@ extension CheerMeterWidgetView {
                                        completion: completion)
     }
 
-    func playScoreAnimation() {
-        pulseCircleView.pulse(duration: 0.2, sizeMultiplier: 1.3)
-        playCenterImageViewRotationFeedbackAnimation()
+    func playLeftScoreAnimation() {
+        leftPulseCircleView.pulse(duration: 0.2, sizeMultiplier: 1.3)
+        playImageViewRotationFeedbackAnimation(imageView: leftChoiceImageView)
+    }
+    
+    func playRightScoreAnimation() {
+        rightPulseCircleView.pulse(duration: 0.2, sizeMultiplier: 1.3)
+        playImageViewRotationFeedbackAnimation(imageView: rightChoiceImageView)
     }
 
     func playTutorialAnimation(duration: TimeInterval, completion: @escaping () -> Void) {
@@ -297,7 +331,7 @@ extension CheerMeterWidgetView {
             }
         }.then { (_) -> Promise<Bool> in
             UIView.animate(duration: 0.3, delay: 0.1, options: []) {
-                self.choiceImageViewInCenter?.transform = self.defaultChoiceTransform
+                self.choiceImageViewInCenter.transform = self.defaultChoiceTransform
             }
         }.then { _ in
             completion()
@@ -312,6 +346,13 @@ extension CheerMeterWidgetView {
 
     func flashRightPowerBar() {
         powerBar.flashRight()
+    }
+    
+    func animateFinishedState() {
+        UIView.animate(withDuration: 0.2, animations: {
+            self.coreWidgetView.alpha = 1.0
+            self.choiceImageViewInCenter.alpha = 1.0
+        })
     }
 }
 
@@ -358,21 +399,22 @@ private extension CheerMeterWidgetView {
             })
         })
     }
-
-    func playCenterImageViewRotationFeedbackAnimation() {
-        guard let choiceImageViewInCenter = choiceImageViewInCenter else { return }
-        choiceImageViewInCenter.layer.removeAllAnimations()
-        choiceImageViewInCenter.transform = .identity
-        UIView.animate(withDuration: 0.1,
-                       delay: 0.0,
-                       options: [.autoreverse, .allowUserInteraction, .curveLinear],
-                       animations: {
-                           choiceImageViewInCenter.transform = CGAffineTransform(rotationAngle: degreesToRadian(30))
-                       }, completion: { finished in
-                           if finished {
-                               choiceImageViewInCenter.transform = .identity
-                           }
-        })
+    
+    func playImageViewRotationFeedbackAnimation(imageView: UIImageView) {
+        imageView.layer.removeAllAnimations()
+        imageView.transform = .identity
+        UIView.animate(
+            withDuration: 0.1,
+            delay: 0.0,
+            options: [.autoreverse, .allowUserInteraction, .curveLinear],
+            animations: {
+                imageView.transform = CGAffineTransform(rotationAngle: degreesToRadian(30))
+            }, completion: { finished in
+                if finished {
+                    imageView.transform = .identity
+                }
+            }
+        )
     }
 }
 
@@ -385,18 +427,17 @@ func degreesToRadian(_ degrees: CGFloat) -> CGFloat {
 private extension CheerMeterWidgetView {
     enum Label {
         case title
-        case scoreTitle
         case instruction
 
         var alignment: NSTextAlignment {
             switch self {
-            case .title, .scoreTitle, .instruction: return .natural
+            case .title, .instruction: return .natural
             }
         }
 
         var category: Theme.TextCategory {
             switch self {
-            case .title, .scoreTitle: return .secondary
+            case .title: return .secondary
             case .instruction: return .tertiary
             }
         }
@@ -405,7 +446,6 @@ private extension CheerMeterWidgetView {
     func UILabel(for label: Label) -> UILabel {
         switch label {
         case .title: return titleLabel
-        case .scoreTitle: return scoreTitleLabel
         case .instruction: return tutorialInstructionLabel
         }
     }
@@ -443,9 +483,6 @@ private func constructViews(timerLottieAnimationFilepath: String) -> Constructed
     coreWidgetView.headerView = headerViews.container
     coreWidgetView.contentView = body
 
-    headerViews.container.heightAnchor.constraint(greaterThanOrEqualToConstant: 36).isActive = true
-    coreWidgetView.heightAnchor.constraint(greaterThanOrEqualToConstant: 176.0).isActive = true
-
     return ConstructedProperties(coreWidgetView: coreWidgetView,
                                  headerViews: headerViews,
                                  meter: meter,
@@ -473,6 +510,7 @@ private func constructHeader(timerLottieAnimationFilepath: String) -> HeaderView
     let timerView = constraintBased {
         AnimationView(filePath: timerLottieAnimationFilepath)
     }
+    timerView.isHidden = true
 
     let container = constraintBased { UIView(frame: .zero) }
     container.addSubview(titleLabel)
@@ -517,9 +555,6 @@ private func constructBody() -> BodyViews {
     let interactionPanel = constructInteractionViews()
     let tutorialViews = constructTutorialView()
 
-    interactionPanel.container.addSubview(tutorialViews.container)
-    tutorialViews.container.constraintsFill(to: interactionPanel.container)
-
     meter.heightAnchor.constraint(equalToConstant: 20).isActive = true
     interactionPanel.container.heightAnchor.constraint(equalToConstant: 120).isActive = true
 
@@ -530,7 +565,8 @@ private func constructBody() -> BodyViews {
     bodyStack.alignment = .fill
     bodyStack.distribution = .fill
 
-    let container = UIView(frame: .zero)
+    let container = UIView()
+    container.translatesAutoresizingMaskIntoConstraints = false
     container.backgroundColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.6)
 
     container.addSubview(bodyStack)
@@ -550,7 +586,8 @@ private struct InteractionViews {
     let rightChoiceCenterConstraints: [NSLayoutConstraint]
     let versusSeparatorViewCenterXConstraint: NSLayoutConstraint
     let scoreLabel: UILabel
-    let scoreTitleLabel: UILabel
+    let leftPulseCircleView: CircleShapeView
+    let rightPulseCircleView: CircleShapeView
 }
 
 // swiftlint:disable function_body_length
@@ -567,35 +604,34 @@ private func constructInteractionViews() -> InteractionViews {
         )
     }
     let scoreLabel = constraintBased { UILabel(frame: .zero) }
-    let scoreTitleLabel = constraintBased { UILabel(frame: .zero) }
+    let leftPulseCircleView: CircleShapeView = {
+        let circleView = CircleShapeView()
+        circleView.translatesAutoresizingMaskIntoConstraints = false
+        circleView.alpha = 0
+        return circleView
+    }()
+    
+    let rightPulseCircleView: CircleShapeView = {
+        let circleView = CircleShapeView()
+        circleView.translatesAutoresizingMaskIntoConstraints = false
+        circleView.alpha = 0
+        return circleView
+    }()
 
     container.clipsToBounds = true
-    scoreLabel.isHidden = true
+    scoreLabel.alpha = 0
     scoreLabel.text = "0"
-    scoreTitleLabel.isHidden = true
 
+    container.addSubview(leftPulseCircleView)
+    container.addSubview(rightPulseCircleView)
     container.addSubview(leftChoiceImageView)
     container.addSubview(rightChoiceImageView)
     container.addSubview(versusSeparatorView)
     container.addSubview(scoreLabel)
-    container.addSubview(scoreTitleLabel)
 
     leftChoiceImageView.contentMode = .scaleAspectFit
     rightChoiceImageView.contentMode = .scaleAspectFit
-
-    let zoomed = CGAffineTransform(scaleX: 1.2, y: 1.2)
-    rightChoiceImageView.transform = zoomed
-    let animateImageViews = {
-        leftChoiceImageView.transform = zoomed
-        rightChoiceImageView.transform = .identity
-    }
-
-    UIView.animate(withDuration: 1.0,
-                   delay: 0.0,
-                   options: [.autoreverse, .repeat, .allowUserInteraction],
-                   animations: animateImageViews,
-                   completion: nil)
-
+    
     let versusCenterXConstraint = NSLayoutConstraint(item: versusSeparatorView,
                                                      attribute: .centerX,
                                                      relatedBy: .equal,
@@ -669,12 +705,18 @@ private func constructInteractionViews() -> InteractionViews {
 
         scoreLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 0),
         scoreLabel.heightAnchor.constraint(equalToConstant: 28),
-        scoreLabel.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -8),
-        scoreLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -15),
-
-        scoreTitleLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -15),
-        scoreTitleLabel.bottomAnchor.constraint(equalTo: scoreLabel.topAnchor),
-        scoreTitleLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 0)
+        scoreLabel.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+        scoreLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+        
+        leftPulseCircleView.centerXAnchor.constraint(equalTo: leftChoiceImageView.centerXAnchor),
+        leftPulseCircleView.centerYAnchor.constraint(equalTo: leftChoiceImageView.centerYAnchor),
+        leftPulseCircleView.widthAnchor.constraint(equalTo: container.widthAnchor, multiplier: 0.3),
+        leftPulseCircleView.heightAnchor.constraint(equalTo: leftPulseCircleView.widthAnchor),
+        
+        rightPulseCircleView.centerXAnchor.constraint(equalTo: rightChoiceImageView.centerXAnchor),
+        rightPulseCircleView.centerYAnchor.constraint(equalTo: rightChoiceImageView.centerYAnchor),
+        rightPulseCircleView.widthAnchor.constraint(equalTo: container.widthAnchor, multiplier: 0.3),
+        rightPulseCircleView.heightAnchor.constraint(equalTo: rightPulseCircleView.widthAnchor)
     ]
         + leftChoiceSelectionConstraints
         + rightChoiceSelectionConstraints
@@ -690,7 +732,8 @@ private func constructInteractionViews() -> InteractionViews {
                             rightChoiceCenterConstraints: rightChoiceCenterConstraints,
                             versusSeparatorViewCenterXConstraint: versusCenterXConstraint,
                             scoreLabel: scoreLabel,
-                            scoreTitleLabel: scoreTitleLabel)
+                            leftPulseCircleView: leftPulseCircleView,
+                            rightPulseCircleView: rightPulseCircleView)
 }
 
 private struct TutorialViews {

@@ -11,7 +11,7 @@ protocol MessageReporter {
 
 struct ReportBody: Encodable {
     let channel: String
-    let userId: String
+    let profileId: String
     let nickname: String
     let messageId: String
     let message: String

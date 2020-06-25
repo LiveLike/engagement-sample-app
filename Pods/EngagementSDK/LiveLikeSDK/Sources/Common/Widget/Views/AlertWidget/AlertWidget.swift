@@ -52,10 +52,20 @@ class AlertWidget: WidgetView {
         coreWidgetView.contentView = contentView
         coreWidgetView.footerView = linkView
 
+        let bottomConstraint = coreWidgetView.bottomAnchor.constraint(equalTo: self.bottomAnchor)
+        
+        let heightConstraint = coreWidgetView.heightAnchor.constraint(lessThanOrEqualToConstant: 120)
+        
+        bottomConstraint.priority = .defaultLow
+        heightConstraint.priority = .defaultHigh
+        
         addSubview(coreWidgetView)
-
         NSLayoutConstraint.activate([
-            contentView.heightAnchor.constraint(greaterThanOrEqualToConstant: 90)
+            coreWidgetView.topAnchor.constraint(equalTo: self.topAnchor),
+            coreWidgetView.leadingAnchor.constraint(equalTo: self.leadingAnchor),
+            coreWidgetView.trailingAnchor.constraint(equalTo: self.trailingAnchor),
+            bottomConstraint,
+            heightConstraint
         ])
     }
 

@@ -174,7 +174,9 @@ extension ChatAdapter {
             scrollToMostRecent(force: true, returnMethod: .scroll)
         } else {
             if let lastBottomVisibleRow = lastBottomVisibleRow {
-                tableView?.scrollToRow(at: IndexPath(row: lastBottomVisibleRow, section: 0), at: .bottom, animated: true)
+                tableView?.scrollToRow(at: IndexPath(row: lastBottomVisibleRow, section: 0),
+                                       at: .bottom,
+                                       animated: false)
             }
         }
         lastRowWasVisible = false
@@ -293,7 +295,7 @@ extension ChatAdapter {
         }
         
         // mark messageViewModel as deleted
-        self.messagesDisplayed[indexOfDeletedMessage].isDeleted = true
+        self.messagesDisplayed[indexOfDeletedMessage].redact(theme: self.theme ?? Theme())
         
         // only reload the tableView if the deleted cell is currently visbile in the tableView
         updateTableViewIfCellVisible(indexOfCell: indexOfDeletedMessage)
@@ -330,7 +332,6 @@ extension ChatAdapter {
             timestampFormatter: config.timestampFormatter,
             shouldDisplayDebugVideoTime: config.shouldDisplayDebugVideoTime
         )
-        
         return view
     }
 }

@@ -14,9 +14,9 @@ protocol ProgramDetailVendor {
 class ProgramDetailClient: ProgramDetailVendor {
 
     private let programID: String
-    private let applicationVendor: ApplicationConfigVendor
+    private let applicationVendor: LiveLikeRestAPIServicable
 
-    init(programID: String, applicationVendor: ApplicationConfigVendor) {
+    init(programID: String, applicationVendor: LiveLikeRestAPIServicable) {
         self.programID = programID
         self.applicationVendor = applicationVendor
     }

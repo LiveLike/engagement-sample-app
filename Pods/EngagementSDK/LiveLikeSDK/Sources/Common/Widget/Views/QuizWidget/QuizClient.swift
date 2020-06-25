@@ -30,19 +30,18 @@ class QuizClient: QuizWidgetResultsClient {
 }
 
 extension QuizClient: WidgetProxyInput {
-    func publish(event: ClientEvent) {
-        switch event {
+    func publish(event: WidgetProxyPublishData) {
+        switch event.clientEvent {
         case let .textQuizResults(results), let .imageQuizResults(results):
             DispatchQueue.main.sync { [weak self] in
                 self?.didReceiveResults?(results)
             }
         default:
-            log.error("Received event \(event.description) in QuizWidgetLiveResultsClient when only .textQuizResults were expected.")
+            log.error("Received event \(event.clientEvent.description) in QuizWidgetLiveResultsClient when only .textQuizResults were expected.")
         }
     }
 
-    func discard(event: ClientEvent, reason: DiscardedReason) {}
-
+    func discard(event: WidgetProxyPublishData, reason: DiscardedReason) {}
     func connectionStatusDidChange(_ status: ConnectionStatus) {}
 
     func error(_ error: Error) {
@@ -54,5 +53,16 @@ extension QuizClient: QuizWidgetVoteClient {
     func vote(url: URL) -> Promise<QuizVote> {
         let resource = Resource<QuizVote>(url: url, method: .post(EmptyBody()), accessToken: accessToken.asString)
         return EngagementSDK.networking.load(resource)
+    }
+    
+    func vote(
+        url: URL,
+        completion: @escaping (Result<QuizVote, Error>) -> Void
+    ) {
+        self.vote(url: url).then { quizVote in
+            completion(.success(quizVote))
+        }.catch { error in
+            completion(.failure(error))
+        }
     }
 }

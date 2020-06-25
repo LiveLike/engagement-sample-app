@@ -10,7 +10,6 @@ import Foundation
 /**
  Content Session delegate.
  */
-@objc(LLContentSessionDelegate)
 public protocol ContentSessionDelegate: AnyObject {
     
     /**
@@ -20,7 +19,7 @@ public protocol ContentSessionDelegate: AnyObject {
 
      - returns: Date of the current video playhead position. Nil is considered to be unsynced.
      */
-    @objc optional func playheadTimeSource(_ session: ContentSession) -> Date?
+    func playheadTimeSource(_ session: ContentSession) -> Date?
 
     /**
      Tells the delegate the `ContentSession` status did change
@@ -29,7 +28,7 @@ public protocol ContentSessionDelegate: AnyObject {
         - session: The content session object informing the delegate of this event
         - status: The status of the content session
      */
-    @objc optional func session(_ session: ContentSession, didChangeStatus status: SessionStatus)
+    func session(_ session: ContentSession, didChangeStatus status: SessionStatus)
 
     /**
      Tells the delegate that the content session encountered an error
@@ -38,7 +37,19 @@ public protocol ContentSessionDelegate: AnyObject {
        - session: The content session object informing the delegate of this event
        - error: The error that the content session encountered
      */
-    @objc optional func session(_ session: ContentSession, didReceiveError error: Error)
+    func session(_ session: ContentSession, didReceiveError error: Error)
     
-    @objc optional func chat(session: ContentSession, roomID: String, newMessage message: ChatMessage)
+    func chat(session: ContentSession, roomID: String, newMessage message: ChatMessage)
+    
+    /// Notifies the delegate that a widget was recieved on the `ContentSession`
+    /// - Parameters:
+    ///   - session: The content session object informing the delegate of this event
+    ///   - jsonObject: The JSON object of the widget that became ready
+    func widget(_ session: ContentSession, didBecomeReady jsonObject: Any)
+    
+    /// Notifies the delegate that a widget was recieved on the `ContentSession`
+    /// - Parameters:
+    ///   - session: The content session object informing the delegate of this event
+    ///   - widget: The `WidgetViewModel` of the widget that became ready
+    func widget(_ session: ContentSession, didBecomeReady widget: Widget)
 }

@@ -94,9 +94,9 @@ class StickerPackCell: UICollectionViewCell, UICollectionViewDelegate, UICollect
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: StickerCell.reuseIdentifier, for: indexPath) as? StickerCell else { return UICollectionViewCell() }
 
-        let stickerKey = stickers[indexPath.row].file.absoluteString
+        let stickerURL = stickers[indexPath.row].file
         let accessibilityLabel = "\(stickers[indexPath.row].shortcode) Sticker"
-        cell.imageView.setImage(key: stickerKey)
+        cell.imageView.setImage(url: stickerURL)
         cell.isAccessibilityElement = false
         cell.imageView.isAccessibilityElement = true
         cell.imageView.accessibilityLabel = accessibilityLabel

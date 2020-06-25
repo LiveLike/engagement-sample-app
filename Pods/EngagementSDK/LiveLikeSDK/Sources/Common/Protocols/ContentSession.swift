@@ -11,14 +11,19 @@ import Foundation
 /// Unix epoch. The number of seconds that have elapsed since January 1, 1970 (midnight UTC/GMT), not counting leap seconds
 typealias EpochTime = TimeInterval
 
+/// Represents the different  pagination types that can be passed down to `getPostedWidgets`
+public enum WidgetPagination {
+    case first
+    case next
+}
+
 /**
  A `ContentSession` instance represents a program item, usually related to a live feed.
 
  `ContentSession` instance needs to be set in both `ChatViewController` and `WidgetViewController` to receive chat/widgets.
 
  */
-@objc(LLContentSession)
-public protocol ContentSession {
+public protocol ContentSession: AnyObject {
     /**
      A unique ID to identify the content currently being played.
      */
@@ -50,70 +55,13 @@ public protocol ContentSession {
      Closes the current session.
      */
     func close()
-
-    func install(plugin: Plugin)
     
     /// Sets an image for the user's chat messages in the current chat room
     func updateUserChatRoomImage(url: URL, completion: @escaping () -> Void, failure: @escaping (Error) -> Void)
-
-    // MARK: - Unavailable
     
-    /// A unique ID to identify the chat room that is currently entered
-    @available(iOS, unavailable, message: "Moved to ChatSession")
-    var currentChatRoomID: String? { get }
-
-    /// The set of chat room IDs that are currently joined
-    @available(iOS, unavailable, message: "Moved to ChatSession")
-    var joinedChatRoomIDs: Set<String> { get }
-
-    /// Joins and displays the room on a ChatViewController
-    @available(iOS, unavailable, message: "Moved to ChatSession")
-    func enterChatRoom(roomID: String, completion: @escaping () -> Void, failure: @escaping (Error) -> Void)
-
-    /// Leave a room to stop receiving updates
-    @available(iOS, unavailable, message: "Moved to ChatSession")
-    func leaveChatRoom(roomID: String, completion: @escaping () -> Void, failure: @escaping (Error) -> Void)
-
-    /// Join the room to begin receiving updates
-    @available(iOS, unavailable, message: "Moved to ChatSession")
-    func joinChatRoom(roomID: String, completion: @escaping () -> Void, failure: @escaping (Error) -> Void)
-
-    /// Returns a list of chat messages with and since a given timestamp
-    @available(iOS, unavailable, message: "Moved to ChatSession")
-    func getLatestChatMessages(
-        forRoom roomID: String,
-        startTimetoken timetoken: TimeToken,
-        completion: @escaping ([ChatMessage]) -> Void,
-        failure: @escaping (Error) -> Void
-    )
-
-    @available(iOS, unavailable, message: "Moved to ChatSession")
-    func getLatestChatMessages(
-        forRoom roomID: String,
-        since timestamp: Date,
-        completion: @escaping ([ChatMessage]) -> Void,
-        failure: @escaping (Error) -> Void
-    )
-    
-    /// Provides the count of chat messages
+    /// Retrieves widgets that have already been posted. Each request returns a maximum of 20 posted widgets.
     /// - Parameters:
-    ///   - roomID: The id of the room
-    ///   - timetoken: The timetoken of the earliest message to start counting from
-    ///   - completion: Completion block that returns the count of chat messages
-    ///   - failure: Failure block
-    @available(iOS, unavailable, message: "Moved to Chat Session")
-    func getChatMessageCount(
-        forRoom roomID: String,
-        startTimetoken timetoken: TimeToken,
-        completion: @escaping (Int) -> Void,
-        failure: @escaping (Error) -> Void
-    )
-
-    @available(iOS, unavailable, message: "Moved to Chat Session")
-    func getChatMessageCount(
-        forRoom roomID: String,
-        since timestamp: Date,
-        completion: @escaping (Int) -> Void,
-        failure: @escaping (Error) -> Void
-    )
+    ///   - page: Pass the `.next` page parameter to retrieve the next page of the posted widgets.
+    ///   - completion: Use the `Result` value to parse an array of posted widgets
+    func getPostedWidgets(page: WidgetPagination, completion: @escaping (Result<[Widget]?, Error>) -> Void)
 }

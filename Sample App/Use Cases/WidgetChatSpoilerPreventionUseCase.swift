@@ -159,6 +159,17 @@ extension WidgetChatSpoilerPreventionUseCase: EngagementSDKDelegate {
 
 // MARK: - ContentSessionDelegate
 extension WidgetChatSpoilerPreventionUseCase: ContentSessionDelegate {
+    func chat(session: ContentSession, roomID: String, newMessage message: ChatMessage) {
+        
+    }
+    
+    func widget(_ session: ContentSession, didBecomeReady jsonObject: Any) {
+        
+    }
+    
+    func widget(_ session: ContentSession, didBecomeReady widget: Widget) {
+        
+    }
     
     /// ℹ️ This func is required to turn on Spoiler Prevention functionality
     /// Read more about it here https://docs.livelike.com/docs/ios-spoiler-free-sync

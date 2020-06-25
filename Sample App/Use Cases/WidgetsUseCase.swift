@@ -125,6 +125,16 @@ extension WidgetsUseCase: EngagementSDKDelegate {
 
 // MARK: - ContentSessionDelegate
 extension WidgetsUseCase: ContentSessionDelegate {
+    func playheadTimeSource(_ session: ContentSession) -> Date? {
+        return nil
+    }
+    
+    func chat(session: ContentSession, roomID: String, newMessage message: ChatMessage) {}
+    
+    func widget(_ session: ContentSession, didBecomeReady jsonObject: Any) {}
+    
+    func widget(_ session: ContentSession, didBecomeReady widget: Widget) {}
+    
     func session(_ session: ContentSession, didChangeStatus status: SessionStatus) {
         print("Session status did change \(status)")
     }

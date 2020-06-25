@@ -14,8 +14,7 @@ import Foundation
 /// Once a `UserSession` is created from livelike CMS, that value is
 /// persisted across application launches. Before sending a request to
 /// livelike backend we check the local persistent store and use that value.
-class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, AccessTokenVendor {
-
+class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, AccessTokenVendor, UserProfileVendor {
     // MARK: - Internal Properties
 
     lazy var whenLiveLikeID: Promise<LiveLikeID> = {
@@ -82,6 +81,19 @@ class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, Acc
             return true
         }
     }
+    
+    lazy var whenProfileResource: Promise<ProfileResource> = {
+        let userProfileService = self.userProfileService
+        return firstly {
+            whenAccessToken
+        }.then { accessToken in
+            return userProfileService.getProfile(forAccessToken: accessToken)
+        }.then { [weak self] profileResource in
+            let awardsProfile = AwardsProfile(from: profileResource)
+            self?.awardsListeners.publish { $0.awardsProfile(didUpdate: awardsProfile) }
+            return Promise(value: profileResource)
+        }
+    }()
 
     // MARK: Private Properties
 
@@ -104,21 +116,6 @@ class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, Acc
         self.accessTokenGenerator = accessTokenGenerator
         self.sdkDelegate = sdkDelegate
     }
-
-    // MARK: Private Helper Promises
-
-    private lazy var whenProfileResource: Promise<ProfileResource> = {
-        let userProfileService = self.userProfileService
-        return firstly {
-            whenAccessToken
-        }.then { accessToken in
-            return userProfileService.getProfile(forAccessToken: accessToken)
-        }.then { [weak self] profileResource in
-            let awardsProfile = AwardsProfile(from: profileResource)
-            self?.awardsListeners.publish { $0.awardsProfile(didUpdate: awardsProfile) }
-            return Promise(value: profileResource)
-        }
-    }()
 
     /**
      Test access token is valid by requesting the profile
@@ -155,14 +152,20 @@ extension UserResolver: AwardsProfileVendor {
 
 // MARK: - Network Request
 
-struct ProfileResource: Decodable {
-    let id: String
-    let nickname: String
-
+/// Represents a user's profile
+public struct ProfileResource: Decodable {
+    public let id: String
+    public let nickname: String
+    public let chatRoomMembershipsUrl: URL
+    
     // Gamification Properties
     let points: Int
     let badges: [APIRewardsClient.BadgeResource]
     let currentBadge: APIRewardsClient.BadgeResource?
+}
+
+protocol UserProfileVendor {
+    var whenProfileResource: Promise<ProfileResource> { get }
 }
 
 protocol AccessTokenVendor {
@@ -187,24 +190,21 @@ protocol UserPointsVendor {
     var whenUserPoints: Promise<Int> { get }
 }
 
-protocol UserProfileVendor {
+protocol UserProfileService {
+    func setNickname(_ nickname: String, forAccessToken accessToken: AccessToken) -> Promise<ProfileResource>
     func getProfile(forAccessToken accessToken: AccessToken) -> Promise<ProfileResource>
 }
 
-protocol UserProfileService: UserProfileVendor {
-    func setNickname(_ nickname: String, forAccessToken accessToken: AccessToken) -> Promise<ProfileResource>
-}
-
 class APIUserProfileService: UserProfileService {
-    private let appConfigVendor: ApplicationConfigVendor
+    private let livelikeRestAPIService: LiveLikeRestAPIServicable
 
-    init(appConfigVendor: ApplicationConfigVendor) {
-        self.appConfigVendor = appConfigVendor
+    init(livelikeRestAPIService: LiveLikeRestAPIServicable) {
+        self.livelikeRestAPIService = livelikeRestAPIService
     }
 
     func getProfile(forAccessToken accessToken: AccessToken) -> Promise<ProfileResource> {
         return firstly {
-            self.appConfigVendor.whenApplicationConfig
+            self.livelikeRestAPIService.whenApplicationConfig
         }.then { appConfig in
             self.requestProfileResource(url: appConfig.profileUrl, accessToken: accessToken.asString)
         }
@@ -218,7 +218,7 @@ class APIUserProfileService: UserProfileService {
         //swiftlint:enable nesting
 
         return firstly {
-            self.appConfigVendor.whenApplicationConfig
+            self.livelikeRestAPIService.whenApplicationConfig
         }.then { appConfig in
             let body = NicknamePatchBody(nickname: nickname)
             let resource = Resource<ProfileResource>(url: appConfig.profileUrl,

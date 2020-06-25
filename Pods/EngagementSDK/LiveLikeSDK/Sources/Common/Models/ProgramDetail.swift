@@ -20,9 +20,9 @@ struct ProgramDetail: Decodable {
     let syncSessionsUrl: URL
     let rankUrl: URL
     let rewardsType: RewardsType
-    let reportUrl: URL
     let reactionPacksUrl: URL?
     let defaultChatRoom: ChatRoomResource?
+    let timelineUrl: String
 
     /// Exclusively for CMS and Demo use
     let streamUrl: String?

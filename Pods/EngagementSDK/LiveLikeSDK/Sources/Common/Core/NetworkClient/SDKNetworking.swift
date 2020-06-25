@@ -59,7 +59,19 @@ extension SDKNetworking {
                     rejected(NetworkClientError.noData)
                     return
                 }
-
+                
+                // Handle httpMethod `DELETE` which does not return a valid JSON when success
+                if let httpMethod = resource.urlRequest.httpMethod,
+                    httpMethod == "DELETE" {
+                    if let deleteResult = true as? A {
+                        fulfilled(deleteResult)
+                    } else {
+                        // reject when `DELETE` response type is not specified as `Bool` type
+                        rejected(NetworkClientError.badDeleteResponseType)
+                    }
+                    return
+                }
+                
                 do {
                     let result = try resource.parse(data)
                     fulfilled(result)

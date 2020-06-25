@@ -15,4 +15,5 @@ protocol QuizWidgetResultsClient {
 
 protocol QuizWidgetVoteClient {
     func vote(url: URL) -> Promise<QuizVote>
+    func vote(url: URL, completion: @escaping (Result<QuizVote, Error>) -> Void)
 }

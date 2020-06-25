@@ -36,6 +36,9 @@ import UIKit
     @objc public var teamTwoFont: UIFont
     /// Changes the text color of the right team bar label
     @objc public var teamTwoTextColor: UIColor
+    
+    /// The filepath for the lottie animation used for the Cheer Meter winner
+    @objc public var filepathForWinnerLottieAnimation: String
 
     /// Defaults
     public override init() {
@@ -54,5 +57,10 @@ import UIKit
         teamTwoRightColor = UIColor(red: 250, green: 80, blue: 100)
         teamTwoTextColor = .white
         teamTwoFont = UIFont.systemFont(ofSize: 14)
+        
+        filepathForWinnerLottieAnimation = CheerMeterTheme.defaultFilepathForWinnerLottieAnimation
     }
+    
+    private static var defaultFilepathForWinnerLottieAnimation: String =
+        Bundle(for: EngagementSDK.self).path(forResource: "win-1", ofType: "json")!
 }

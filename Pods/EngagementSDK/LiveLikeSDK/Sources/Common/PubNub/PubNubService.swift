@@ -40,7 +40,10 @@ class PubNubService: PubSubService {
             config,
             callbackQueue: messagingSerialQueue
         )
+
+        pubnub.filterExpression = "!(content_filter LIKE '*filtered*') || sender_id == '\(userID.asString)'"
     }
+    
 
     func subscribe(_ channel: String) -> PubSubChannel {
         return PubNubChannel(

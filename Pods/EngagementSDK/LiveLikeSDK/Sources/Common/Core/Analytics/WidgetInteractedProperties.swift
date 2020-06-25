@@ -7,11 +7,11 @@
 
 import Foundation
 
-struct WidgetInteractedProperties {
+public struct WidgetInteractedProperties {
     var widgetId: String
     var widgetKind: String
-    var firstTapTime: Date
-    var lastTapTime: Date
+    var firstTapTime: Date?
+    var lastTapTime: Date?
     var numberOfTaps: Int
     var interactionTimeInterval: TimeInterval?
     var widgetViewModel: WidgetViewModel
@@ -26,11 +26,13 @@ struct WidgetInteractedProperties {
     init(
         widgetId: String,
         widgetKind: String,
-        firstTapTime: Date,
-        lastTapTime: Date,
+        firstTapTime: Date?,
+        lastTapTime: Date?,
         numberOfTaps: Int,
         interactionTimeInterval: TimeInterval?,
-        widgetViewModel: WidgetViewModel
+        widgetViewModel: WidgetViewModel,
+        previousState: WidgetState,
+        currentState: WidgetState
     ) {
         self.widgetId = widgetId
         self.widgetKind = widgetKind
@@ -39,5 +41,12 @@ struct WidgetInteractedProperties {
         self.numberOfTaps = numberOfTaps
         self.interactionTimeInterval = interactionTimeInterval
         self.widgetViewModel = widgetViewModel
+    }
+  
+    init(widget: WidgetViewModel) {
+        self.widgetId = widget.id
+        self.widgetKind = widget.kind.stringValue
+        self.numberOfTaps = 0
+        self.widgetViewModel = widget
     }
 }

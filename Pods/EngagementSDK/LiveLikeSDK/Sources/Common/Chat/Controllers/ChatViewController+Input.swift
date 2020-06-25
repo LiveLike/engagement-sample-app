@@ -34,53 +34,21 @@ extension ChatViewController {
         case .standard:
             updateInputView(nil, keyboardType: keyboardType)
         case .sticker:
-            guard let stickerPacks = stickerPacks else { return }
-            stickerInputView.stickerPacks = stickerPacks
-            updateInputView(stickerInputView, keyboardType: keyboardType)
+            self.updateInputView(self.stickerInputView, keyboardType: self.keyboardType)
         }
         if !isReset {
             eventRecorder?.record(.keyboardSelected(properties: keyboardType))
         }
     }
 
-    // MARK: Stickers
-
-    func refreshStickers() {
-        guard
-            let sessionImpl = session as? InternalContentSession,
-            let stickerRepo = stickerRepo
-        else {
-            return
-        }
-
-        firstly {
-            stickerRepo.retrieve(programID: sessionImpl.programID)
-
-        }.then { _ in
-            guard let stickerPacks = self.stickerPacks else { return }
-            self.stickerInputView.stickerPacks = stickerPacks
-            self.chatInputViewAccessory.keyboardToggleButton.isHidden = !self.doStickersExist(stickerPacks: stickerPacks)
-
-        }.catch { error in
-            log.error("Failed to fetch stickers with error: \(error)")
-        }
-    }
-
     // handles a scenario where many sticker packs exist with zero stickers
-    private func doStickersExist(stickerPacks: [StickerPack]) -> Bool {
+    func doStickersExist(stickerPacks: [StickerPack]) -> Bool {
         return stickerPacks.first(where: { $0.stickers.count > 0 }) != nil
     }
-
-    var stickerPacks: [StickerPack]? {
-        guard
-            let sessionImpl = session as? InternalContentSession,
-            let stickerRepo = stickerRepo
-        else {
-            return nil
-        }
-
-        return StickerPack.recentStickerPacks(from: Array(sessionImpl.recentlyUsedStickers))
-            + stickerRepo.getStickerPacks()
+    
+    var recentlyUsedStickerPacks: [StickerPack] {
+        guard let chatSession = chatSession else { return [] }
+        return StickerPack.recentStickerPacks(from: Array(chatSession.recentlyUsedStickers))
     }
 }
 
@@ -109,10 +77,6 @@ extension ChatViewController: ChatInputViewDelegate {
             }
         }
         resetInputViews()
-
-        if let stickerPacks = stickerPacks {
-            self.stickerInputView.stickerPacks = stickerPacks
-        }
     }
 
     func chatInputKeyboardToggled() {
@@ -132,9 +96,10 @@ extension ChatViewController: ChatInputViewDelegate {
 extension ChatViewController: StickerInputViewDelegate {
     func stickerSelected(_ sticker: Sticker) {
         chatInputViewAccessory.insertText(":\(sticker.shortcode):")
-        if let sessionImpl = session as? InternalContentSession {
-            sessionImpl.recentlyUsedStickers.insert(sticker, at: 0)
-        }
+        
+        guard let chatSession = chatSession else { return }
+        chatSession.recentlyUsedStickers.insert(sticker, at: 0)
+        self.stickerInputView.stickerPacks = self.recentlyUsedStickerPacks + stickerPacks
     }
 
     func backspacePressed() {

@@ -9,7 +9,7 @@ import UIKit
 
 class SynchronizedWidgetProxy: WidgetProxy {
     /// Private
-    private let queue = Queue<ClientEvent>()
+    private let queue = Queue<WidgetProxyPublishData>()
     private var timer: DispatchSourceTimer?
     private var playerTimeSource: PlayerTimeSource?
 
@@ -28,7 +28,7 @@ class SynchronizedWidgetProxy: WidgetProxy {
         timer?.cancel()
     }
 
-    func publish(event: ClientEvent) {
+    func publish(event: WidgetProxyPublishData) {
         queue.enqueue(element: event)
     }
 }
@@ -50,12 +50,12 @@ private extension SynchronizedWidgetProxy {
             guard let event = self.queue.peek() else { return }
 
             // Send widget immediately if widget is unscheduled or no time source.
-            if event.minimumScheduledTime == nil || self.playerTimeSource?() == nil {
+            if event.clientEvent.minimumScheduledTime == nil || self.playerTimeSource?() == nil {
                 self.downStreamProxyInput?.publish(event: event)
                 self.queue.removeNext()
             }
 
-            guard let minimumScheduledTime = event.minimumScheduledTime else { return }
+            guard let minimumScheduledTime = event.clientEvent.minimumScheduledTime else { return }
             guard let playerTimeSource = self.playerTimeSource?() else { return }
 
             // Discard widget if it doesn't meet the delay threshold

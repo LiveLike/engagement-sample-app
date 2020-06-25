@@ -30,19 +30,18 @@ class ImageSliderClient: ImageSliderResultsClient {
 }
 
 extension ImageSliderClient: WidgetProxyInput {
-    func publish(event: ClientEvent) {
-        switch event {
+    func publish(event: WidgetProxyPublishData) {
+        switch event.clientEvent {
         case let .imageSliderResults(results):
             DispatchQueue.main.sync { [weak self] in
                 self?.delegate?.resultsClient(didReceiveResults: results)
             }
         default:
-            log.error("Received event \(event.description) in ImageSliderLiveResultsClient when only .imageSliderResults were expected.")
+            log.error("Received event \(event.clientEvent.description) in ImageSliderLiveResultsClient when only .imageSliderResults were expected.")
         }
     }
 
-    func discard(event: ClientEvent, reason: DiscardedReason) {}
-
+    func discard(event: WidgetProxyPublishData, reason: DiscardedReason) {}
     func connectionStatusDidChange(_ status: ConnectionStatus) {}
 
     func error(_ error: Error) {

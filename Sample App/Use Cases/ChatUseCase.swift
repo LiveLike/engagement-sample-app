@@ -40,7 +40,7 @@ class ChatUseCase: UIViewController {
         setupUI()
         setupTheme()
         
-        sdk = EngagementSDK(clientID: clientID)
+        sdk = EngagementSDK.init(config: EngagementSDKConfig(clientID: clientID))
         sdk.delegate = self
         session = sdk.contentSession(config: SessionConfiguration(programID: programID))
         session.delegate = self
@@ -116,6 +116,18 @@ extension ChatUseCase: EngagementSDKDelegate {
 }
 
 extension ChatUseCase: ContentSessionDelegate {
+    func playheadTimeSource(_ session: ContentSession) -> Date? {
+        return nil
+    }
+    
+    func session(_ session: ContentSession, didChangeStatus status: SessionStatus) {}
+    
+    func chat(session: ContentSession, roomID: String, newMessage message: ChatMessage) {}
+    
+    func widget(_ session: ContentSession, didBecomeReady jsonObject: Any) {}
+    
+    func widget(_ session: ContentSession, didBecomeReady widget: Widget) {}
+    
     func session(_ session: ContentSession, didReceiveError error: Error) {
         let alert = UIAlertController(
             title: "ContentSession Error",

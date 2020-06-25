@@ -22,6 +22,9 @@ public extension EngagementSDK {
         /// Indicates that an invalid user access token
         /// If received, the EngagementSDK will continue to work but will not be associated to the expected user.
         case invalidUserAccessToken(String)
+        
+        /// Indicates that the custom api origin set may be invalid.
+        case invalidAPIOrigin
     }
 }
 
@@ -40,6 +43,10 @@ extension EngagementSDK.SetupError: LocalizedError {
 
         case let .invalidUserAccessToken(userAccessToken):
             return "Failed to load user's profile with the user access token '\(userAccessToken)' because it was malformed or doesn't exist."
+            
+        case let .invalidAPIOrigin:
+            return "Failed to initialize the Engagement SDK due to a bad request. Please check that the custom api origin is correct."
+        
         }
     }
 }
@@ -85,6 +92,8 @@ extension EngagementSDK.SetupError: CustomNSError {
             return 3
         case .invalidUserAccessToken:
             return 4
+        case .invalidAPIOrigin:
+            return 5
         }
     }
 

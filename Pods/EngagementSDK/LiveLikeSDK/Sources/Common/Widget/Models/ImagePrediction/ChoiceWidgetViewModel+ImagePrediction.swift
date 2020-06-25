@@ -51,8 +51,6 @@ extension ChoiceWidgetViewModel {
                                                              timeout: imagePredictionFollowUp.timeout,
                                                              options: options,
                                                              customData: imagePredictionFollowUp.customData)
-        imagePredictionViewModel.animationCorrectAsset = theme.randomCorrectAnimationAsset()
-        imagePredictionViewModel.animationIncorrectAsset = theme.randomIncorrectAnimationAsset()
 
         return imagePredictionViewModel
     }

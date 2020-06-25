@@ -1,20 +1,19 @@
 //
-//  ChatReactionManager.swift
+//  ChatRoomReactionVendor.swift
 //  EngagementSDK
 //
-//  Created by Jelzon Monzon on 9/19/19.
+//  Created by Mike Moloksher on 5/27/20.
 //
 
 import Foundation
 import UIKit
 
-class ProgramChatReactionsVendor: ReactionVendor{
-
-    private let programDetailVendor: ProgramDetailVendor
+class ChatRoomReactionVendor: ReactionVendor {
+    private let reactionPacksUrl: URL
     private let cache: Cache
 
-    init(programDetailVendor: ProgramDetailVendor, cache: Cache){
-        self.programDetailVendor = programDetailVendor
+    init(reactionPacksUrl: URL, cache: Cache){
+        self.reactionPacksUrl = reactionPacksUrl
         self.cache = cache
     }
 
@@ -22,21 +21,19 @@ class ProgramChatReactionsVendor: ReactionVendor{
         return firstly {
             loadedReactions
         }.recover { error in
-            log.error("ProgramChatReactionsVendor.getReactions() recovering from error: \(error.localizedDescription)")
+            log.error("ChatRoomReactionVendor.getReactions() recovering from error: \(error.localizedDescription)")
             return Promise(value: [])
         }
     }
 
     private lazy var loadedReactions: Promise<[ReactionAsset]> = {
         return firstly {
-            self.programDetailVendor.getProgramDetails()
-        }.then { program -> Promise<ReactionPacksResource> in
-            guard let reactionPackURL = program.reactionPacksUrl else {
-                return Promise(error: ProgramChatReactionVendorError.invalidReactionPacksURL)
-            }
-            return self.loadReactionPack(atURL: reactionPackURL)
+            return self.loadReactionPack(atURL: reactionPacksUrl)
         }.then { reactionPacks -> Promise<[ReactionAsset]> in
-            guard let reactionPack = reactionPacks.results.first else { return Promise(error: ProgramChatReactionVendorError.emptyReactionPacksResource) }
+            guard let reactionPack = reactionPacks.results.first else {
+                log.debug("Reaction Packs Resource is Empty")
+                return Promise(value: [])
+            }
             let reactionAssets = reactionPack.emojis.map({ ReactionAsset(reactionResource: $0) })
             return Promise(value: reactionAssets)
         }.then { reactionAssets in
@@ -71,14 +68,11 @@ fileprivate extension ReactionAsset {
 
 private enum ProgramChatReactionVendorError: LocalizedError {
     case invalidReactionPacksURL
-    case emptyReactionPacksResource
 
     var errorDescription: String? {
         switch self {
         case .invalidReactionPacksURL:
             return "Invalid Reaction Packs URL"
-        case .emptyReactionPacksResource:
-            return "Reaction Packs Resource is Empty"
         }
     }
 }

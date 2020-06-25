@@ -8,12 +8,7 @@
 import Foundation
 typealias MetaData = [String: String]
 
-protocol WidgetEvents: AnyObject {
-    func actionHandler(event: WidgetEvent)
-    func widgetInteractionDidBegin(widget: WidgetViewModel)
-    func widgetInteractionDidComplete(properties: WidgetInteractedProperties)
-}
-
-enum WidgetEvent {
-    case dismiss(action: DismissAction)
+public protocol WidgetEvents: AnyObject {
+    func widgetDidEnterState(widget: WidgetViewModel, state: WidgetState)
+    func widgetStateCanComplete(widget: WidgetViewModel, state: WidgetState)
 }

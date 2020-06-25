@@ -11,13 +11,15 @@ class PubSubChatRoom: NSObject, InternalChatSessionProtocol {
     
     private let messageHistoryLimit: UInt
     private var chatChannel: PubSubChannel
-    private let reactionChannel: PubSubChannel?
     private var _availableReactions: [ReactionID] = []
     private let userID: ChatUser.ID
     private let nickname: UserNicknameVendor
     private let _roomID: String
+    private let _title: String?
     private var userChatRoomImageUrl: URL?
     private var oldestChatMessageTimetoken: TimeToken?
+    var stickerRepository: StickerRepository
+    var recentlyUsedStickers: LimitedArray<Sticker> = LimitedArray<Sticker>(maxSize: 30)
     // where deleted message id's are stored
     private var deletedMessageIDs: Set<ChatMessageID> = Set()
     private var imageUploader: ImageUploader
@@ -33,12 +35,13 @@ class PubSubChatRoom: NSObject, InternalChatSessionProtocol {
     private let messageReporter: MessageReporter?
     let blockList: BlockList
     let eventRecorder: EventRecorder
-    let stickerRepository: StickerRepository
     let reactionsViewModelFactory: ReactionsViewModelFactory
     let reactionsVendor: ReactionVendor
+    private let chatFilters: Set<ChatFilter>
     var isReportingEnabled: Bool {
         return messageReporter != nil
     }
+    private let mediaRepository: MediaRepository = EngagementSDK.mediaRepository
     
     private var publicDelegates: Listener<ChatSessionDelegate> = Listener()
     private var delegates: Listener<InternalChatSessionDelegate> = Listener()
@@ -60,30 +63,32 @@ class PubSubChatRoom: NSObject, InternalChatSessionProtocol {
     init(
         roomID: String,
         chatChannel: PubSubChannel,
-        reactionChannel: PubSubChannel?,
         userID: ChatUser.ID,
         nickname: UserNicknameVendor,
         imageUploader: ImageUploader,
         eventRecorder: EventRecorder,
-        stickerRepository: StickerRepository,
         reactionsViewModelFactory: ReactionsViewModelFactory,
         reactionsVendor: ReactionVendor,
         messageHistoryLimit: UInt,
-        messageReporter: MessageReporter?
+        messageReporter: MessageReporter?,
+        title: String?,
+        chatFilters: Set<ChatFilter>,
+        stickerRepository: StickerRepository
     ) {
         self._roomID = roomID
         self.chatChannel = chatChannel
-        self.reactionChannel = reactionChannel
         self.userID = userID
         self.nickname = nickname
         self.imageUploader = imageUploader
         self.blockList = BlockList(for: userID)
         self.eventRecorder = eventRecorder
-        self.stickerRepository = stickerRepository
         self.reactionsViewModelFactory = reactionsViewModelFactory
         self.reactionsVendor = reactionsVendor
         self.messageHistoryLimit = messageHistoryLimit
         self.messageReporter = messageReporter
+        self._title = title
+        self.chatFilters = chatFilters
+        self.stickerRepository = stickerRepository
         super.init()
 
         self.chatChannel.delegate = self
@@ -145,7 +150,11 @@ private extension PubSubChatRoom {
                     profileImageUrl: self.userChatRoomImageUrl,
                     createdAt: TimeToken(pubnubTimetoken: 0),
                     bodyImageUrl: imageURL,
-                    bodyImageSize: CGSize(width: Int(imageSize.width), height: Int(imageSize.width))
+                    bodyImageSize: CGSize(
+                        width: Int(imageSize.width),
+                        height: Int(imageSize.width)),
+                    filteredMessage: nil,
+                    filteredReasons: Set()
                 )
                 self.mockedMessageIDs.insert(mockMessage.id)
                 self.messages.append(mockMessage)
@@ -153,59 +162,56 @@ private extension PubSubChatRoom {
                 self.delegates.publish { $0.chatSession(self, didRecieveNewMessage: mockMessage) }
 
                 // Send real message
-
-                Cache.shared.get(
-                    key: imageURL.absoluteString
-                ) { [weak self] (imageData: Data?) in
-                    guard let self = self else {
-                        return reject(PubSubChatRoomError.promiseRejectedDueToNilSelf)
-                    }
-                    guard let imageData = imageData else {
-                        return reject(PubSubChatRoomError.failedToSendImageDueToMissingData)
-                    }
-                    // upload image
-                    self.imageUploader.upload(imageData) { [weak self] result in
-                        switch result {
-                        case .success(let imageResource):
-                            //publish mock message
-                            guard let self = self else { return }
-                            let payload = PubSubImagePayload(
-                                id: messageID,
-                                imageUrl: imageResource.imageUrl,
-                                imageHeight: Int(imageSize.height),
-                                imageWidth: Int(imageSize.width),
-                                senderId: self.userID.asString,
-                                senderNickname: nickname,
-                                senderImageUrl: self.userChatRoomImageUrl,
-                                badgeImageUrl: clientMessage.badge?.imageURL,
-                                programDateTime: pdt
-                            )
-                            let message = PubSubChatImage(
-                                event: .imageCreated,
-                                payload: payload
-                            )
-                            guard let encodedMessage = try? self.encoder.encode(message) else {
-                                return reject(PubSubChatRoomError.failedToEncodeChatMessage)
-                            }
-                            guard let encodedMessageString = String(data: encodedMessage, encoding: .utf8) else {
-                                return reject(PubSubChatRoomError.failedToEncodeChatMessage)
-                            }
-
-                            self.chatChannel.send(encodedMessageString) { [weak self] result in
+                self.mediaRepository.getImage(url: imageURL) { [weak self] result in
+                    guard let self = self else { return }
+                    switch result {
+                    case .success(let success):
+                        // upload image
+                        self.imageUploader.upload(success.imageData) { [weak self] result in
+                            switch result {
+                            case .success(let imageResource):
+                                //publish mock message
                                 guard let self = self else { return }
-                                switch result {
-                                case .success(let pubsubID):
-                                    self.chatMessageIDsToPubSubIDs[chatMessageID] = pubsubID
-                                    mockMessage.id = ChatMessageID(pubsubID)
-                                    self.chatMessages[pubsubID] = mockMessage
-                                    fulfill(chatMessageID)
-                                case .failure(let error):
-                                    reject(error)
+                                let payload = PubSubImagePayload(
+                                    id: messageID,
+                                    imageUrl: imageResource.imageUrl,
+                                    imageHeight: Int(imageSize.height),
+                                    imageWidth: Int(imageSize.width),
+                                    senderId: self.userID.asString,
+                                    senderNickname: nickname,
+                                    senderImageUrl: self.userChatRoomImageUrl,
+                                    badgeImageUrl: clientMessage.badge?.imageURL,
+                                    programDateTime: pdt
+                                )
+                                let message = PubSubChatImage(
+                                    event: .imageCreated,
+                                    payload: payload
+                                )
+                                guard let encodedMessage = try? self.encoder.encode(message) else {
+                                    return reject(PubSubChatRoomError.failedToEncodeChatMessage)
                                 }
+                                guard let encodedMessageString = String(data: encodedMessage, encoding: .utf8) else {
+                                    return reject(PubSubChatRoomError.failedToEncodeChatMessage)
+                                }
+
+                                self.chatChannel.send(encodedMessageString) { [weak self] result in
+                                    guard let self = self else { return }
+                                    switch result {
+                                    case .success(let pubsubID):
+                                        self.chatMessageIDsToPubSubIDs[chatMessageID] = pubsubID
+                                        mockMessage.id = ChatMessageID(pubsubID)
+                                        self.chatMessages[pubsubID] = mockMessage
+                                        fulfill(chatMessageID)
+                                    case .failure(let error):
+                                        reject(error)
+                                    }
+                                }
+                            case .failure(let error):
+                                reject(error)
                             }
-                        case .failure(let error):
-                            reject(error)
                         }
+                    case .failure(let error):
+                        reject(error)
                     }
                 }
             }
@@ -217,7 +223,9 @@ private extension PubSubChatRoom {
                 senderNickname: nickname,
                 senderImageUrl: userChatRoomImageUrl,
                 badgeImageUrl: clientMessage.badge?.imageURL,
-                programDateTime: pdt
+                programDateTime: pdt,
+                filteredMessage: nil,
+                contentFilter: nil
             )
 
             return Promise { [weak self] fulfill, reject in
@@ -246,8 +254,13 @@ private extension PubSubChatRoom {
         let unfilteredMessages: [ChatMessage] = historyResult.messages.compactMap { message in
             do {
                 let payload = try PubSubChatMessageDecoder.shared.decode(dict: message.message)
+                
                 switch payload {
                 case .messageCreated(let payload):
+                    // Exclude filtered messages
+                    guard payload.filteredSet.isDisjoint(with: self.chatFilters) else {
+                        return nil
+                    }
                     let chatMessageType = ChatMessage(
                         from: payload,
                         channel: self.chatChannel.name,
@@ -307,6 +320,7 @@ extension PubSubChatRoom: PubSubChannelDelegate {
                 actions: message.messageActions,
                 userID: userID
             )
+            
             self.messages.append(chatMessage)
             self.publicDelegates.publish { $0.chatSession(self, didRecieveNewMessage: chatMessage)}
             self.delegates.publish { $0.chatSession(self, didRecieveNewMessage: chatMessage)}
@@ -325,12 +339,14 @@ extension PubSubChatRoom: PubSubChannelDelegate {
                 actions: message.messageActions,
                 userID: userID
             )
+            
+            // always update the mock image `ChatMessage` with the real one from Pubnub
+            chatMessages[message.pubsubID] = chatMessage
 
             if self.chatMessageIDsToPubSubIDs[chatMessage.id] == nil {
                 // only publish downstream here if pubsub id doesn't exist yet
                 // if pubsub id already exists then this message was mocked and published earlier
                 self.chatMessageIDsToPubSubIDs[chatMessage.id] = message.pubsubID
-                chatMessages[message.pubsubID] = chatMessage
                 self.messages.append(chatMessage)
                 self.publicDelegates.publish { $0.chatSession(self, didRecieveNewMessage: chatMessage)}
                 self.delegates.publish { $0.chatSession(self, didRecieveNewMessage: chatMessage)}
@@ -348,7 +364,6 @@ extension PubSubChatRoom: PubSubChannelDelegate {
             log.error(PubSubChatRoomError.failedToFindChatMessageForPubSubID(pubsubID: messageAction.messageID))
             return
         }
-
         let voteID = ReactionVote.ID(messageAction.id)
         let reactionID = ReactionID(fromString: messageAction.value)
         let reactionVote = ReactionVote(
@@ -396,6 +411,10 @@ extension PubSubChatRoom {
     var roomID: String {
         return _roomID
     }
+    
+    var title: String? {
+        return _title
+    }
 
     var availableReactions: [ReactionID] {
         get {
@@ -423,6 +442,10 @@ extension PubSubChatRoom {
 
                     switch payload {
                     case .messageCreated(let payload):
+                        // Exclude filtered messages
+                        guard payload.filteredSet.isDisjoint(with: self.chatFilters) else {
+                            return nil
+                        }
                         return ChatMessage(
                             from: payload,
                             channel: self.chatChannel.name,
@@ -456,10 +479,14 @@ extension PubSubChatRoom {
     }
 
     func getMessageCount(since timestamp: TimeToken, completion: @escaping (Result<Int, Error>) -> Void) {
-        self.chatChannel.messageCount(
-            since: timestamp,
-            completion: completion
-        )
+        self.getMessages(since: timestamp) { result in
+            switch result {
+            case .success(let messages):
+                completion(.success(messages.count))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
     }
     
     func disconnect() {
@@ -492,11 +519,7 @@ extension PubSubChatRoom {
     }
 
     func sendMessage(_ clientMessage: ClientMessage) -> Promise<ChatMessageID> {
-        return sendMessage(clientMessage, messageID: UUID().uuidString, messageEvent: .messageCreated)
-    }
-    
-    func updateMessage(_ clientMessage: ClientMessage, messageID: String) -> Promise<ChatMessageID> {
-        return sendMessage(clientMessage, messageID: messageID, messageEvent: .messageUpdated)
+        return sendMessage(clientMessage, messageID: UUID().uuidString.lowercased(), messageEvent: .messageCreated)
     }
     
     func deleteMessage(_ clientMessage: ClientMessage, messageID: String) -> Promise<ChatMessageID> {
@@ -510,12 +533,20 @@ extension PubSubChatRoom {
         guard let messageReporter = self.messageReporter else {
             return completion(.failure(PubSubChatRoomError.failedDueToMissingMessageReporter))
         }
+        
+        var messageBody = ""
+        if let messageImageUrlString = message.bodyImageUrl?.absoluteString {
+            messageBody = messageImageUrlString
+        } else {
+            messageBody = message.message
+        }
+        
         let reportBody = ReportBody(
             channel: self.chatChannel.name,
-            userId: self.userID.asString,
+            profileId: self.userID.asString,
             nickname: self.nickname.currentNickname ?? "*** ERROR: Unknown Nickname ***",
             messageId: id.asString,
-            message: message.message
+            message: messageBody
         )
         messageReporter.report(reportBody: reportBody, completion: completion)
     }
@@ -702,7 +733,6 @@ extension PubSubChatRoom {
 
 enum PubSubChatEvent: String, Codable {
     case messageCreated = "message-created"
-    case messageUpdated = "message-updated"
     case messageDeleted = "message-deleted"
     case imageCreated = "image-created"
     case imageDeleted = "image-deleted"
@@ -750,8 +780,6 @@ class PubSubChatMessageDecoder {
             } catch {
                 throw Errors.failedToDecodePayload(decodingError: "\(error)")
             }
-        case .messageUpdated:
-            throw NilError()
         case .messageDeleted:
             guard let messagePayload = dict["payload"] else {
                 throw Errors.missingPayload
@@ -821,6 +849,59 @@ struct PubSubChatPayload: Codable {
     var senderImageUrl: URL?
     var badgeImageUrl: URL?
     var programDateTime: Date?
+    // The message after it has been filtered
+    var filteredMessage: String?
+    // The reasons why a message was filtered
+    var contentFilter: [ChatFilter]?
+    
+    var filteredSet: Set<ChatFilter> {
+        return Set(contentFilter ?? [])
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case message
+        case senderId
+        case senderNickname
+        case senderImageUrl
+        case badgeImageUrl
+        case programDateTime
+        case filteredMessage
+        case contentFilter
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(String.self, forKey: .id).lowercased()
+        self.message = try? container.decode(String.self, forKey: .message)
+        self.senderId = try? container.decode(String.self, forKey: .senderId)
+        self.senderNickname = try? container.decode(String.self, forKey: .senderNickname)
+        self.senderImageUrl = try? container.decode(URL.self, forKey: .senderImageUrl)
+        self.badgeImageUrl = try? container.decode(URL.self, forKey: .badgeImageUrl)
+        self.programDateTime = try? container.decode(Date.self, forKey: .programDateTime)
+        self.filteredMessage = try? container.decode(String.self, forKey: .filteredMessage)
+        self.contentFilter = try? container.decode([ChatFilter].self, forKey: .contentFilter)
+    }
+    
+    init(id: String,
+         message: String?,
+         senderId: String?,
+         senderNickname: String?,
+         senderImageUrl: URL?,
+         badgeImageUrl: URL?,
+         programDateTime: Date?,
+         filteredMessage: String?,
+         contentFilter: [ChatFilter]?) {
+        self.id = id.lowercased()
+        self.message = message
+        self.senderId = senderId
+        self.senderNickname = senderNickname
+        self.senderImageUrl = senderImageUrl
+        self.badgeImageUrl = badgeImageUrl
+        self.programDateTime = programDateTime
+        self.filteredMessage = filteredMessage
+        self.contentFilter = contentFilter
+    }
 }
 
 struct PubSubImagePayload: Codable {
@@ -833,6 +914,51 @@ struct PubSubImagePayload: Codable {
     let senderImageUrl: URL?
     let badgeImageUrl: URL?
     let programDateTime: Date?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case imageUrl
+        case imageHeight
+        case imageWidth
+        case senderId
+        case senderNickname
+        case senderImageUrl
+        case badgeImageUrl
+        case programDateTime
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(String.self, forKey: .id).lowercased()
+        self.imageUrl = try container.decode(URL.self, forKey: .imageUrl)
+        self.imageHeight = try container.decode(Int.self, forKey: .imageHeight)
+        self.imageWidth = try container.decode(Int.self, forKey: .imageWidth)
+        self.senderId = try container.decode(String.self, forKey: .senderId)
+        self.senderNickname = try container.decode(String.self, forKey: .senderNickname)
+        self.senderImageUrl = try? container.decode(URL.self, forKey: .senderImageUrl)
+        self.badgeImageUrl = try? container.decode(URL.self, forKey: .badgeImageUrl)
+        self.programDateTime = try? container.decode(Date.self, forKey: .programDateTime)
+    }
+    
+    init(id: String,
+         imageUrl: URL,
+         imageHeight: Int,
+         imageWidth: Int,
+         senderId: String,
+         senderNickname: String,
+         senderImageUrl: URL?,
+         badgeImageUrl: URL?,
+         programDateTime: Date?) {
+        self.id = id.lowercased()
+        self.imageUrl = imageUrl
+        self.imageHeight = imageHeight
+        self.imageWidth = imageWidth
+        self.senderId = senderId
+        self.senderNickname = senderNickname
+        self.senderImageUrl = senderImageUrl
+        self.badgeImageUrl = badgeImageUrl
+        self.programDateTime = programDateTime
+    }
 }
 
 struct PubSubChatMessage: Codable {

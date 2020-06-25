@@ -13,36 +13,24 @@ import Foundation
 class LiveCheerMeterVoteClient: CheerMeterVoteClient {
     private let batchThreshold: Int = 10
     private let debounceTimeInterval: TimeInterval = 1
-
-    private weak var delegate: CheerMeterVoteClientDelegate?
-
-    private let widgetMessagingClient: WidgetClient
-    private let subscribeChannel: String
     private let voteDebouncer: Debouncer<(voteURL: URL, voteCount: Int)>
     private let accessToken: AccessToken
     private var batchedVotes: Int = 0
+    private let voteURL: URL
 
-    init(widgetMessagingClient: WidgetClient, subscribeChannel: String, accessToken: AccessToken) {
-        self.widgetMessagingClient = widgetMessagingClient
-        self.subscribeChannel = subscribeChannel
+    init(
+        accessToken: AccessToken,
+        voteURL: URL
+    ) {
         self.accessToken = accessToken
+        self.voteURL = voteURL
         voteDebouncer = Debouncer(delay: debounceTimeInterval)
         voteDebouncer.callback = { [weak self] voteCountAndURL in
             self?.voteAndResetBatchedVotes(voteURL: voteCountAndURL.voteURL, voteCount: voteCountAndURL.voteCount)
         }
     }
 
-    func setDelegate(_ delegate: CheerMeterVoteClientDelegate) {
-        self.delegate = delegate
-        widgetMessagingClient.addListener(self, toChannel: subscribeChannel)
-    }
-
-    func removeDelegate(_ delegate: CheerMeterVoteClientDelegate) {
-        self.delegate = nil
-        widgetMessagingClient.removeListener(self, fromChannel: subscribeChannel)
-    }
-
-    func sendVote(voteURL: URL) {
+    func sendVote() {
         batchedVotes += 1
         if batchedVotes >= batchThreshold {
             voteAndResetBatchedVotes(voteURL: voteURL, voteCount: batchedVotes)
@@ -74,35 +62,15 @@ private struct CheerMeterVote: Codable {
 
 private struct CheerMeterVoteResponse: Decodable {}
 
-extension LiveCheerMeterVoteClient: WidgetProxyInput {
-    func publish(event: ClientEvent) {
-        guard case let .cheerMeterResults(payload) = event else {
-            return
-        }
-        DispatchQueue.main.sync {
-            delegate?.didReceiveResults(payload)
-        }
-    }
-
-    func discard(event: ClientEvent, reason: DiscardedReason) {
-        //
-    }
-
-    func connectionStatusDidChange(_ status: ConnectionStatus) {
-        //
-    }
-
-    func error(_ error: Error) {
-        //
-    }
-}
-
 protocol CheerMeterVoteClient {
-    func setDelegate(_ delegate: CheerMeterVoteClientDelegate)
-    func removeDelegate(_ delegate: CheerMeterVoteClientDelegate)
-    func sendVote(voteURL: URL)
+    func sendVote()
 }
 
-protocol CheerMeterVoteClientDelegate: AnyObject {
+protocol CheerMeterResultsClient: AnyObject {
+    var latestResults: CheerMeterResults? { get set }
+    var delegate: CheerMeterResultsDelegate? { get set }
+}
+
+protocol CheerMeterResultsDelegate: AnyObject {
     func didReceiveResults(_ results: CheerMeterResults)
 }

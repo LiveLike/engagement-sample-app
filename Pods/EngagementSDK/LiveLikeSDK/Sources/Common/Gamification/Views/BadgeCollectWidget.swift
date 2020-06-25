@@ -8,6 +8,7 @@
 import UIKit
 
 class BadgeCollectWidget: WidgetController {
+    
     private let message: String = "EngagementSDK.gamification.BadgeCollectWidget.message".localized()
     private let buttonText: String = "EngagementSDK.gamification.BadgeCollectWidget.button".localized()
 
@@ -30,6 +31,13 @@ class BadgeCollectWidget: WidgetController {
     var correctOptions: Set<WidgetOption>?
     var options: Set<WidgetOption>?
     var customData: String?
+    var previousState: WidgetState?
+    var currentState: WidgetState = .ready {
+        willSet {
+            previousState = self.currentState
+        }
+    }
+    var userDidInteract: Bool = false
 
     private let badgeViewModel: BadgeViewModel
     private var gamificationModal: GamificationModal!
@@ -78,19 +86,14 @@ class BadgeCollectWidget: WidgetController {
     private func handleActionButton() {
         self.badgeViewModel.collect()
         eventRecorder.record(.badgeCollected(badgeViewModel.innerBadge))
-        gamificationModal.playBadgeCollectAnimation().then { _ in
-            self.delegate?.actionHandler(event: .dismiss(action: .complete))
-        }.catch { error in
+        gamificationModal.playBadgeCollectAnimation().catch { error in
             log.error(error.localizedDescription)
-            self.delegate?.actionHandler(event: .dismiss(action: .complete))
         }
     }
-
-    func start() {
-        delay(timeout) { [weak self] in
-            self?.delegate?.actionHandler(event: .dismiss(action: .timeout))
-        }
-    }
+    
+    func moveToNextState() { }
+    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) { }
+    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) { }
 
     func willDismiss(dismissAction: DismissAction) {
         self.badgeViewModel.collect()

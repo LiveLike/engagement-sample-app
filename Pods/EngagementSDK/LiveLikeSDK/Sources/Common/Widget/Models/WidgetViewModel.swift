@@ -7,10 +7,9 @@
 
 import UIKit
 
-public protocol WidgetViewModel {
+public protocol WidgetViewModel: AnyObject {
     var id: String { get }
     var kind: WidgetKind { get }
-    var height: CGFloat { get }
     var widgetTitle: String? { get }
     
     /// The time interval for which the user is able to interact with the widget
@@ -21,6 +20,19 @@ public protocol WidgetViewModel {
     var options: Set<WidgetOption>? { get }
     
     var customData: String? { get }
+    var previousState: WidgetState? { get set }
+    var currentState: WidgetState { get set }
+    var delegate: WidgetEvents? { get set }
+    
+    /// Has the user interacted with the widget
+    var userDidInteract: Bool { get }
+    
+    
+    var dismissSwipeableView: UIView { get }
+
+    func moveToNextState()
+    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void)
+    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void)
 }
 
 /// WidgetOption is a class which represents an option a widget can have
@@ -41,4 +53,22 @@ public protocol WidgetViewModel {
         self.image = image
         self.isCorrect = isCorrect
     }
+}
+
+public enum WidgetDismissReason {
+    /// The user has dismissed the widget
+    case userDismiss
+
+    /// The `dismissWidget()` method was called on the WidgetViewController
+    case apiDismiss
+
+    /// The widget has expired
+    case timeExpired
+}
+
+public enum WidgetState {
+    case ready
+    case interacting
+    case results
+    case finished
 }

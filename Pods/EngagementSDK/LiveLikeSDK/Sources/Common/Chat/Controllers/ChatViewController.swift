@@ -21,7 +21,6 @@ public typealias TimestampFormatter = (Date) -> String
  Also, an extension was included for convenience to help add a view controller inside of a specificied view. Please see `UIViewController.addChild(viewController:view:)` for more information
  */
 
-@objc(LLChatViewController)
 public class ChatViewController: UIViewController {
     // MARK: Properties
 
@@ -42,7 +41,7 @@ public class ChatViewController: UIViewController {
         }
     }
 
-    private var chatSession: InternalChatSessionProtocol?
+    var chatSession: InternalChatSessionProtocol?
     /// The current Chat Session being displayed if any
     public var currentChatSession: ChatSession? {
         return self.chatSession
@@ -53,37 +52,58 @@ public class ChatViewController: UIViewController {
         self.chatSession?.removeInternalDelegate(self)
         self.chatSession = nil
         self.chatAdapter = nil
+        self.stickerPacks = []
     }
     
     /// Sets the chat session to be displayed.
     /// Replaces the current chat session if there is one set.
     public func setChatSession(_ chatSession: ChatSession) {
-        self.clearChatSession()
-        guard let chatSession = chatSession as? InternalChatSessionProtocol else { return }
-        
-        let factory = MessageViewModelFactory(
-            stickerRepository: chatSession.stickerRepository,
-            channel: "",
-            reactionsFactory: chatSession.reactionsViewModelFactory
-        )
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.clearChatSession()
+            
+            guard let chatSession = chatSession as? InternalChatSessionProtocol else { return }
+            self.chatSession = chatSession
+            self.messageVC.chatSession = chatSession
+            
+            chatSession.stickerRepository.getStickerPacks { [weak self] result in
+                guard let self = self else { return}
+                
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let stickerPacks):
+                        self.stickerPacks = stickerPacks
+                    case .failure(let error):
+                        log.error("Failed to get sticker packs with error: \(error)")
+                    }
 
-        let adapter = ChatAdapter(
-            messageViewModelFactory: factory,
-            eventRecorder: chatSession.eventRecorder,
-            blockList: chatSession.blockList,
-            chatSession: chatSession
-        )
-        
-        chatSession.addInternalDelegate(self)
-        self.chatSession = chatSession
-        self.messageVC.chatSession = chatSession
-        self.chatAdapter = adapter
-        
-        self.chatSession(chatSession, didRecieveMessageHistory: chatSession.messages)
+                    self.stickerInputView.stickerPacks = self.recentlyUsedStickerPacks + self.stickerPacks
+                    self.chatInputViewAccessory.keyboardToggleButton.isHidden = !self.doStickersExist(stickerPacks: self.stickerPacks)
+                    
+                    let factory = MessageViewModelFactory(
+                        stickerPacks: self.stickerPacks,
+                        channel: "",
+                        reactionsFactory: chatSession.reactionsViewModelFactory,
+                        mediaRepository: EngagementSDK.mediaRepository
+                    )
+
+                    let adapter = ChatAdapter(
+                        messageViewModelFactory: factory,
+                        eventRecorder: chatSession.eventRecorder,
+                        blockList: chatSession.blockList,
+                        chatSession: chatSession
+                    )
+                    
+                    chatSession.addInternalDelegate(self)
+                    
+                    self.chatAdapter = adapter
+                    self.chatSession(chatSession, didRecieveMessageHistory: chatSession.messages)
+                }
+            }
+        }
     }
 
     /// A `ContentSession` used by the ChatController to link with the program on the CMS.
-    @objc
     public weak var session: ContentSession? {
         didSet {
             guard let sessionImpl = session as? InternalContentSession else {
@@ -95,8 +115,6 @@ public class ChatViewController: UIViewController {
             }
 
             sessionImpl.chatDelegate = self
-
-            stickerRepo = sessionImpl.stickerRepository
             eventRecorder = sessionImpl.eventRecorder
             superPropertyRecorder = sessionImpl.superPropertyRecorder
             peoplePropertyRecorder = sessionImpl.peoplePropertyRecorder
@@ -138,7 +156,6 @@ public class ChatViewController: UIViewController {
     ///
     /// By default the view will animate down in portrait and to the right in landscape.
     /// Setting this value will override the defaults.
-    @objc
     public var animationDirection: Direction = .down {
         didSet {
             resetChatViewPosition()
@@ -146,18 +163,15 @@ public class ChatViewController: UIViewController {
     }
 
     /// Use the keyboardDidHideCompletion handler to perform any tasks after the chat keyboard has been hidden
-    @objc
     public var keyboardDidHideCompletion: (() -> Void)?
 
     /// Use the keyboardDidHideCompletion handler to perform any tasks after the chat keyboard has been shown
-    @objc
     public var keyboardDidShowCompletion: (() -> Void)?
 
     /// Callback for when the user has sent a chat message.
-    @objc public var didSendMessage: (ChatMessage) -> Void = { _ in }
+    public var didSendMessage: (ChatMessage) -> Void = { _ in }
 
     /// Determines whether the user's profile status bar, above the chat input field, is visible
-    @objc
     public var shouldDisplayProfileStatusBar: Bool = true {
         didSet {
             refreshProfileStatusBarVisibility()
@@ -166,7 +180,7 @@ public class ChatViewController: UIViewController {
 
     /// The formatter used print timestamp labels on the chat message.
     /// Set to nil to hide the timestamp labels.
-    @objc public var messageTimestampFormatter: TimestampFormatter? = { date in
+    public var messageTimestampFormatter: TimestampFormatter? = { date in
         let dateFormatter = DateFormatter()
         dateFormatter.amSymbol = "am"
         dateFormatter.pmSymbol = "pm"
@@ -175,20 +189,16 @@ public class ChatViewController: UIViewController {
     }
 
     /// Determines whether the user is able to post images into chat
-    @objc public var shouldSupportChatImagePosting: Bool = true {
+    public var shouldSupportChatImagePosting: Bool = true {
         didSet {
             self.chatInputViewAccessory.supportExternalImages = shouldSupportChatImagePosting
         }
     }
     
     /// Determines whether the user is able to post images into chat
-    @objc public var shouldDisplayDebugVideoTime: Bool = false
+    public var shouldDisplayDebugVideoTime: Bool = false
     
-    var stickerRepo: StickerRepository? {
-        didSet {
-            refreshStickers()
-        }
-    }
+    var stickerPacks: [StickerPack] = []
 
     // MARK: Internal Properties
 
@@ -255,6 +265,8 @@ public class ChatViewController: UIViewController {
         stickerInputView.delegate = self
         return stickerInputView
     }()
+    
+    var recentlyUsedStickers = LimitedArray<Sticker>(maxSize: 30)
 
     private var theme: Theme = .dark
     private var displayNameVendor: UserNicknameVendor?
@@ -319,14 +331,17 @@ public class ChatViewController: UIViewController {
     }
 
     /// :nodoc:
-    public override func willTransition(to newCollection: UITraitCollection, with coordinator: UIViewControllerTransitionCoordinator) {
-        chatAdapter?.orientationWillChange()
-        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+    public override func willTransition(to newCollection: UITraitCollection,
+                                        with coordinator: UIViewControllerTransitionCoordinator) {
+        coordinator.animate(alongsideTransition: { [weak self] _ in
+            // Save the visible row position
+            self?.isRotating = true
+            self?.chatAdapter?.orientationWillChange()
+        }, completion: { [weak self] _ in
+            // Scroll to the saved position prior to screen rotate
             self?.chatAdapter?.orientationDidChange()
             self?.isRotating = false
-        }
-
-        isRotating = true
+        })
         super.willTransition(to: newCollection, with: coordinator)
     }
 
@@ -421,18 +436,16 @@ public class ChatViewController: UIViewController {
             guard let messageText = message.message else { return }
             
             let stickerIDs = messageText.stickerIDs
-            if let stickers = self.stickerRepo?.getStickerPacks() {
-                let indices = ChatSentMessageProperties.calculateStickerIndices(stickerIDs: stickerIDs, stickers: stickers)
-                let sentProperties = ChatSentMessageProperties(
-                    characterCount: messageText.count,
-                    messageId: chatMessageID.asString,
-                    stickerIDs: stickerIDs,
-                    stickerCount: stickerIDs.count,
-                    stickerIndices: indices,
-                    hasExternalImage: message.imageURL != nil
-                )
-                self.eventRecorder?.record(.chatMessageSent(properties: sentProperties))
-            }
+            let indices = ChatSentMessageProperties.calculateStickerIndices(stickerIDs: stickerIDs, stickers: self.stickerPacks)
+            let sentProperties = ChatSentMessageProperties(
+                characterCount: messageText.count,
+                messageId: chatMessageID.asString,
+                stickerIDs: stickerIDs,
+                stickerCount: stickerIDs.count,
+                stickerIndices: indices,
+                hasExternalImage: message.imageURL != nil
+            )
+            self.eventRecorder?.record(.chatMessageSent(properties: sentProperties))
 
             var superProps = [SuperProperty]()
             let now = Date()
@@ -475,7 +488,7 @@ public class ChatViewController: UIViewController {
 
      - note: A theme can be applied at any time and will update the view immediately
      */
-    @objc
+    
     public func setTheme(_ theme: Theme) {
         self.theme = theme
         DispatchQueue.main.async { [weak self] in

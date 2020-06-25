@@ -12,9 +12,9 @@ typealias PollSelection = (id: String, url: URL)
 
 protocol PollWidget {
     var onSelectionAction: ((PollSelection) -> Void)? { get set }
-    func beginTimer(completion: @escaping () -> Void)
-    func beginCloseTimer(duration: Double, closeAction: @escaping (DismissAction) -> Void)
-    func lockSelections()
+    func beginTimer(seconds: TimeInterval, completion: @escaping () -> Void)
+    func setOptionsLocked(_ lock: Bool)
     func revealResults()
     func updateResults(results: PollResults)
+    func showCloseButton(completion: @escaping () -> Void)
 }
