@@ -25,19 +25,19 @@ class PauseWidgetProxy: WidgetProxy {
         pauseStatus = initialPauseStatus
     }
 
-    func publish(event: ClientEvent) {
+    func publish(event: WidgetProxyPublishData) {
         guard let playerTimeSource = playerTimeSource?() else {
             downStreamProxyInput?.publish(event: event)
             return
         }
 
         /// Discard non-scheduled events while paused
-        if pauseStatus == .paused, event.minimumScheduledTime == nil {
+        if pauseStatus == .paused, event.clientEvent.minimumScheduledTime == nil {
             downStreamProxyInput?.discard(event: event, reason: .paused)
             return
         }
         /// Discard scheduled events during a current pause
-        if pauseStatus == .paused, let publishTime = event.minimumScheduledTime {
+        if pauseStatus == .paused, let publishTime = event.clientEvent.minimumScheduledTime {
             guard let pauseStartTime = currentPauseStartTime else {
                 downStreamProxyInput?.discard(event: event, reason: .paused)
                 return
@@ -50,7 +50,7 @@ class PauseWidgetProxy: WidgetProxy {
         }
 
         /// Discard scheduled events during a past pause
-        if let publishTime = event.minimumScheduledTime {
+        if let publishTime = event.clientEvent.minimumScheduledTime {
             for pauseTime in pastPauseTimes where publishTime.isBetween(pauseTime.startTime, pauseTime.endTime) {
                 downStreamProxyInput?.discard(event: event, reason: .paused)
                 return

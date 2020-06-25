@@ -37,7 +37,7 @@ extension Resource where A: Decodable {
         urlRequest.httpMethod = method.method
         switch method {
         case .get: ()
-        case let .post(body), let .patch(body):
+        case let .post(body), let .patch(body), let .delete(body):
             urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
             let encoder = JSONEncoder()
             encoder.keyEncodingStrategy = .convertToSnakeCase

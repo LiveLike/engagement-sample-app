@@ -25,19 +25,17 @@ public struct ChatMessageID: Equatable, Hashable {
 
 class MessageViewModel: Equatable {
     var id: ChatMessageID
-    var message: String
+    var message: NSAttributedString
     let sender: ChatUser?
     let username: String
     let isLocalClient: Bool
     let syncPublishTimecode: String?
     let channel: String
-    var isDeleted: Bool = false
+    private(set) var isDeleted: Bool = false
     var badgeImageURL: URL?
     let createdAt: Date
     
     var chatReactions: ReactionButtonListViewModel
-
-    let stickerRepository: StickerRepository
     var profileImageUrl: URL?
     var bodyImageUrl: URL?
     
@@ -49,7 +47,7 @@ class MessageViewModel: Equatable {
     var accessibilityLabel: String?
     
     init(id: ChatMessageID,
-         message: String,
+         message: NSAttributedString,
          sender: ChatUser?,
          username: String,
          isLocalClient: Bool,
@@ -57,11 +55,11 @@ class MessageViewModel: Equatable {
          channel: String,
          badgeImageURL: URL?,
          chatReactions: ReactionButtonListViewModel,
-         stickerRepository: StickerRepository,
          profileImageUrl: URL?,
          createdAt: Date,
          bodyImageUrl: URL?,
-         bodyImageSize: CGSize?) {
+         bodyImageSize: CGSize?,
+         accessibilityLabel: String) {
         self.id = id
         self.message = message
         self.sender = sender
@@ -71,22 +69,10 @@ class MessageViewModel: Equatable {
         self.channel = channel
         self.badgeImageURL = badgeImageURL
         self.chatReactions = chatReactions
-        self.stickerRepository = stickerRepository
         self.profileImageUrl = profileImageUrl
         self.createdAt = createdAt
         self.bodyImageUrl = bodyImageUrl
         self.bodyImageSize = bodyImageSize
-        
-        var imagesToPreDownload = [URL]()
-        if let badgeImageURL = badgeImageURL {
-            imagesToPreDownload.append(badgeImageURL)
-        } else if let imageUrl = profileImageUrl {
-            imagesToPreDownload.append(imageUrl)
-        } else if let bodyImageUrl = bodyImageUrl {
-            imagesToPreDownload.append(bodyImageUrl)
-        }
-        
-        Cache.shared.downloadAndCacheImages(urls: imagesToPreDownload, completion: nil)
         
         if let videoTimestamp = syncPublishTimecode,
             let videoTimestampInterval = TimeInterval(videoTimestamp) {
@@ -94,6 +80,21 @@ class MessageViewModel: Equatable {
         }
     }
 
+    /// Replaces the message body with 'Redacted'
+    func redact(theme: Theme) {
+        let attributes = [
+            NSAttributedString.Key.font: UIFont.italicSystemFont(ofSize: 14.0),
+            NSAttributedString.Key.foregroundColor: theme.messageTextColor
+        ]
+        let attributedString = NSMutableAttributedString(
+            string: "This message has been removed.",
+            attributes: attributes
+        )
+        self.message = attributedString
+        self.accessibilityLabel = ("\(username) \(attributedString.mutableString)")
+        self.isDeleted = true
+    }
+    
     static func == (lhs: MessageViewModel, rhs: MessageViewModel) -> Bool {
         // In the case that both ids are 0 for local messages, this is because the user is muted, so the messages should only be considered equal if the send dates are equal
         if lhs.isLocalClient, rhs.isLocalClient, lhs.id == rhs.id {
@@ -101,46 +102,5 @@ class MessageViewModel: Equatable {
         }
 
         return lhs.id == rhs.id
-    }
-}
-
-extension MessageViewModel {
-    func attributedMessage(theme: Theme) -> NSAttributedString {
-        let attributes = [
-            NSAttributedString.Key.font: self.isDeleted ? UIFont.italicSystemFont(ofSize: 14.0) : theme.fontPrimary,
-            NSAttributedString.Key.foregroundColor: theme.messageTextColor
-        ]
-
-        var attributedString = NSMutableAttributedString(string: isDeleted ? "Redacted" : message, attributes: attributes)
-        accessibilityLabel = ("\(username) \(attributedString.mutableString)")
-        
-        if let bodyImageUrl = bodyImageUrl {
-            accessibilityLabel = ("\(username) Image")
-            if Cache.shared.has(key: bodyImageUrl.absoluteString) {
-                Cache.shared.get(key: bodyImageUrl.absoluteString, completion: { (imageData: Data?) in
-                    guard let imageData = imageData else {
-                        return log.error("STICKERS Cache found result for key \(bodyImageUrl.absoluteString) but it was nil")
-                    }
-                    guard let image = UIImage.decode(imageData) else {
-                        return log.error("STICKERS Failed to decode to UIImage with result from cache for key \(bodyImageUrl.absoluteString)")
-                    }
-                    
-                    let stickerAttachment = StickerAttachment(image, stickerName: bodyImageUrl.absoluteString, verticalOffset: 0.0, isLargeImage: true)
-                    attributedString = NSMutableAttributedString(attachment: stickerAttachment)
-                })
-            } else {
-                if let placeholder = UIImage.coloredImage(from: .gray, size: bodyImageSize ?? CGSize(width: 50, height: 50)) {
-                    let stickerAttachment = StickerAttachment(placeholder, stickerName: bodyImageUrl.absoluteString, verticalOffset: 0.0, isLargeImage: true)
-                    attributedString = NSMutableAttributedString(attachment: stickerAttachment)
-                }
-            }
-        } else {
-            let stickerMessage = attributedString.replaceStickerShortcodesInMessage(font: theme.fontPrimary, stickerRepository: stickerRepository)
-            attributedString = stickerMessage.attributedString
-            if let stickerLabel = stickerMessage.stickerLabel {
-                accessibilityLabel = ("\(username) Image: [\(stickerLabel)]")
-            }
-        }
-        return attributedString
     }
 }

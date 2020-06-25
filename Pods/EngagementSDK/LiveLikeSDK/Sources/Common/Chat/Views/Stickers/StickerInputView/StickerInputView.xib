@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14490.70" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
-    <device id="retina6_1" orientation="portrait">
-        <adaptation id="fullscreen"/>
-    </device>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="16097" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_1" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14490.49"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="16087"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -17,7 +15,7 @@
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             <subviews>
                 <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="none" translatesAutoresizingMaskIntoConstraints="NO" id="ggj-P9-MAp">
-                    <rect key="frame" x="0.0" y="0.0" width="414" height="40"/>
+                    <rect key="frame" x="0.0" y="0.0" width="354" height="40"/>
                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="40" id="b6G-ZY-0rk"/>
@@ -30,7 +28,7 @@
                     </collectionViewFlowLayout>
                 </collectionView>
                 <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" pagingEnabled="YES" dataMode="none" translatesAutoresizingMaskIntoConstraints="NO" id="fKn-ib-bDw">
-                    <rect key="frame" x="0.0" y="40" width="414" height="257"/>
+                    <rect key="frame" x="0.0" y="40" width="414" height="291"/>
                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     <collectionViewFlowLayout key="collectionViewLayout" scrollDirection="horizontal" minimumLineSpacing="10" minimumInteritemSpacing="10" id="Hnd-2k-v5s">
                         <size key="itemSize" width="50" height="50"/>
@@ -54,7 +52,7 @@
                 <constraint firstItem="fKn-ib-bDw" firstAttribute="leading" secondItem="vUN-kp-3ea" secondAttribute="leading" id="FK0-4b-qb4"/>
                 <constraint firstItem="fKn-ib-bDw" firstAttribute="trailing" secondItem="vUN-kp-3ea" secondAttribute="trailing" id="FPg-bX-SK3"/>
                 <constraint firstItem="vUN-kp-3ea" firstAttribute="trailing" secondItem="8OS-vv-W8O" secondAttribute="trailing" id="PPU-RV-4oY"/>
-                <constraint firstItem="ggj-P9-MAp" firstAttribute="trailing" secondItem="vUN-kp-3ea" secondAttribute="trailing" id="gGZ-uG-yqd"/>
+                <constraint firstItem="ggj-P9-MAp" firstAttribute="trailing" secondItem="8OS-vv-W8O" secondAttribute="leading" id="gGZ-uG-yqd"/>
                 <constraint firstItem="ggj-P9-MAp" firstAttribute="leading" secondItem="vUN-kp-3ea" secondAttribute="leading" id="hUs-Ra-TWy"/>
                 <constraint firstItem="8OS-vv-W8O" firstAttribute="bottom" secondItem="ggj-P9-MAp" secondAttribute="bottom" id="iCB-vq-QC3"/>
                 <constraint firstItem="8OS-vv-W8O" firstAttribute="top" secondItem="ggj-P9-MAp" secondAttribute="top" id="nTP-ce-m8S"/>

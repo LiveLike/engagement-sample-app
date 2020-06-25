@@ -11,35 +11,49 @@ import UIKit
 class ImageDownloadProxy: WidgetProxy {
     var downStreamProxyInput: WidgetProxyInput?
 
-    private let cache = Cache.shared
+    private let mediaRepository: MediaRepository = EngagementSDK.mediaRepository
 
-    func publish(event: ClientEvent) {
-        let completion = { [weak self] in
-            guard let self = self else { return }
-            self.downStreamProxyInput?.publish(event: event)
-        }
-
-        switch event {
+    func publish(event: WidgetProxyPublishData) {
+        switch event.clientEvent {
         case let .imagePredictionCreated(payload):
-            cache.downloadAndCacheImages(urls: payload.options.map { $0.imageUrl }, completion: completion)
-        case let .imagePredictionFollowUp(payload, _):
-            cache.downloadAndCacheImages(urls: payload.options.map { $0.imageUrl }, completion: completion)
+            mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
+                self?.handlePrefetchResult(result: result, event: event)
+            }
+        case let .imagePredictionFollowUp(payload):
+            mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
+                self?.handlePrefetchResult(result: result, event: event)
+            }
         case let .imagePollCreated(payload):
-            cache.downloadAndCacheImages(urls: payload.options.map { $0.imageUrl }, completion: completion)
+            mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
+                self?.handlePrefetchResult(result: result, event: event)
+            }
         case let .imageQuizCreated(payload):
-            cache.downloadAndCacheImages(urls: payload.choices.map { $0.imageUrl }, completion: completion)
+            mediaRepository.prefetchMedia(urls: payload.choices.map{ $0.imageUrl }) { [weak self] result in
+                self?.handlePrefetchResult(result: result, event: event)
+            }
         case let .alertCreated(payload):
             if let url = payload.imageUrl {
-                cache.downloadAndCacheImages(urls: [url], completion: completion)
+                mediaRepository.prefetchMedia(url: url) { [weak self] result in
+                    self?.handlePrefetchResult(result: result, event: event)
+                }
             } else {
                 downStreamProxyInput?.publish(event: event)
             }
         case let .imageSliderCreated(payload):
-            cache.downloadAndCacheImages(urls: payload.options.map { $0.imageUrl }, completion: completion)
+            mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
+                self?.handlePrefetchResult(result: result, event: event)
+            }
         case let .cheerMeterCreated(payload):
-            cache.downloadAndCacheImages(urls: payload.options.map { $0.imageUrl }, completion: completion)
+            mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
+                self?.handlePrefetchResult(result: result, event: event)
+            }
         default:
             downStreamProxyInput?.publish(event: event)
         }
+    }
+    
+    private func handlePrefetchResult(result: Result<Bool, Error>, event: WidgetProxyPublishData) {
+        // Always publish event even if prefetch fails
+        self.downStreamProxyInput?.publish(event: event)
     }
 }

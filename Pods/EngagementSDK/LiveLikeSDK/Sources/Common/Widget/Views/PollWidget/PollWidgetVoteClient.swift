@@ -52,9 +52,9 @@ extension PollClient: PollWidgetVoteClient {
 }
 
 extension PollClient: WidgetProxyInput {
-    func publish(event: ClientEvent) {
-        guard case let .imagePollResults(results) = event else {
-            log.error("Received event \(event.description) in PollWidgetLiveUpdateClient when only .imagePollResults were expected.")
+    func publish(event: WidgetProxyPublishData) {
+        guard case let .imagePollResults(results) = event.clientEvent else {
+            log.error("Received event \(event.clientEvent.description) in PollWidgetLiveUpdateClient when only .imagePollResults were expected.")
             return
         }
 
@@ -63,8 +63,7 @@ extension PollClient: WidgetProxyInput {
         }
     }
 
-    func discard(event: ClientEvent, reason: DiscardedReason) {}
-
+    func discard(event: WidgetProxyPublishData, reason: DiscardedReason) {}
     func connectionStatusDidChange(_ status: ConnectionStatus) {}
 
     func error(_ error: Error) {

@@ -27,5 +27,6 @@ struct ApplicationConfiguration: Decodable {
     let pubnubOrigin: String?
     let organizationId: String
     let organizationName: String
+    let createChatRoomUrl: String
     
 }

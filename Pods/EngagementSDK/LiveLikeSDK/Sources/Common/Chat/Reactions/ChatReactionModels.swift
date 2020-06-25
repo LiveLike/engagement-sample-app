@@ -147,11 +147,14 @@ struct ReactionButtonListViewModel {
 
 class ReactionsViewModelFactory {
     private let reactionAssetsVendor: ReactionVendor
-    private let cache: Cache
+    private let mediaRepository: MediaRepository
 
-    init(reactionAssetsVendor: ReactionVendor, cache: Cache){
+    init(
+        reactionAssetsVendor: ReactionVendor,
+        mediaRepository: MediaRepository
+    ) {
         self.reactionAssetsVendor = reactionAssetsVendor
-        self.cache = cache
+        self.mediaRepository = mediaRepository
     }
 
     func make(from reactionVotes: ReactionVotes) -> Promise<ReactionButtonListViewModel> {
@@ -199,13 +202,9 @@ class ReactionsViewModelFactory {
     }
 
     private func reactionViewModel(reactionAsset: ReactionAsset, reactionVotes: ReactionVotes) -> Promise<ReactionButtonViewModel?> {
-        return cache.get(key: reactionAsset.imageURL.absoluteString).then { (data: Data) in
-            guard
-                let image = UIImage(data: data)
-            else {
-                log.error("Failed to download UIImage for reaction with id: \(reactionAsset.id) ")
-                return Promise(value: nil)
-            }
+        return firstly {
+            mediaRepository.getImagePromise(url: reactionAsset.imageURL)
+        }.then { image in
             let reactionViewModel = ReactionButtonViewModel(
                 id: reactionAsset.id,
                 voteCount: reactionVotes.voteCount(forID: reactionAsset.id),

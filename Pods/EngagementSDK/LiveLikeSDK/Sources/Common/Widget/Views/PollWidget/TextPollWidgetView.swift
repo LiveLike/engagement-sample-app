@@ -30,7 +30,7 @@ class TextPollWidgetView: VerticalChoiceWidget, PollWidget {
 
     var onSelectionAction: ((PollSelection) -> Void)?
 
-    private var closeAction: ((DismissAction) -> Void)?
+    private var closeAction: (() -> Void)?
 
     init(data: ImagePollCreated, theme: Theme, choiceOptionFactory: ChoiceWidgetOptionFactory, widgetConfig: WidgetConfig) {
         question = data.question
@@ -88,30 +88,25 @@ class TextPollWidgetView: VerticalChoiceWidget, PollWidget {
         optionButtons = textChoices
     }
 
-    func beginTimer(completion: @escaping () -> Void) {
-        titleView.beginTimer(duration: timeout,
+    func beginTimer(seconds: TimeInterval, completion: @escaping () -> Void) {
+        titleView.beginTimer(duration: seconds,
                              animationFilepath: theme.filepathsForWidgetTimerLottieAnimation,
                              completion: completion)
     }
-
-    func beginCloseTimer(duration: Double, closeAction: @escaping (DismissAction) -> Void) {
-        self.closeAction = closeAction
-        titleView.closeButton.addTarget(self, action: #selector(closeButtonPressed), for: .touchUpInside)
-        if widgetConfig.isManualDismissButtonEnabled {
-            titleView.showCloseButton()
-        }
-        titleView.beginTimer(duration: duration) {
-            closeAction(.timeout)
-        }
+    
+    func showCloseButton(completion: @escaping () -> Void) {
+        self.closeAction = completion
+        self.titleView.closeButton.addTarget(self, action: #selector(closeButtonPressed), for: .touchUpInside)
+        self.titleView.showCloseButton()
     }
 
     @objc private func closeButtonPressed() {
-        closeAction?(.tapX)
+        closeAction?()
     }
 
-    func lockSelections() {
+    func setOptionsLocked(_ lock: Bool) {
         for optionButton in optionButtons {
-            optionButton.isUserInteractionEnabled = false
+            optionButton.isUserInteractionEnabled = !lock
         }
     }
 

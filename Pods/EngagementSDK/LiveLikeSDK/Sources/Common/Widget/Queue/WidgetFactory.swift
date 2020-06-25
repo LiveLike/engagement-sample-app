@@ -62,15 +62,12 @@ class ClientEventWidgetFactory: WidgetFactory {
                                                                                                         image: nil) })))
             return widget
             // MARK: Text Predictions Follow Up
-        case let .textPredictionFollowUp(payload, vote):
-            guard let vote = vote else {
-                log.error("There is not vote associated to this textPredictionFollowUp widget.")
-                return nil
-            }
+        case let .textPredictionFollowUp(payload):
+            let vote = voteRepo.findVote(for: payload.id)
             let viewmodel = ChoiceWidgetViewModel.make(from: payload, theme: theme)
             let widget = PredictionFollowUpViewController(type: .text,
                                                           widgetData: viewmodel,
-                                                          voteID: vote.optionId,
+                                                          voteID: vote?.optionId,
                                                           theme: theme,
                                                           kind: payload.kind,
                                                           correctOptionIds: payload.correctOptionsIds,
@@ -102,15 +99,12 @@ class ClientEventWidgetFactory: WidgetFactory {
                                                                                                         image: nil) })))
             return widget
             // MARK: Image Prediction Follow Up
-        case let .imagePredictionFollowUp(payload, vote):
-            guard let vote = vote else {
-                log.error("There is not vote associated to this imagePredictionFollowUp widget.")
-                return nil
-            }
+        case let .imagePredictionFollowUp(payload):
+            let vote = voteRepo.findVote(for: payload.id)
             let viewmodel = ChoiceWidgetViewModel.make(from: payload, theme: theme)
             let widget = PredictionFollowUpViewController(type: .image,
                                                           widgetData: viewmodel,
-                                                          voteID: vote.optionId,
+                                                          voteID: vote?.optionId,
                                                           theme: theme,
                                                           kind: payload.kind,
                                                           correctOptionIds: payload.correctOptionsIds,
@@ -137,7 +131,10 @@ class ClientEventWidgetFactory: WidgetFactory {
             return widget
             // MARK: Text Poll
         case let .textPollCreated(payload):
-            let pollWidgetClient = PollClient(widgetMessagingClient: widgetMessagingOutput, accessToken: accessToken)
+            let pollWidgetClient = PollClient(
+                widgetMessagingClient: widgetMessagingOutput,
+                accessToken: accessToken
+            )
             let choiceFactory = ChoiceWidgetOptionFactory()
             let textPollWidget = TextPollWidgetView(data: payload,
                                                     theme: theme,
@@ -175,10 +172,11 @@ class ClientEventWidgetFactory: WidgetFactory {
             let resultsClient = QuizClient(widgetMessagingClient: widgetMessagingOutput,
                                            updateChannel: payload.subscribeChannel,
                                            accessToken: accessToken)
-            let imageQuizWidget = ImageQuizWidgetView(data: payload,
-                                                      cache: Cache.shared,
-                                                      theme: theme,
-                                                      widgetConfig: widgetConfig)
+            let imageQuizWidget = ImageQuizWidgetView(
+                data: payload,
+                theme: theme,
+                widgetConfig: widgetConfig
+            )
             let widget = QuizWidgetViewController(payload: payload,
                                                   quizWidget: imageQuizWidget,
                                                   quizVoteClient: resultsClient,
@@ -204,13 +202,36 @@ class ClientEventWidgetFactory: WidgetFactory {
             // MARK: Cheer Meter
         case let .cheerMeterCreated(payload):
             do {
-                let voteClient = LiveCheerMeterVoteClient(widgetMessagingClient: widgetMessagingOutput,
-                                                          subscribeChannel: payload.subscribeChannel,
-                                                          accessToken: accessToken)
-                return try CheerMeterWidgetViewController(cheerMeterData: payload,
-                                                          voteClient: voteClient,
-                                                          theme: theme,
-                                                          eventRecorder: eventRecorder)
+                guard
+                    let leftVoteURL = payload.options[safe: 0]?.voteUrl,
+                    let rightVoteURL = payload.options[safe: 1]?.voteUrl
+                else {
+                    throw NilError()
+                }
+                
+                let leftVoteClient = LiveCheerMeterVoteClient(
+                    accessToken: accessToken,
+                    voteURL: leftVoteURL
+                )
+                
+                let rightVoteClient = LiveCheerMeterVoteClient(
+                    accessToken: accessToken,
+                    voteURL: rightVoteURL
+                )
+                
+                let resultsClient = LiveCheerMeterResultsClient(
+                    widgetClient: widgetMessagingOutput,
+                    subscribeChannel: payload.subscribeChannel
+                )
+                
+                return try CheerMeterWidgetViewController(
+                    cheerMeterData: payload,
+                    leftVoteClient: leftVoteClient,
+                    rightVoteClient: rightVoteClient,
+                    resultsClient: resultsClient,
+                    theme: theme,
+                    eventRecorder: eventRecorder
+                )
             } catch {
                 log.error(error.localizedDescription)
                 return nil

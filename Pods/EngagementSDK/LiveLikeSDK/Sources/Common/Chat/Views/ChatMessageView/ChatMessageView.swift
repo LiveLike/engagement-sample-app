@@ -106,15 +106,16 @@ class ChatMessageView: UIView {
         shouldDisplayDebugVideoTime: Bool
     ) {
         self.message = message
-        isLocalClientMessage = message.isLocalClient
-        hideActionsPanel()
+        self.messageLabel.attributedText = message.message
+        self.isLocalClientMessage = message.isLocalClient
+        self.hideActionsPanel()
 
-        timestampExists = timestampFormatter != nil
-        usernameLabel.text = message.username
+        self.timestampExists = timestampFormatter != nil
+        self.usernameLabel.text = message.username
         //timestampLabel.text = timestampFormatter?(message.createdAt)
-        timestampLabel.text = nil // using alternateTimestamp label only for now
+        self.timestampLabel.text = nil // using alternateTimestamp label only for now
         
-        alternateTimestampLabel.text = {
+        self.alternateTimestampLabel.text = {
             
             let defaultTimestamp = timestampFormatter?(message.createdAt)
             if shouldDisplayDebugVideoTime {
@@ -135,21 +136,20 @@ class ChatMessageView: UIView {
         }()
         
         if let imageUrl = message.badgeImageURL {
-            badgeImageView.setImage(key: imageUrl.absoluteString)
+            self.badgeImageView.setImage(url: imageUrl)
             self.badgeExists = true
         } else {
             self.badgeExists = false
         }
                 
-        reactionsDisplayView.set(chatReactions: message.chatReactions, theme: theme)
+        self.reactionsDisplayView.set(chatReactions: message.chatReactions, theme: self.theme)
         
-        cellImageUrl = message.profileImageUrl
-        
-        applyTheme()
+        self.cellImageUrl = message.profileImageUrl
+        self.accessibilityLabel = message.accessibilityLabel
+        self.applyTheme()
     }
 
     func applyTheme() {
-        updateAttributedTextStyles(theme: theme)
         timestampLabel.font = theme.chatMessageTimestampFont
         timestampLabel.textColor = theme.chatMessageTimestampTextColor
         alternateTimestampLabel.font = theme.chatMessageTimestampFont
@@ -157,7 +157,6 @@ class ChatMessageView: UIView {
         messageViewHolder.layer.cornerRadius = theme.messageCornerRadius
         messageBackground.backgroundColor = theme.messageBackgroundColor
         messageBackground.layer.cornerRadius = theme.messageCornerRadius
-        messageLabel.font = theme.fontPrimary
         messageLabel.textColor = theme.messageTextColor
         usernameLabel.textColor = isLocalClientMessage ? theme.myUsernameTextColor : theme.usernameTextColor
         usernameLabel.font = theme.fontSecondary
@@ -200,8 +199,8 @@ class ChatMessageView: UIView {
         }
         
         if theme.chatImageWidth > 0 {
-            if let imageUrl = cellImageUrl?.absoluteString {
-                lhsImageView.setImage(key: imageUrl)
+            if let imageUrl = cellImageUrl {
+                lhsImageView.setImage(url: imageUrl)
             }
         }
         lhsImageWidth.constant = theme.chatImageWidth
@@ -253,13 +252,6 @@ class ChatMessageView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         messageViewHolder.layer.cornerRadius = theme.messageCornerRadius
-    }
-
-    private func updateAttributedTextStyles(theme: Theme) {
-        guard let message = self.message else {
-            return
-        }
-        messageLabel.attributedText = message.attributedMessage(theme: theme)
     }
 }
 

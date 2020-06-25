@@ -14,17 +14,15 @@ class ImageQuizWidgetView: VerticalChoiceWidget, QuizWidget {
     private let quizTheme: QuizWidgetTheme
     private let theme: Theme
     private let widgetConfig: WidgetConfig
-    private let cache: Cache
-    private var closeButtonAction: ((DismissAction) -> Void)?
+    private var closeButtonAction: (() -> Void)?
     private let choiceOptionFactory: ChoiceWidgetOptionFactory = ChoiceWidgetOptionFactory()
     private let quizButtonStyle: ChoiceWidgetOptionFactory.Style
     private var quizOptionButtons = [ChoiceWidgetOptionButton]()
 
-    init(data: ImageQuizCreated, cache: Cache, theme: Theme, widgetConfig: WidgetConfig) {
+    init(data: ImageQuizCreated, theme: Theme, widgetConfig: WidgetConfig) {
         self.data = data
         quizTheme = theme.quizWidget
         self.theme = theme
-        self.cache = cache
         self.widgetConfig = widgetConfig
         quizButtonStyle = .wideTextImage
         super.init()
@@ -60,14 +58,14 @@ class ImageQuizWidgetView: VerticalChoiceWidget, QuizWidget {
     }
 
     @objc private func closeButtonPressed() {
-        closeButtonAction?(.tapX)
+        closeButtonAction?()
     }
 }
 
 // MARK: - Picked Answer Functionality
 
 extension ImageQuizWidgetView {
-    func revealAnswer(myOptionId: String?) {
+    func revealAnswer(myOptionId: String?, completion:(() -> Void)?) {
         let correctOptions: [String] = data.choices.filter { $0.isCorrect }.map { $0.id }
         // show percentage on all choices
         // show correct answer and if my choice was incorrect
@@ -91,9 +89,11 @@ extension ImageQuizWidgetView {
             let myOption = myOptionId,
             correctOptions.contains(myOption)
         {
-            playOverlayAnimation(animationFilepath: theme.randomCorrectAnimationAsset())
+            playOverlayAnimation(animationFilepath: theme.randomCorrectAnimationAsset(),
+                                 completion: completion)
         } else {
-            playOverlayAnimation(animationFilepath: theme.randomIncorrectAnimationAsset())
+            playOverlayAnimation(animationFilepath: theme.randomIncorrectAnimationAsset(),
+                                 completion: completion)
         }
     }
 
@@ -117,21 +117,16 @@ extension ImageQuizWidgetView {
 // MARK: - Timer Functionality
 
 extension ImageQuizWidgetView {
-    func beginTimer(completion: @escaping () -> Void) {
-        titleView.beginTimer(duration: data.timeout.timeInterval, animationFilepath: theme.filepathsForWidgetTimerLottieAnimation) {
+    func beginTimer(seconds: TimeInterval, completion: @escaping () -> Void) {
+        titleView.beginTimer(duration: seconds, animationFilepath: theme.filepathsForWidgetTimerLottieAnimation) {
             completion()
         }
     }
-
-    func beginCloseTimer(duration: Double, completion: @escaping (DismissAction) -> Void) {
+    
+    func showCloseButton(completion: @escaping () -> Void) {
         closeButtonAction = completion
         titleView.closeButton.addTarget(self, action: #selector(closeButtonPressed), for: .touchUpInside)
-        if widgetConfig.isManualDismissButtonEnabled {
-            titleView.showCloseButton()
-        }
-        titleView.beginTimer(duration: duration) {
-            completion(.timeout)
-        }
+        titleView.showCloseButton()
     }
 }
 
@@ -155,5 +150,9 @@ extension ImageQuizWidgetView {
         for quizOptionButton in quizOptionButtons {
             quizOptionButton.isUserInteractionEnabled = false
         }
+    }
+    
+    func stopAnswerRevealAnimation() {
+        stopOverlayAnimation()
     }
 }

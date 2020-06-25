@@ -12,16 +12,16 @@ class Analytics: EventRecorder {
 
     private var widgetPropertyRecorder: WidgetPropertyRecorder?
 
-    private let applicationConfigVendor: ApplicationConfigVendor
+    private let livelikeRestAPIService: LiveLikeRestAPIServicable
     private lazy var whenMixpanel: Promise<MixpanelAnalytics> =
         firstly {
-            applicationConfigVendor.whenApplicationConfig
+            livelikeRestAPIService.whenApplicationConfig
         }.then { (appConfig) -> Promise<MixpanelAnalytics> in
             self.initializeMixpanel(appConfig: appConfig)
         }
 
-    init(applicationConfigVendor: ApplicationConfigVendor) {
-        self.applicationConfigVendor = applicationConfigVendor
+    init(livelikeRestAPIService: LiveLikeRestAPIServicable) {
+        self.livelikeRestAPIService = livelikeRestAPIService
     }
 
     func record(_ event: AnalyticsEvent) {

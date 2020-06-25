@@ -31,8 +31,8 @@ class PredictionClient: PredictionVoteClient, WidgetProxyInput {
     
     // MARK: Widget Proxy Input
     
-    func publish(event: ClientEvent) {
-        switch event{
+    func publish(event: WidgetProxyPublishData) {
+        switch event.clientEvent {
         case .textPredictionResults(let results),
              .imagePredictionResults(let results):
             didRecieveResults?(results)
@@ -46,7 +46,7 @@ class PredictionClient: PredictionVoteClient, WidgetProxyInput {
     }
     
     // Not implemented
-    func discard(event: ClientEvent, reason: DiscardedReason) {}
+    func discard(event: WidgetProxyPublishData, reason: DiscardedReason) {}
     func connectionStatusDidChange(_ status: ConnectionStatus) {}
     
 }

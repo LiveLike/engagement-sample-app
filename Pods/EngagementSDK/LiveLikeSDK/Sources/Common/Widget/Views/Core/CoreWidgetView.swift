@@ -69,7 +69,6 @@ class CoreWidgetView: UIView {
             coreWidgetYConstraint = topAnchor.constraint(equalTo: newSuperview.topAnchor)
 
             NSLayoutConstraint.activate([
-                widthAnchor.constraint(equalTo: newSuperview.widthAnchor, constant: -32),
                 coreWidgetXConstraint!,
                 coreWidgetYConstraint!
             ])

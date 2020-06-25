@@ -110,3 +110,19 @@ class DialogWidgetView: UIView {
         ])
     }
 }
+
+class GradientButton: UIButton {
+    var gradient = GradientView(orientation: .horizontal)
+
+    init() {
+        super.init(frame: .zero)
+        insertSubview(gradient, at: 0)
+        clipsToBounds = true
+        gradient.translatesAutoresizingMaskIntoConstraints = false
+        gradient.constraintsFill(to: self)
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}

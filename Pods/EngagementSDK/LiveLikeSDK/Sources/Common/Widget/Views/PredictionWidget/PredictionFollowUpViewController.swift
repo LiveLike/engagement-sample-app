@@ -12,12 +12,31 @@ class PredictionFollowUpViewController: WidgetController {
     var correctOptions: Set<WidgetOption>?
     var options: Set<WidgetOption>?
     var customData: String?
+    var userDidInteract: Bool = false
+    var previousState: WidgetState?
+    var currentState: WidgetState = .ready {
+        willSet {
+            previousState = self.currentState
+        }
+        didSet {
+            self.delegate?.widgetDidEnterState(widget: self, state: currentState)
+            switch currentState {
+            case .ready:
+                break
+            case .interacting:
+                break
+            case .results:
+                enterResultsState()
+            case .finished:
+                enterFinishedState()
+            }
+        }
+    }
     var id: String
     var kind: WidgetKind
     var interactionTimeInterval: TimeInterval?
     
     weak var delegate: WidgetEvents?
-    weak var eventsDelegate: EngagementEventsDelegate?
     var coreWidgetView: CoreWidgetView {
         return widgetView.coreWidgetView
     }
@@ -72,12 +91,13 @@ class PredictionFollowUpViewController: WidgetController {
     }()
 
     private let widgetData: ChoiceWidgetViewModel
-    private let voteID: String
+    private let voteID: String?
     private let predictionTheme: PredictionWidgetTheme
     private let theme: Theme
     private let widgetConfig: WidgetConfig
     private let type: ChoiceWidgetViewType
     private let correctOptionIds: [String]
+    private var closeButtonAction: (() -> Void)?
 
     // MARK: Analytics
 
@@ -88,7 +108,7 @@ class PredictionFollowUpViewController: WidgetController {
 
     init(type: ChoiceWidgetViewType,
          widgetData: ChoiceWidgetViewModel,
-         voteID: String,
+         voteID: String?,
          theme: Theme,
          kind: WidgetKind,
          correctOptionIds: [String],
@@ -123,16 +143,10 @@ class PredictionFollowUpViewController: WidgetController {
         view.addSubview(widgetView)
         widgetView.constraintsFill(to: view)
         widgetView.titleView.closeButton.addTarget(self, action: #selector(closeButtonPressed), for: .touchUpInside)
-        if widgetConfig.isManualDismissButtonEnabled {
-            widgetView.titleView.showCloseButton()
-        }
-        widgetView.titleView.beginTimer(duration: widgetData.timeout) { [weak self] in
-            self?.delegate?.actionHandler(event: .dismiss(action: .timeout))
-        }
     }
 
     @objc func closeButtonPressed() {
-        delegate?.actionHandler(event: .dismiss(action: .tapX))
+        closeButtonAction?()
     }
 
     private func highlightOptionView(widgetOptionButton: ChoiceWidgetOptionButton) {
@@ -157,21 +171,31 @@ class PredictionFollowUpViewController: WidgetController {
         widgetOptionButton.setColors(theme.neutralOptionColors)
         widgetOptionButton.layer.cornerRadius = 0
     }
-
-    func start() {
-        let isCorrect = correctOptionIds.contains(voteID)
-        if isCorrect {
-            if let animationAsset = self.widgetData.animationCorrectAsset {
-                widgetView.playOverlayAnimation(animationFilepath: animationAsset)
-            }
-        } else {
-            if let animationAsset = self.widgetData.animationIncorrectAsset {
-                widgetView.playOverlayAnimation(animationFilepath: animationAsset)
+    
+    func moveToNextState() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            switch self.currentState {
+            case .ready:
+                self.currentState = .results
+            case .interacting:
+                break
+            case .results:
+                self.currentState = .finished
+            case .finished:
+                break
             }
         }
-        eventRecorder.record(.widgetDisplayed(kind: kind.analyticsName,
-                                              widgetId: widgetData.id))
     }
+    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) {
+        self.closeButtonAction = { [weak self] in
+            guard let self = self else { return }
+            completion(self)
+        }
+        widgetView.titleView.showCloseButton()
+    }
+    
+    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) { }
 
     func willDismiss(dismissAction: DismissAction) {
         if dismissAction.userDismissed {
@@ -184,5 +208,26 @@ class PredictionFollowUpViewController: WidgetController {
             )
             eventRecorder.record(.widgetUserDismissed(properties: properties))
         }
+    }
+    
+    private func enterResultsState() {
+        eventRecorder.record(.widgetDisplayed(kind: kind.analyticsName,
+        widgetId: widgetData.id))
+        if let voteID = voteID {
+            let isCorrect = correctOptionIds.contains(voteID)
+            let animationAsset = isCorrect ?
+                theme.randomCorrectAnimationAsset() :
+                theme.randomIncorrectAnimationAsset()
+            widgetView.playOverlayAnimation(animationFilepath: animationAsset) { [weak self] in
+                guard let self = self else { return }
+                self.delegate?.widgetStateCanComplete(widget: self, state: .results)
+            }
+        } else {
+            self.delegate?.widgetStateCanComplete(widget: self, state: .results)
+        }
+    }
+    
+    private func enterFinishedState() {
+        self.delegate?.widgetStateCanComplete(widget: self, state: .finished)
     }
 }

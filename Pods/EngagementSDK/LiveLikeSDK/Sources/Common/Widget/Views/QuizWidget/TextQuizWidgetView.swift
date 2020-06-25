@@ -20,7 +20,7 @@ class TextQuizWidgetView: VerticalChoiceWidget, QuizWidget {
     private let widgetConfig: WidgetConfig
 
     private var choiceViews = [TextChoiceWidgetOptionButton]()
-    private var closeButtonAction: ((DismissAction) -> Void)?
+    private var closeButtonAction: (() -> Void)?
 
     init(data: TextQuizCreated, theme: Theme, widgetConfig: WidgetConfig) {
         self.data = data
@@ -37,6 +37,7 @@ class TextQuizWidgetView: VerticalChoiceWidget, QuizWidget {
     }
 
     private func configure() {
+        self.clipsToBounds = true
         customize(quizTheme, theme: theme)
         titleView.titleLabel.text = theme.uppercaseTitleText ? data.question.uppercased() : data.question
         titleView.titleMargins = theme.choiceWidgetTitleMargins
@@ -69,31 +70,26 @@ class TextQuizWidgetView: VerticalChoiceWidget, QuizWidget {
         }
     }
 
-    func beginTimer(completion: @escaping () -> Void) {
+    func beginTimer(seconds: TimeInterval, completion: @escaping () -> Void) {
         titleView.beginTimer(
-            duration: data.timeout.timeInterval,
+            duration: seconds,
             animationFilepath: theme.filepathsForWidgetTimerLottieAnimation
         ) {
             completion()
         }
     }
 
-    func beginCloseTimer(duration: Double, completion: @escaping (DismissAction) -> Void) {
+    func showCloseButton(completion: @escaping () -> Void) {
         closeButtonAction = completion
         titleView.closeButton.addTarget(self, action: #selector(closeButtonPressed), for: .touchUpInside)
-        if widgetConfig.isManualDismissButtonEnabled {
-            titleView.showCloseButton()
-        }
-        titleView.beginTimer(duration: duration) {
-            completion(.timeout)
-        }
+        titleView.showCloseButton()
     }
 
     @objc private func closeButtonPressed() {
-        closeButtonAction?(.tapX)
+        closeButtonAction?()
     }
 
-    func revealAnswer(myOptionId: String?) {
+    func revealAnswer(myOptionId: String?, completion: (() -> Void)?) {
         let correctOptions: [String] = data.choices.filter { $0.isCorrect }.map { $0.id }
         // show percentage on all choices
         // show correct answer and if my choice was incorrect
@@ -117,9 +113,11 @@ class TextQuizWidgetView: VerticalChoiceWidget, QuizWidget {
             let myOption = myOptionId,
             correctOptions.contains(myOption)
         {
-            playOverlayAnimation(animationFilepath: theme.randomCorrectAnimationAsset())
+            playOverlayAnimation(animationFilepath: theme.randomCorrectAnimationAsset(),
+                                 completion: completion)
         } else {
-            playOverlayAnimation(animationFilepath: theme.randomIncorrectAnimationAsset())
+            playOverlayAnimation(animationFilepath: theme.randomIncorrectAnimationAsset(),
+                                 completion: completion)
         }
     }
 
@@ -143,5 +141,9 @@ class TextQuizWidgetView: VerticalChoiceWidget, QuizWidget {
         for choiceView in choiceViews {
             choiceView.isUserInteractionEnabled = false
         }
+    }
+    
+    func stopAnswerRevealAnimation() {
+        stopOverlayAnimation()
     }
 }

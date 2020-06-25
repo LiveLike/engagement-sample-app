@@ -15,7 +15,7 @@ protocol WidgetProcessor: AnyObject {
 /// when the `processor` has finished processing
 class StoreWidgetProxy: WidgetProxy, WidgetProcessor {
     /// Private
-    private let queue = Queue<ClientEvent>()
+    private let queue = Queue<WidgetProxyPublishData>()
 
     /// Internal
     var downStreamProxyInput: WidgetProxyInput?
@@ -27,7 +27,7 @@ class StoreWidgetProxy: WidgetProxy, WidgetProcessor {
         }
     }
 
-    func publish(event: ClientEvent) {
+    func publish(event: WidgetProxyPublishData) {
         if !isProcessing {
             downStreamProxyInput?.publish(event: event)
         } else {
@@ -35,7 +35,7 @@ class StoreWidgetProxy: WidgetProxy, WidgetProcessor {
         }
     }
     
-    func addToFrontOfQueue(event: ClientEvent){
+    func addToFrontOfQueue(event: WidgetProxyPublishData){
         if !isProcessing {
             downStreamProxyInput?.publish(event: event)
         } else {

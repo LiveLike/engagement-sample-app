@@ -45,14 +45,14 @@ class WidgetQueue: WidgetProxyInput {
         widgetRendererListeners.removeAll()
     }
 
-    func publish(event: ClientEvent) {
+    func publish(event: WidgetProxyPublishData) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.renderer?.displayWidget(from: ClientEventWidgetFactory(event: event, voteRepo: self.voteRepo, widgetMessagingOutput: self.widgetMessagingOutput, accessToken: self.accessToken, eventRecorder: self.eventRecorder))
+            self.renderer?.displayWidget(from: ClientEventWidgetFactory(event: event.clientEvent, voteRepo: self.voteRepo, widgetMessagingOutput: self.widgetMessagingOutput, accessToken: self.accessToken, eventRecorder: self.eventRecorder))
         }
     }
 
-    func discard(event: ClientEvent, reason: DiscardedReason) {
+    func discard(event: WidgetProxyPublishData, reason: DiscardedReason) {
         log.info("Discarded widget \(event) -> \(reason)")
     }
 
@@ -131,16 +131,12 @@ extension WidgetQueue: WidgetRenderer {
 
 /// Facade for widget events
 extension WidgetQueue: WidgetEvents {
-    func actionHandler(event: WidgetEvent) {
-        widgetEventListeners.publish { $0.actionHandler(event: event) }
-    }
-    
-    func widgetInteractionDidBegin(widget: WidgetViewModel) {
-        widgetEventListeners.publish { $0.widgetInteractionDidBegin(widget: widget) }
+    func widgetDidEnterState(widget: WidgetViewModel, state: WidgetState) {
+        widgetEventListeners.publish { $0.widgetDidEnterState(widget: widget, state: state) }
     }
 
-    func widgetInteractionDidComplete(properties: WidgetInteractedProperties) {
-        widgetEventListeners.publish { $0.widgetInteractionDidComplete(properties: properties) }
+    func widgetStateCanComplete(widget: WidgetViewModel, state: WidgetState) {
+        
     }
 }
 

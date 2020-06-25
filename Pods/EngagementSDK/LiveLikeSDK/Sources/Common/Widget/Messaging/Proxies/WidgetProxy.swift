@@ -9,9 +9,14 @@ import Foundation
 
 typealias WidgetProxy = WidgetProxyInput & WidgetProxyOutput
 
+struct WidgetProxyPublishData {
+    var clientEvent: ClientEvent
+    var jsonObject: Any
+}
+
 protocol WidgetProxyInput: AnyObject {
-    func publish(event: ClientEvent)
-    func discard(event: ClientEvent, reason: DiscardedReason)
+    func publish(event: WidgetProxyPublishData)
+    func discard(event: WidgetProxyPublishData, reason: DiscardedReason)
     func connectionStatusDidChange(_ status: ConnectionStatus)
     func error(_ error: Error)
 }
@@ -21,11 +26,12 @@ protocol WidgetProxyOutput: AnyObject {
 }
 
 extension WidgetProxyInput where Self: WidgetProxyOutput {
+    
     func error(_ error: Error) {
         downStreamProxyInput?.error(error)
     }
 
-    func discard(event: ClientEvent, reason: DiscardedReason) {
+    func discard(event: WidgetProxyPublishData, reason: DiscardedReason) {
         downStreamProxyInput?.discard(event: event, reason: reason)
     }
 

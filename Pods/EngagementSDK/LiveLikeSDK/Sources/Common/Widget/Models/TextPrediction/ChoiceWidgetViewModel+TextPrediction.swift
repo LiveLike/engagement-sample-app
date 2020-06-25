@@ -31,8 +31,6 @@ extension ChoiceWidgetViewModel {
                                               timeout: textPredictionFollowUp.timeout,
                                               options: followUpOptions,
                                               customData: nil)
-        viewModel.animationCorrectAsset = theme.randomCorrectAnimationAsset()
-        viewModel.animationIncorrectAsset = theme.randomIncorrectAnimationAsset()
         return viewModel
     }
 

@@ -65,18 +65,28 @@ private extension PubSubWidgetClient {
     ///    }
     /// ```
     func processMessage(message: PNMessageResult) throws -> MessagingEventType {
+        let eventName = try extractEventNameFromPubNubMessage(message: message)
+        let jsonData = try extractWidgetPayloadFromPubNubMessage(message: message)
+        return try parsePayload(for: eventName, jsonObject: jsonData)
+    }
+    
+    func extractEventNameFromPubNubMessage(message: PNMessageResult) throws -> EventName {
         guard let message = message.data.message as? [String: AnyObject] else { throw MessagingClientError.invalidEvent(event: "The message is empty") }
         guard let eventString = message["event"] as? String else { throw MessagingClientError.invalidEvent(event: "The message does not contain an event") }
         guard let eventType = EventName(rawValue: eventString) else { throw MessagingClientError.invalidEvent(event: "The message has an invalid event \(eventString)") }
-        log.debug("Received Event: \(eventType)")
+        return eventType
+    }
+    
+    func extractWidgetPayloadFromPubNubMessage(message: PNMessageResult) throws -> Any {
+        guard let message = message.data.message as? [String: AnyObject] else { throw MessagingClientError.invalidEvent(event: "The message is empty") }
         guard let payload = message["payload"] as? [String: AnyObject] else { throw MessagingClientError.invalidEvent(event: "The message does not contain a payload") }
-        let jsonData = try JSONSerialization.data(withJSONObject: payload, options: .prettyPrinted)
-        log.debug(String(decoding: jsonData, as: UTF8.self))
-        return try parsePayload(for: eventType, jsonData: jsonData)
+//        let jsonData = try JSONSerialization.data(withJSONObject: payload, options: .prettyPrinted)
+        return payload
     }
 
     // swiftlint:disable:next function_body_length
-    func parsePayload(for event: EventName, jsonData: Data) throws -> MessagingEventType {
+    func parsePayload(for event: EventName, jsonObject: Any) throws -> MessagingEventType {
+        let jsonData = try JSONSerialization.data(withJSONObject: jsonObject, options: .prettyPrinted)
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         decoder.dateDecodingStrategy = .formatted(DateFormatter.iso8601Full)
@@ -87,7 +97,7 @@ private extension PubSubWidgetClient {
             return MessagingEventType.widget(clientEvent)
         case .textPredictionFollowUpCreated:
             let textPredictionFollowUp = try decoder.decode(TextPredictionFollowUp.self, from: jsonData)
-            let clientEvent = ClientEvent.textPredictionFollowUp(textPredictionFollowUp, nil)
+            let clientEvent = ClientEvent.textPredictionFollowUp(textPredictionFollowUp)
             return MessagingEventType.widget(clientEvent)
         case .imagePredictionCreated:
             let imagePrediction = try decoder.decode(ImagePredictionCreated.self, from: jsonData)
@@ -95,7 +105,7 @@ private extension PubSubWidgetClient {
             return MessagingEventType.widget(clientEvent)
         case .imagePredictionFollowUpCreated:
             let imagePredictionFollowUp = try decoder.decode(ImagePredictionFollowUp.self, from: jsonData)
-            let clientEvent = ClientEvent.imagePredictionFollowUp(imagePredictionFollowUp, nil)
+            let clientEvent = ClientEvent.imagePredictionFollowUp(imagePredictionFollowUp)
             return MessagingEventType.widget(clientEvent)
         case .textPredictionResults, .imagePredictionResults:
             let predictionResults = try decoder.decode(PredictionResults.self, from: jsonData)
@@ -156,10 +166,15 @@ private extension PubSubWidgetClient {
 extension PubSubWidgetClient: PNObjectEventListener {
     func client(_ client: PubNub, didReceiveMessage message: PNMessageResult) {
         do {
-            let event = try processMessage(message: message)
-            switch event {
+            let eventName = try extractEventNameFromPubNubMessage(message: message)
+            let payloadData = try extractWidgetPayloadFromPubNubMessage(message: message)
+            let clientEvent = try parsePayload(for: eventName, jsonObject: payloadData)
+            
+            switch clientEvent {
             case let .widget(widgetEvent):
-                widgetListeners.publish(channel: message.data.channel) { $0.publish(event: widgetEvent) }
+                widgetListeners.publish(channel: message.data.channel) {
+                    $0.publish(event: WidgetProxyPublishData(clientEvent: widgetEvent, jsonObject: payloadData))
+                }
             }
         } catch {
             widgetListeners.publish(channel: message.data.channel) { $0.error(error) }

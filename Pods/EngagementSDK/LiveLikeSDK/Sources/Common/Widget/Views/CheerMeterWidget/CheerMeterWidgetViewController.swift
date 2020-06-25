@@ -22,9 +22,26 @@ class CheerMeterWidgetViewController: WidgetController {
     var widgetTitle: String?
     var correctOptions: Set<WidgetOption>?
     var options: Set<WidgetOption>?
+    var userDidInteract: Bool = false
     var customData: String?
-    var height: CGFloat {
-        return coreWidgetView.bounds.height + 32
+    var previousState: WidgetState?
+    var currentState: WidgetState = .ready {
+        willSet {
+            previousState = self.currentState
+        }
+        didSet {
+            self.delegate?.widgetDidEnterState(widget: self, state: currentState)
+            switch currentState {
+            case .ready:
+                break
+            case .interacting:
+                enterInteractionState()
+            case .results:
+                enterResultsState()
+            case .finished:
+                enterFinishedState()
+            }
+        }
     }
 
     private let tutorialDuration: TimeInterval = 5.0
@@ -35,21 +52,11 @@ class CheerMeterWidgetViewController: WidgetController {
     private let cheerMeterData: CheerMeterCreated
     private let leftCheerOption: CheerOption
     private let rightCheerOption: CheerOption
-    private let voteClient: CheerMeterVoteClient
+    private let leftVoteClient: CheerMeterVoteClient
+    private let rightVoteClient: CheerMeterVoteClient
+    private let resultsClient: CheerMeterResultsClient
     private let theme: Theme
-    private let cache: Cache = Cache.shared
-
-    private var mySide: Side?
-    private var state: CheerMeterState {
-        didSet {
-            switch state {
-            case .sideSelection: startSideSelection()
-            case .tutorial: startTutorial()
-            case .tapGame: startTapGame()
-            case .results: startResults()
-            }
-        }
-    }
+    private let mediaRepository: MediaRepository = EngagementSDK.mediaRepository
 
     private var leftScore: Int = 0
     private var rightScore: Int = 0
@@ -62,7 +69,14 @@ class CheerMeterWidgetViewController: WidgetController {
     private var lastTapTime: Date?
     private var interactableState: InteractableState = .closedToInteraction
 
-    init(cheerMeterData: CheerMeterCreated, voteClient: CheerMeterVoteClient, theme: Theme, eventRecorder: EventRecorder) throws {
+    init(
+        cheerMeterData: CheerMeterCreated,
+        leftVoteClient: CheerMeterVoteClient,
+        rightVoteClient: CheerMeterVoteClient,
+        resultsClient: CheerMeterResultsClient,
+        theme: Theme,
+        eventRecorder: EventRecorder
+    ) throws {
         guard cheerMeterData.options.count == 2 else {
             throw InitializationError.unexpectedNumberOfOptions(inEvent: cheerMeterData)
         }
@@ -73,10 +87,11 @@ class CheerMeterWidgetViewController: WidgetController {
         rightCheerOption = cheerMeterData.options[1]
         id = cheerMeterData.id
         kind = cheerMeterData.kind
-        self.voteClient = voteClient
+        self.leftVoteClient = leftVoteClient
+        self.rightVoteClient = rightVoteClient
+        self.resultsClient = resultsClient
         self.theme = theme
         self.eventRecorder = eventRecorder
-        state = .sideSelection
         self.widgetTitle = cheerMeterData.question
         self.options = Set(cheerMeterData.options.map({ WidgetOption(id: $0.id, text: $0.description, image: nil)}))
         self.interactionTimeInterval = cheerMeterData.timeout.timeInterval
@@ -88,83 +103,8 @@ class CheerMeterWidgetViewController: WidgetController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    private func startSideSelection() {
-        interactableState = .openToInteraction
-        cheerMeter.playVersusAnimation()
-        cheerMeter.playTimerAnimation { [weak self] finished in
-            guard let self = self, finished else { return }
-            // If state hasn't changed then dismiss early
-            if self.state == .sideSelection {
-                self.delegate?.actionHandler(event: .dismiss(action: .timeout))
-            }
-        }
-    }
-
-    private func startTutorial() {
-        interactableState = .closedToInteraction
-        if let mySide = mySide {
-            switch mySide {
-            case .left:
-                cheerMeter.setCircleFeedbackProperties(fillColor: UIColor(red: 80, green: 160, blue: 250, alpha: 0.4),
-                                                       strokeColor: UIColor(red: 80, green: 160, blue: 250, alpha: 0.6))
-            case .right:
-                cheerMeter.setCircleFeedbackProperties(fillColor: UIColor(red: 250, green: 80, blue: 100, alpha: 0.4),
-                                                       strokeColor: UIColor(red: 250, green: 80, blue: 100, alpha: 0.6))
-            }
-        }
-
-        cheerMeter.playTutorialAnimation(duration: 4) {
-            self.state = .tapGame
-        }
-    }
-
     private func startTapGame() {
-        interactableState = .openToInteraction
-        cheerMeter.showScores()
-        cheerMeter.timerDuration = CGFloat(tapGameDuration)
-        cheerMeter.playTimerAnimation { [weak self] finished in
-            guard let self = self, finished else { return }
-            self.cheerMeter.playTapGameOverAnimation {
-                self.state = .results
-            }
-        }
-        delegate?.widgetInteractionDidBegin(widget: self)
-    }
 
-    private func startResults() {
-        interactableState = .closedToInteraction
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self = self else { return }
-            
-            self.voteClient.removeDelegate(self)
-            
-            if let firstTapTime = self.firstTapTime, let lastTapTime = self.lastTapTime {
-                let properties = WidgetInteractedProperties(
-                    widgetId: self.cheerMeterData.id,
-                    widgetKind: self.kind.analyticsName,
-                    firstTapTime: firstTapTime,
-                    lastTapTime: lastTapTime,
-                    numberOfTaps: self.myScore,
-                    interactionTimeInterval: self.interactionTimeInterval,
-                    widgetViewModel: self
-                )
-                self.delegate?.widgetInteractionDidComplete(properties: properties)
-            }
-            guard let mySide = self.mySide else { return }
-            let winner: Side = self.leftScore > self.rightScore ? .left : .right
-            if winner == mySide {
-                if let winnerImage = mySide == .left ? self.cheerMeter.leftChoiceImage : self.cheerMeter.rightChoiceImage {
-                    self.cheerMeterResults.playWin(winnerImage: winnerImage, completion: {
-                        self.delegate?.actionHandler(event: .dismiss(action: .timeout))
-                    })
-                }
-            } else {
-                self.cheerMeterResults.playLose {
-                    self.delegate?.actionHandler(event: .dismiss(action: .timeout))
-                }
-            }
-        }
     }
 }
 
@@ -175,85 +115,86 @@ private extension CheerMeterWidgetViewController {
         case left
         case right
     }
-
-    enum CheerMeterState {
-        case sideSelection
-        case tutorial
-        case tapGame
-        case results
-    }
 }
 
 // MARK: - View Lifecycle
 
 extension CheerMeterWidgetViewController {
-    override func loadView() {
-        view = cheerMeter
-        view.addSubview(cheerMeterResults)
-    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        cheerMeter.translatesAutoresizingMaskIntoConstraints = false
+        cheerMeterResults.translatesAutoresizingMaskIntoConstraints = false
+        
+        view.addSubview(cheerMeter)
+        view.addSubview(cheerMeterResults)
+        
+        cheerMeter.constraintsFill(to: view)
+        NSLayoutConstraint.activate([
+            cheerMeterResults.topAnchor.constraint(equalTo: cheerMeter.topAnchor),
+            cheerMeterResults.leadingAnchor.constraint(equalTo: cheerMeter.leadingAnchor),
+            cheerMeterResults.trailingAnchor.constraint(equalTo: cheerMeter.trailingAnchor),
+            cheerMeterResults.heightAnchor.constraint(equalToConstant: 200)
+        ])
+        cheerMeterResults.constraintsFill(to: cheerMeter)
+        
+        cheerMeter.setLeftCircleFeedbackProperties(
+            fillColor: theme.cheerMeter.teamOneLeftColor.withAlphaComponent(0.4),
+            strokeColor: theme.cheerMeter.teamOneRightColor.withAlphaComponent(0.6)
+        )
+        cheerMeter.setRightCircleFeedbackProperties(
+            fillColor: theme.cheerMeter.teamTwoLeftColor.withAlphaComponent(0.4),
+            strokeColor: theme.cheerMeter.teamTwoRightColor.withAlphaComponent(0.6)
+        )
+        
         cheerMeter.setup(question: cheerMeterData.question,
                          duration: cheerMeterData.timeout.timeInterval,
                          leftChoice: leftCheerOption,
                          rightChoice: rightCheerOption,
-                         cache: cache,
+                         mediaRepository: mediaRepository,
                          theme: theme)
         cheerMeter.delegate = self
-        voteClient.setDelegate(self)
+        resultsClient.delegate = self
 
         cheerMeterResults.isUserInteractionEnabled = false
-        cheerMeterResults.constraintsFill(to: view)
-
+        
         eventRecorder.record(.widgetDisplayed(kind: kind.stringValue, widgetId: cheerMeterData.id))
+        
+        cheerMeter.isUserInteractionEnabled = false
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        voteClient.removeDelegate(self)
     }
 }
 
 extension CheerMeterWidgetViewController: CheerMeterWidgetViewDelegate {
     func optionSelected(button: CheerMeterWidgetViewButtons) {
-        switch state {
-        case .sideSelection: handleSideSelectionPress(button: button)
-        case .tutorial: break
-        case .tapGame: handleTapGamePress(button: button)
-        case .results: break
-        }
-    }
-
-    private func handleSideSelectionPress(button: CheerMeterWidgetViewButtons) {
-        switch button {
-        case .leftChoice:
-            mySide = .left
-            cheerMeter.animateLeftSelectionCenter {
-                self.state = .tutorial
-            }
-        case .rightChoice:
-            mySide = .right
-            cheerMeter.animateRightSelectionCenter {
-                self.state = .tutorial
-            }
-        }
+        handleTapGamePress(button: button)
     }
 
     private func handleTapGamePress(button: CheerMeterWidgetViewButtons) {
+        if myScore == 0 {
+            // Fade out versus animation if first tap
+            cheerMeter.fadeOutVersusAnimation()
+        }
+        
         myScore += 1
         cheerMeter.score = myScore.description
 
         switch button {
         case .leftChoice:
             cheerMeter.flashLeftPowerBar()
-            voteClient.sendVote(voteURL: leftCheerOption.voteUrl)
+            cheerMeter.playLeftScoreAnimation()
+            leftVoteClient.sendVote()
         case .rightChoice:
             cheerMeter.flashRightPowerBar()
-            voteClient.sendVote(voteURL: rightCheerOption.voteUrl)
+            cheerMeter.playRightScoreAnimation()
+            rightVoteClient.sendVote()
         }
-
-        cheerMeter.playScoreAnimation()
+        
+        cheerMeter.scoreLabelFadeInOut()
 
         let now = Date()
         if firstTapTime == nil {
@@ -265,9 +206,9 @@ extension CheerMeterWidgetViewController: CheerMeterWidgetViewDelegate {
 
 // MARK: - CheerMeterVoteClientDelegate
 
-extension CheerMeterWidgetViewController: CheerMeterVoteClientDelegate {
+extension CheerMeterWidgetViewController: CheerMeterResultsDelegate {
     func didReceiveResults(_ results: CheerMeterResults) {
-        guard state != .results else {
+        guard currentState != .results else {
             return
         }
         
@@ -285,12 +226,33 @@ extension CheerMeterWidgetViewController: CheerMeterVoteClientDelegate {
 // MARK: - Internal APIs
 
 internal extension CheerMeterWidgetViewController {
-    var coreWidgetView: CoreWidgetView {
-        return cheerMeter.coreWidgetView
+    
+    func moveToNextState() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            switch self.currentState {
+            case .ready :
+                self.currentState = .interacting
+            case .interacting:
+                self.currentState = .results
+            case .results:
+                self.currentState = .finished
+            case .finished:
+                break
+            }
+        }
     }
-
-    func start() {
-        state = .sideSelection
+    
+    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) {
+        // Not implemented
+    }
+    
+    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
+        cheerMeter.timerDuration = CGFloat(seconds)
+        cheerMeter.playTimerAnimation { [weak self] _ in
+            guard let self = self else { return }
+            completion(self)
+        }
     }
 
     func willDismiss(dismissAction: DismissAction) {
@@ -316,8 +278,77 @@ internal extension CheerMeterWidgetViewController {
 // MARK: - Private APIs
 
 private extension CheerMeterWidgetViewController {
+    
+    private func enterInteractionState() {
+        cheerMeter.playVersusAnimation()
+        interactableState = .openToInteraction
+        cheerMeter.showScores()
+        self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
+        cheerMeter.isUserInteractionEnabled = true
+    }
+    
+    private func enterResultsState() {
+        interactableState = .closedToInteraction
+        cheerMeter.isUserInteractionEnabled = false
+        
+        // handle tie
+        if leftScore == rightScore {
+            self.cheerMeterResults.playTieAnimation {
+                self.delegate?.widgetStateCanComplete(widget: self, state: .results)
+                return
+            }
+        } else {
+            // handle a winner
+            let winnerImage: UIImage? = {
+                if leftScore > rightScore {
+                    return self.cheerMeter.leftChoiceImage
+                } else {
+                    return self.cheerMeter.rightChoiceImage
+                }
+            }()
+            
+            guard let winnersImage = winnerImage else {
+                self.delegate?.widgetStateCanComplete(widget: self, state: .results)
+                return
+            }
+            
+            self.cheerMeterResults.playWin(winnerImage: winnersImage) { [weak self] in
+                guard let self = self else { return }
+                self.resultsClient.delegate = nil
+                
+                let properties = WidgetInteractedProperties(
+                    widgetId: self.cheerMeterData.id,
+                    widgetKind: self.kind.analyticsName,
+                    firstTapTime: self.firstTapTime,
+                    lastTapTime: self.lastTapTime,
+                    numberOfTaps: self.myScore,
+                    interactionTimeInterval: self.interactionTimeInterval,
+                    widgetViewModel: self,
+                    previousState: .interacting,
+                    currentState: .results
+                )
+                self.delegate?.widgetStateCanComplete(widget: self, state: .results)
+            }
+        }
+    }
+    
+    private func enterFinishedState() {
+        let properties = WidgetInteractedProperties(
+            widgetId: self.cheerMeterData.id,
+            widgetKind: self.kind.analyticsName,
+            firstTapTime: self.firstTapTime,
+            lastTapTime: self.lastTapTime,
+            numberOfTaps: self.myScore,
+            interactionTimeInterval: self.interactionTimeInterval,
+            widgetViewModel: self,
+            previousState: previousState ?? .interacting,
+            currentState: .finished
+        )
+        self.cheerMeter.animateFinishedState()
+        self.delegate?.widgetStateCanComplete(widget: self, state: .finished)
+    }
+    
     class ResultsView: UIView {
-
         private let theme: Theme
 
         init(theme: Theme){
@@ -327,6 +358,25 @@ private extension CheerMeterWidgetViewController {
 
         required init?(coder: NSCoder) {
             fatalError("init(coder:) has not been implemented")
+        }
+        
+        func playTieAnimation(completion: @escaping () -> Void) {
+            let lottie = AnimationView(filePath: theme.randomTieAnimationFilepath())
+            lottie.contentMode = .scaleAspectFit
+
+            addSubview(lottie)
+            lottie.constraintsFill(to: self)
+
+            lottie.play { complete in
+                if complete {
+                    UIView.animate(withDuration: 0.2, animations: {
+                        lottie.alpha = 0
+                    }, completion: { _ in
+                        completion()
+                    })
+                }
+            }
+            
         }
 
         func playLose(completion: @escaping () -> Void) {
@@ -348,19 +398,26 @@ private extension CheerMeterWidgetViewController {
         }
 
         func playWin(winnerImage: UIImage, completion: @escaping () -> Void) {
-            let winLottie = AnimationView(filePath: theme.randomCorrectAnimationAsset())
-            winLottie.contentMode = .scaleAspectFit
-
-            addSubview(winLottie)
-            winLottie.constraintsFill(to: self)
+            let lottie = AnimationView(filePath: theme.cheerMeter.filepathForWinnerLottieAnimation)
+            let winnerImageView = UIImageView(image: winnerImage)
+            winnerImageView.contentMode = .scaleAspectFit
             
-            winLottie.play { complete in
+            addSubview(winnerImageView)
+            addSubview(lottie)
+            
+            lottie.contentMode = .scaleAspectFit
+            
+            winnerImageView.constraintsFill(to: self)
+            lottie.constraintsFill(to: self)
+            
+            winnerImageView.transform = CGAffineTransform(scaleX: 0, y: 0)
+            UIView.animate(withDuration: 1, animations: {
+                winnerImageView.transform = CGAffineTransform(scaleX: 0.6, y: 0.6)
+            })
+
+            lottie.play { complete in
                 if complete {
-                    UIView.animate(withDuration: 0.2, animations: {
-                        winLottie.alpha = 0
-                    }, completion: { _ in
-                        completion()
-                    })
+                    completion()
                 }
             }
         }
@@ -375,35 +432,31 @@ private extension CheerMeterWidgetView {
         duration: TimeInterval,
         leftChoice: CheerOption,
         rightChoice: CheerOption,
-        cache: Cache,
+        mediaRepository: MediaRepository,
         theme: Theme
     ) {
         titleText = question
         leftChoiceText = leftChoice.description
         rightChoiceText = rightChoice.description
         timerDuration = CGFloat(duration)
-        scoreTitle = "EngagementSDK.widget.CheerMeter.scoreTitle".localized(withComment: "Text to indicate your score.")
         instructionText = "EngagementSDK.widget.CheerMeter.instruction".localized(withComment: "Text to teach user how to play the game by tapping.")
 
-        cache.get(key: leftChoice.imageUrl.absoluteString) { [weak self] (data: Data?) in
-            guard
-                let self = self,
-                let image = data.flatMap(UIImage.init(data:))
-            else {
-                return
+        mediaRepository.getImage(url: leftChoice.imageUrl) { [weak self] result in
+            switch result {
+            case .success(let success):
+                self?.leftChoiceImage = success.image
+            case .failure(let error):
+                log.error(error)
             }
-
-            self.leftChoiceImage = image
         }
-        cache.get(key: rightChoice.imageUrl.absoluteString) { [weak self] (data: Data?) in
-            guard
-                let self = self,
-                let image = data.flatMap(UIImage.init(data:))
-            else {
-                return
+        
+        mediaRepository.getImage(url: rightChoice.imageUrl) { [weak self] result in
+            switch result {
+            case .success(let success):
+                self?.rightChoiceImage = success.image
+            case .failure(let error):
+                log.error(error)
             }
-
-            self.rightChoiceImage = image
         }
 
         applyTheme(theme)

@@ -12,10 +12,12 @@ class ImageUploader {
 
     private let uploadUrl: URL
     private let urlSession: URLSession
+    private let accessToken: AccessToken
 
-    init(uploadUrl: URL, urlSession: URLSession) {
+    init(uploadUrl: URL, urlSession: URLSession, accessToken: AccessToken) {
         self.uploadUrl = uploadUrl
         self.urlSession = urlSession
+        self.accessToken = accessToken
     }
 
     func upload(
@@ -38,6 +40,7 @@ class ImageUploader {
     ) {
         var request = URLRequest(url: uploadUrl)
         request.httpMethod = "POST"
+        request.setValue("Bearer \(self.accessToken.asString)", forHTTPHeaderField: "Authorization")
 
         let boundary = generateBoundaryString()
 
@@ -67,10 +70,13 @@ class ImageUploader {
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = .convertFromSnakeCase
 
-            guard let imageResource = try? decoder.decode(ImageResource.self, from: data) else {
-                return completion(.failure(Errors.failedToDecodeDataAsImageResource))
+            do {
+                let imageResource = try decoder.decode(ImageResource.self, from: data)
+                completion(.success(imageResource))
+            } catch {
+                log.error("\(error)")
+                completion(.failure(Errors.failedToDecodeDataAsImageResource))
             }
-            completion(.success(imageResource))
         }
         task.resume()
     }
@@ -105,7 +111,7 @@ class ImageUploader {
     }
 
     private func generateBoundaryString() -> String {
-        return "Boundary-\(NSUUID().uuidString)"
+        return "Boundary-\(NSUUID().uuidString.lowercased())"
     }
 
     private enum Errors: LocalizedError {

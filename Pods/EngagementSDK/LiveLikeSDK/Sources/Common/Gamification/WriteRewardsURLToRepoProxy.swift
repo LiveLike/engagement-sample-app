@@ -18,19 +18,19 @@ class WriteRewardsURLToRepoProxy {
 }
 
 extension WriteRewardsURLToRepoProxy: WidgetProxy {
-    func publish(event: ClientEvent) {
-        switch event {
+    func publish(event: WidgetProxyPublishData) {
+        switch event.clientEvent {
         case let .textPollCreated(payload):
             add(id: payload.id, url: payload.rewardsUrl)
         case let .textQuizCreated(payload):
             add(id: payload.id, url: payload.rewardsUrl)
         case let .textPredictionCreated(payload):
             add(id: payload.id, url: payload.rewardsUrl)
-        case let .textPredictionFollowUp(payload, _):
+        case let .textPredictionFollowUp(payload):
             add(id: payload.id, url: payload.rewardsUrl)
         case let .imagePredictionCreated(payload):
             add(id: payload.id, url: payload.rewardsUrl)
-        case let .imagePredictionFollowUp(payload, _):
+        case let .imagePredictionFollowUp(payload):
             add(id: payload.id, url: payload.rewardsUrl)
         case let .imagePollCreated(payload):
             add(id: payload.id, url: payload.rewardsUrl)

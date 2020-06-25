@@ -34,6 +34,13 @@ class GamificationTutorialWidget: WidgetController {
     var options: Set<WidgetOption>?
 
     var customData: String?
+    var previousState: WidgetState?
+    var currentState: WidgetState = .ready {
+        willSet {
+            previousState = self.currentState
+        }
+    }
+    var userDidInteract: Bool = false
     
     private var gamificationModal: GamificationModal!
     private var rewardsView: RewardsView!
@@ -76,11 +83,12 @@ class GamificationTutorialWidget: WidgetController {
         gamificationModal.heightAnchor.constraint(equalToConstant: 203).isActive = true
     }
 
+    func moveToNextState() { }
+    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) { }
+    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) { }
+    
     func start() {
         rewardsView.apply(viewModel: awards, animated: true)
-        delay(10) { [weak self] in
-            self?.delegate?.actionHandler(event: .dismiss(action: .timeout))
-        }
     }
 
     func willDismiss(dismissAction: DismissAction) {

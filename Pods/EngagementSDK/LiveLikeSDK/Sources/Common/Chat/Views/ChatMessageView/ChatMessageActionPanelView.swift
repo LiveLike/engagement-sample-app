@@ -54,7 +54,6 @@ class ChatMessageActionPanelView: UIStackView {
         flagBtn.translatesAutoresizingMaskIntoConstraints = false
         flagBtn.heightAnchor.constraint(equalToConstant: 30.0).isActive = true
         flagBtn.widthAnchor.constraint(equalToConstant: 30.0).isActive = true
-        flagBtn.addTarget(self, action: #selector(chatFlagPressed(sender:)), for: .touchUpInside)
         return flagBtn
     }()
 
@@ -110,11 +109,13 @@ extension ChatMessageActionPanelView {
         flagBackgroundView.livelike_shadowOpacity = 0.3
         flagBackgroundView.livelike_shadowRadius = 3
         flagBackgroundView.livelike_shadowOffset = CGSize(width: 0, height: 0)
+        
+        flagBtn.addTarget(self, action: #selector(chatFlagPressed(sender:)), for: .touchUpInside)
     }
     
     func prepareToBeShown(messageViewModel: MessageViewModel) {
         self.messageViewModel = messageViewModel
-
+        
         reactionsHolder.arrangedSubviews.forEach { view in
             guard let reactionView = view as? ReactionView else { return }
             let count = messageViewModel
@@ -124,9 +125,9 @@ extension ChatMessageActionPanelView {
             
             reactionView.isMine = messageViewModel.chatReactions.isMine(forID: reactionView.reactionID)
         }
-
-        flagHolder.isHidden = !(chatSession?.isReportingEnabled ?? false)
         
+        // only show the flag when reporting is enabled and the message is not yours
+        flagHolder.isHidden = !((chatSession?.isReportingEnabled ?? false) && !messageViewModel.isLocalClient)
     }
     
     func setTheme(theme: Theme) {

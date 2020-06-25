@@ -14,7 +14,6 @@ import Bugsnag
 
  - Important: Concurrent instances of the EngagementSDK is not supported; Only one instance should exist at any time.
  */
-@objc(LLEngagementSDK)
 public class EngagementSDK: NSObject {
     // MARK: - Static Properties
 
@@ -22,13 +21,13 @@ public class EngagementSDK: NSObject {
 
     static let networking: SDKNetworking = SDKNetworking(sdkVersion: EngagementSDK.version)
     static let prodAPIEndpoint: URL = URL(string: "https://cf-blast.livelikecdn.com/api/v1")!
+    static let mediaRepository: MediaRepository = MediaRepository(cache: Cache.shared)
 
     // MARK: - Stored Properties
 
     // MARK: Public
 
     /// The sdk's delegate, currently only used to report setup errors
-    @objc
     public weak var delegate: EngagementSDKDelegate?
     
     private let config: EngagementSDKConfig
@@ -55,14 +54,15 @@ public class EngagementSDK: NSObject {
     // MARK: Private
     
     private var whenMessagingClients: Promise<InternalContentSession.MessagingClients>!
-    private var applicationConfigVendor: ApplicationConfigVendor
+    private var livelikeRestAPIService: LiveLikeRestAPIServicable
     private var whenProgramURLTemplate: Promise<String>
-    private let stickerRepository: StickerRepository
     private let accessTokenVendor: AccessTokenVendor
     private let livelikeIDVendor: LiveLikeIDVendor
     private let userNicknameService: UserNicknameService
     private let userPointsVendor: UserPointsVendor
+    private let userProfileVendor: UserProfileVendor
     private let sdkErrorReporter: InternalErrorReporter
+    private let widgetVotes = WidgetVotes()
 
     private let widgetPauseDelegates: Listener<PauseDelegate> = Listener<PauseDelegate>()
     private let analytics: Analytics
@@ -76,54 +76,66 @@ public class EngagementSDK: NSObject {
     /// Initializes an instance of the EngagementSDK
     /// - Parameter config: An EngagementSDKConfig object
     public convenience init(config: EngagementSDKConfig) {
-        let appConfigVendor = ApplicationConfigClient(
-            apiBaseURL: config.apiOrigin,
-            clientID: config.clientID
-        )
+        let livelikeRestAPIService = LiveLikeRestAPIServices(apiBaseURL: config.apiOrigin, clientID: config.clientID)
         
         let sdkErrorReporter = InternalErrorReporter()
-        let accessTokenGenerator = APIAccessTokenGenerator(applicationConfigVendor: appConfigVendor)
-        let userProfileService = APIUserProfileService(appConfigVendor: appConfigVendor)
+        let accessTokenGenerator = APIAccessTokenGenerator(livelikeRestAPIService: livelikeRestAPIService)
+        let userProfileService = APIUserProfileService(livelikeRestAPIService: livelikeRestAPIService)
         
         let userResolver = UserResolver(accessTokenStorage: config.accessTokenStorage,
                                         userProfileService: userProfileService,
                                         accessTokenGenerator: accessTokenGenerator,
                                         sdkDelegate: sdkErrorReporter)
+        
+        let bugsnagAPIKey: String = {
+            guard
+                let key = Bundle(for: EngagementSDK.self).object(forInfoDictionaryKey: "BugsnagAPIKey") as? String,
+                key != ""
+            else {
+                log.error("Failed to find Bugsnag API Key.")
+                return ""
+            }
+            return key
+        }()
 
         self.init(
             config: config,
-            applicationConfigVendor: appConfigVendor,
+            livelikeRestAPIService: livelikeRestAPIService,
             accessTokenVendor: userResolver,
             livelikeIDVendor: userResolver,
             userNicknameService: userResolver,
             userPointsVendor: userResolver,
+            userProfileVendor: userResolver,
             awardsProfileVendor: userResolver,
-            sdkErrorReporter: sdkErrorReporter
+            sdkErrorReporter: sdkErrorReporter,
+            bugsnagAPIKey: bugsnagAPIKey
         )
     }
 
     internal init(
         config: EngagementSDKConfig,
-        applicationConfigVendor: ApplicationConfigVendor,
+        livelikeRestAPIService: LiveLikeRestAPIServicable,
         accessTokenVendor: AccessTokenVendor,
         livelikeIDVendor: LiveLikeIDVendor,
         userNicknameService: UserNicknameService,
         userPointsVendor: UserPointsVendor,
+        userProfileVendor: UserProfileVendor,
         awardsProfileVendor: AwardsProfileVendor,
-        sdkErrorReporter: InternalErrorReporter
+        sdkErrorReporter: InternalErrorReporter,
+        bugsnagAPIKey: String
     ) {
         self.config = config
         self.accessTokenVendor = accessTokenVendor
-        self.applicationConfigVendor = applicationConfigVendor
+        self.livelikeRestAPIService = livelikeRestAPIService
         self.livelikeIDVendor = livelikeIDVendor
         self.userNicknameService = userNicknameService
         self.userPointsVendor = userPointsVendor
+        self.userProfileVendor = userProfileVendor
         self.sdkErrorReporter = sdkErrorReporter
-        analytics = Analytics(applicationConfigVendor: applicationConfigVendor)
+        analytics = Analytics(livelikeRestAPIService: livelikeRestAPIService)
         whenProgramURLTemplate = Promise<String>()
         log.info("Initializing EngagementSDK using client id: '\(config.clientID)'")
         widgetPauseStatus = UserDefaults.standard.bool(forKey: EngagementSDK.permanentPauseUserDefaultsKey) == true ? .paused : .unpaused
-        stickerRepository = StickerRepository(apiBaseURL: config.apiOrigin)
         super.init()
         sdkErrorReporter.delegate = self
         awardsProfileVendor.addDelegate(self)
@@ -159,13 +171,14 @@ public class EngagementSDK: NSObject {
         /// 3. Initialize third parties (Bugsnag)
         firstly {
             Promises.zip(
-                self.applicationConfigVendor.whenApplicationConfig,
+                self.livelikeRestAPIService.whenApplicationConfig,
                 self.userNicknameService.whenInitialNickname,
                 self.livelikeIDVendor.whenLiveLikeID
             )
         }.then { appConfig, nickname, livelikeID in
             if config.isBugsnagEnabled {
                 self.initializeBugsnag(
+                    apiKey: bugsnagAPIKey,
                     organizationID: appConfig.organizationId,
                     organizationName: appConfig.organizationName,
                     userID: livelikeID.asString,
@@ -176,53 +189,79 @@ public class EngagementSDK: NSObject {
         }.catch { error in
             switch error {
             case NetworkClientError.badRequest:
-                self.delegate?.sdk?(self, setupFailedWithError: SetupError.invalidClientID(config.clientID))
+                if config.apiOrigin != EngagementSDKConfig.defaultAPIOrigin {
+                    self.delegate?.sdk?(self, setupFailedWithError: SetupError.invalidAPIOrigin)
+                } else {
+                    self.delegate?.sdk?(self, setupFailedWithError: SetupError.invalidClientID(config.clientID))
+                }
             default:
                 self.delegate?.sdk?(self, setupFailedWithError: error)
             }
         }
     }
     
-    /// Creates a connection to a chat room.
-    func connectChatRoom(
-        config: ChatSessionConfig,
-        reactionsVendor: ReactionVendor,
-        messageReporter: MessageReporter?,
-        completion: @escaping (Result<ChatSession, Error>) -> Void
-    ) {
-        log.info("Connecting to chat room with id \(config.roomID).")
-        self.loadChatRoom(
-            config: config,
-            reactionVendor: reactionsVendor,
-            messageReporter: messageReporter
-        ) { result in
-            switch result {
-            case .success(let chatRoom):
-                let chatSession: InternalChatSessionProtocol = {
-                    if let syncTimeSource = config.syncTimeSource {
-                        log.info("Found syncTimeSource - Enabling Spoiler Free Sync for Chat Session with id \(config.roomID)")
-                        let spoilerFreeChatRoom = SpoilerFreeChatSession(
-                            realChatRoom: chatRoom,
-                            playerTimeSource: syncTimeSource
-                        )
-                        return spoilerFreeChatRoom
-                    } else {
-                        return chatRoom
-                    }
-                }()
-                
-                log.info("Loading initial history for Chat Room with id: \(config.roomID)")
-                chatSession.loadInitialHistory {
-                    switch $0 {
-                    case .success:
-                        completion(.success(chatSession))
-                    case .failure(let error):
-                        completion(.failure(error))
-                    }
-                }
-            case .failure(let error):
-                completion(.failure(error))
+    /// Create an instance of a `Widget` which can be placed into your view.
+    /// - Parameters:
+    ///   - jsonObject: A JSON object compatable with `JSONSerialization.data(withJSONObject:options:)`
+    ///   - completion: A result containing the `Widget`
+    func createWidget(withJSONObject jsonObject: Any, completion: @escaping (Result<WidgetController, Error>) -> Void) {
+        firstly {
+            Promises.zip(
+                self.whenMessagingClients,
+                self.accessTokenVendor.whenAccessToken
+            )
+        }.then { messagingClients, accessToken in
+            guard let widgetClient = messagingClients.widgetMessagingClient else {
+                return
             }
+            let clientEvent = try WidgetPayloadParser.parse(jsonObject)
+            let widgetFactory = ClientEventWidgetFactory(
+                event: clientEvent,
+                voteRepo: self.widgetVotes,
+                widgetMessagingOutput: widgetClient,
+                accessToken: accessToken,
+                eventRecorder: self.eventRecorder
+            )
+            guard let widget = widgetFactory.create(widgetConfig: WidgetConfig()) else {
+                return
+            }
+            completion(.success(widget))
+        }.catch { error in
+            completion(.failure(error))
+        }
+    }
+    
+    func createWidgets(
+        widgetJSONObjects jsonObjects: [Any],
+        completion: @escaping (Result<[Widget], Error>) -> Void
+    ) {
+        firstly {
+            Promises.zip(
+                self.whenMessagingClients,
+                self.accessTokenVendor.whenAccessToken
+            )
+        }.then { messagingClients, accessToken in
+            guard let widgetClient = messagingClients.widgetMessagingClient else {
+                return
+            }
+            DispatchQueue.main.async {
+                let widgets: [Widget] = jsonObjects.compactMap { jsonObject in
+                    guard let clientEvent = try? WidgetPayloadParser.parse(jsonObject) else {
+                        return nil
+                    }
+                    let widgetFactory = ClientEventWidgetFactory(
+                        event: clientEvent,
+                        voteRepo: self.widgetVotes,
+                        widgetMessagingOutput: widgetClient,
+                        accessToken: accessToken,
+                        eventRecorder: self.eventRecorder
+                    )
+                    return widgetFactory.create(widgetConfig: WidgetConfig())
+                }
+                completion(.success(widgets))
+            }
+        }.catch { error in
+            completion(.failure(error))
         }
     }
 }
@@ -231,7 +270,7 @@ public class EngagementSDK: NSObject {
 
 public extension EngagementSDK {
     /// A property to control the level of logging from the `EngagementSDK`.
-    @objc
+    
     static var logLevel: LogLevel {
         get { return Logger.LoggingLevel }
         set { Logger.LoggingLevel = newValue }
@@ -242,14 +281,12 @@ public extension EngagementSDK {
 
 public extension EngagementSDK {
     /// A delegate that returns analytics events.
-    @objc
     var analyticsDelegate: EngagementAnalyticsDelegate? {
         get { return analytics.delegate }
         set { analytics.delegate = newValue }
     }
 
     /// Returns whether widgets are paused for all sessions
-    @objc
     var areWidgetsPausedForAllSessions: Bool {
         return widgetPauseStatus == .paused
     }
@@ -261,7 +298,6 @@ public extension EngagementSDK {
      - Parameter delegate: an object that will act as the delegate of the content session.
      - Returns: returns the `ContentSession`
      */
-    @objc
     func contentSession(config: SessionConfiguration, delegate: ContentSessionDelegate) -> ContentSession {
         return contentSessionInternal(config: config, delegate: delegate)
     }
@@ -272,7 +308,6 @@ public extension EngagementSDK {
      - Parameter config: A configuration object that defines the properties for a `ContentSession`
      - Returns: returns the `ContentSession`
      */
-    @objc
     func contentSession(config: SessionConfiguration) -> ContentSession {
         return contentSessionInternal(config: config, delegate: nil)
     }
@@ -305,7 +340,7 @@ public extension EngagementSDK {
      Sets a user's display name and calls the completion block
      - Note: This version of the method is for Objective-C, if using swift we encourage the variant which returns a `Result<Void, Error>`.
      */
-    @objc
+    
     func setUserDisplayName(_ newDisplayName: String, completion: @escaping (Bool, Error?) -> Void) {
         setUserDisplayName(newDisplayName) {
             switch $0 {
@@ -322,12 +357,134 @@ public extension EngagementSDK {
         config: ChatSessionConfig,
         completion: @escaping (Result<ChatSession, Error>) -> Void
     ) {
-        self.connectChatRoom(
-            config: config,
-            reactionsVendor: ApplicationReactionVendor(),
-            messageReporter: nil,
-            completion: completion
-        )
+        log.info("Connecting to chat room with id \(config.roomID).")
+        self.loadChatRoom(
+            config: config
+        ) { result in
+            switch result {
+            case .success(let chatRoom):
+                let chatSession: InternalChatSessionProtocol = {
+                    if let syncTimeSource = config.syncTimeSource {
+                        log.info("Found syncTimeSource - Enabling Spoiler Free Sync for Chat Session with id \(config.roomID)")
+                        let spoilerFreeChatRoom = SpoilerFreeChatSession(
+                            realChatRoom: chatRoom,
+                            playerTimeSource: syncTimeSource
+                        )
+                        return spoilerFreeChatRoom
+                    } else {
+                        return chatRoom
+                    }
+                }()
+                
+                log.info("Loading initial history for Chat Room with id: \(config.roomID)")
+                chatSession.loadInitialHistory {
+                    switch $0 {
+                    case .success:
+                        completion(.success(chatSession))
+                    case .failure(let error):
+                        completion(.failure(error))
+                    }
+                }
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    /// Creates a chat room with an optional title
+    func createChatRoom(title: String?,
+                        completion: @escaping (Result<String, Error>) -> Void) {
+        firstly {
+            Promises.zip(self.accessTokenVendor.whenAccessToken,
+                         self.livelikeRestAPIService.whenApplicationConfig)
+        }.then { accessToken, appConfig -> Promise<ChatRoomResource> in
+            self.livelikeRestAPIService.createChatRoomResource(title: title,
+                                                         accessToken: accessToken,
+                                                         appConfig: appConfig)
+        }.then { chatRoomResource in
+            completion(.success(chatRoomResource.id))
+        }.catch { error in
+            log.error("Error creating room: \(error.localizedDescription)")
+            completion(.failure(error))
+        }
+    }
+    
+    /// Retrieve information about a chat room
+    func getChatRoomInfo(roomID: String, completion: @escaping (Result<ChatRoomInfo, Error>) -> Void) {
+        firstly {
+            livelikeRestAPIService.getChatRoomResource(roomID: roomID)
+        }.then { chatRoomResource in
+            completion(.success(ChatRoomInfo(id: chatRoomResource.id, title: chatRoomResource.title)))
+        }.catch { error in
+            log.error("Error getting chat room info: \(error.localizedDescription)")
+            completion(.failure(error))
+        }
+    }
+    
+    /// Retrieve all the users who are members of a chat room
+    func getChatRoomMemberships(roomID: String,
+                                page: ChatRoomMembershipPagination,
+                                completion: @escaping (Result<[ChatRoomMember], Error>) -> Void) {
+        firstly {
+           self.accessTokenVendor.whenAccessToken
+        }.then { accessToken -> Promise<[ChatRoomMember]> in
+            self.livelikeRestAPIService.getChatRoomMemberships(roomID: roomID,
+                                                               page: page,
+                                                               accessToken: accessToken)
+        }.then { chatRoomMembers in
+             completion(.success(chatRoomMembers))
+        }.catch { error in
+            log.error("Error getting room memberships: \(error.localizedDescription)")
+            completion(.failure(error))
+        }
+    }
+    
+    /// Retrieve all Chat Rooms the current user is a member of
+    func getUserChatRoomMemberships(page: ChatRoomMembershipPagination,
+                                    completion: @escaping (Result<[ChatRoomInfo], Error>) -> Void) {
+        firstly {
+            Promises.zip(self.accessTokenVendor.whenAccessToken,
+                         self.userProfileVendor.whenProfileResource)
+        }.then { accessToken, profileResource -> Promise<[ChatRoomInfo]> in
+            self.livelikeRestAPIService.getUserChatRoomMemberships(profile: profileResource,
+                                                                   accessToken: accessToken,
+                                                                   page: page)
+        }.then { userChatRoomMemberships in
+             completion(.success(userChatRoomMemberships))
+        }.catch { error in
+            log.error("Error getting user chat room memberships: \(error.localizedDescription)")
+            completion(.failure(error))
+        }
+    }
+    
+    /// Create a membership between the current user and a Chat Room
+    func createUserChatRoomMembership(roomID: String,
+                                      completion: @escaping (Result<ChatRoomMember, Error>) -> Void) {
+        firstly {
+           self.accessTokenVendor.whenAccessToken
+        }.then { accessToken -> Promise<ChatRoomMember> in
+            self.livelikeRestAPIService.createChatRoomMembership(roomID: roomID, accessToken: accessToken)
+        }.then { chatRoomMember in
+             completion(.success(chatRoomMember))
+        }.catch { error in
+            log.error("Error creating room membership: \(error.localizedDescription)")
+            completion(.failure(error))
+        }
+    }
+    
+    /// Deletes a membership between the current user and a Chat Room
+    func deleteUserChatRoomMembership(roomID: String,
+                                      completion: @escaping (Result<Bool, Error>) -> Void) {
+        firstly {
+           self.accessTokenVendor.whenAccessToken
+        }.then { accessToken -> Promise<Bool> in
+            self.livelikeRestAPIService.deleteChatRoomMembership(roomID: roomID, accessToken: accessToken)
+        }.then { chatRoomMember in
+             completion(.success(chatRoomMember))
+        }.catch { error in
+            log.error("Error deleting room membership: \(error.localizedDescription)")
+            completion(.failure(error))
+        }
     }
 }
 
@@ -336,13 +493,14 @@ public extension EngagementSDK {
 private extension EngagementSDK {
     
     private func initializeBugsnag(
+        apiKey: String,
         organizationID: String,
         organizationName: String,
         userID: String,
         userNickname: String
     ){
         let config = BugsnagConfiguration()
-        config.apiKey = "a7446a8c255f671b980a4c3edf5c5586"
+        config.apiKey = apiKey
         config.appVersion = "\(Bundle.main.displayName ?? "UNKNOWN APP NAME") (\(EngagementSDK.version))"
         #if DEBUG
         config.releaseStage = "development"
@@ -350,21 +508,19 @@ private extension EngagementSDK {
         config.setUser(userID, withName: userNickname, andEmail: nil)
         Bugsnag.start(with: config)
     }
-
+    
     private func loadChatRoom(
         config: ChatSessionConfig,
-        reactionVendor: ReactionVendor,
-        messageReporter: MessageReporter?,
         completion: @escaping (Result<InternalChatSessionProtocol, Error>) -> Void
     ) {
         firstly {
-            self.applicationConfigVendor.whenApplicationConfig
+            self.livelikeRestAPIService.whenApplicationConfig
         }.then { application in
             return Promises.zip(
                 .init(value: application),
                 self.livelikeIDVendor.whenLiveLikeID,
                 self.accessTokenVendor.whenAccessToken,
-                self.getChatRoomResource(roomID: config.roomID)
+                self.livelikeRestAPIService.getChatRoomResource(roomID: config.roomID)
             )
         }.then { application, livelikeid, accessToken, chatRoomResource in
             guard let chatPubnubChannel = chatRoomResource.channels.chat.pubnub else {
@@ -385,48 +541,42 @@ private extension EngagementSDK {
 
             let imageUploader = ImageUploader(
                 uploadUrl: chatRoomResource.uploadUrl,
-                urlSession: EngagementSDK.networking.urlSession
+                urlSession: EngagementSDK.networking.urlSession,
+                accessToken: accessToken
+            )
+           
+            let reactionVendor = ChatRoomReactionVendor(reactionPacksUrl: chatRoomResource.reactionPacksUrl,
+                                                         cache: Cache.shared)
+
+            let messageReporter = APIMessageReporter(
+                reportURL: chatRoomResource.reportMessageUrl,
+                accessToken: accessToken
             )
 
+            let stickerRepository = StickerRepository(stickerPacksURL: chatRoomResource.stickerPacksUrl)
+            
             let chatRoom: InternalChatSessionProtocol = PubSubChatRoom(
                 roomID: chatRoomResource.id,
                 chatChannel: chatChannel,
-                reactionChannel: nil,
                 userID: chatId,
                 nickname: self.userNicknameService,
                 imageUploader: imageUploader,
                 eventRecorder: self.eventRecorder,
-                stickerRepository: self.stickerRepository,
                 reactionsViewModelFactory:
                     ReactionsViewModelFactory(
                         reactionAssetsVendor: reactionVendor,
-                        cache: Cache.shared
+                        mediaRepository: EngagementSDK.mediaRepository
                     ),
                 reactionsVendor: reactionVendor,
                 messageHistoryLimit: config.messageHistoryLimit,
-                messageReporter: messageReporter
+                messageReporter: messageReporter,
+                title: chatRoomResource.title,
+                chatFilters: Set([.filtered]),
+                stickerRepository: stickerRepository
             )
-
             completion(.success(chatRoom))
         }.catch { error in
             completion(.failure(error))
-        }
-    }
-
-    private func getChatRoomResource(roomID: String) -> Promise<ChatRoomResource> {
-        return firstly {
-            self.applicationConfigVendor.whenApplicationConfig
-        }.then { (appConfig: ApplicationConfiguration) in
-            let stringToReplace = "{chat_room_id}"
-            guard appConfig.chatRoomDetailUrlTemplate.contains(stringToReplace) else {
-                return Promise(error: ContentSessionError.invalidChatRoomURLTemplate)
-            }
-            let urlTemplateFilled = appConfig.chatRoomDetailUrlTemplate.replacingOccurrences(of: stringToReplace, with: roomID)
-            guard let chatRoomURL = URL(string: urlTemplateFilled) else {
-                return Promise(error: ContentSessionError.invalidChatRoomURL)
-            }
-            let resource = Resource<ChatRoomResource>(get: chatRoomURL)
-            return EngagementSDK.networking.load(resource)
         }
     }
 
@@ -441,8 +591,7 @@ private extension EngagementSDK {
             whenMessagingClients = messagingClientPromise()
         }
 
-        let programDetailVendor = ProgramDetailClient(programID: config.programID, applicationVendor: self.applicationConfigVendor)
-        let reactionVendor = ProgramChatReactionsVendor(programDetailVendor: programDetailVendor, cache: Cache.shared)
+        let programDetailVendor = ProgramDetailClient(programID: config.programID, applicationVendor: self.livelikeRestAPIService)
 
         return InternalContentSession(sdkInstance: self,
                                       config: config,
@@ -451,20 +600,19 @@ private extension EngagementSDK {
                                       nicknameVendor: userNicknameService,
                                       userPointsVendor: userPointsVendor,
                                       programDetailVendor: programDetailVendor,
-                                      stickerRepository: stickerRepository,
                                       whenAccessToken: accessTokenVendor.whenAccessToken,
                                       eventRecorder: eventRecorder,
                                       superPropertyRecorder: superPropertyRecorder,
                                       peoplePropertyRecorder: peoplePropertyRecorder,
-                                      reactionVendor: reactionVendor,
-                                      appConfigVendor: applicationConfigVendor,
+                                      livelikeRestAPIService: livelikeRestAPIService,
+                                      widgetVotes: widgetVotes,
                                       delegate: delegate)
     }
 
     func messagingClientPromise() -> Promise<InternalContentSession.MessagingClients> {
         return Promises.retry(count: 3, delay: 2.0) { () -> Promise<InternalContentSession.MessagingClients> in
             firstly {
-                self.applicationConfigVendor.whenApplicationConfig
+                self.livelikeRestAPIService.whenApplicationConfig
                 
             }.then(on: DispatchQueue.global()) { configuration -> Promise<(ApplicationConfiguration, LiveLikeID, String, AccessToken)> in
                 log.info("Successfully initialized the Engagement SDK!")
@@ -546,7 +694,7 @@ extension EngagementSDK: WidgetCrossSessionPauser {
      Pauses widgets for all ContentSessions
      This is stored in UserDefaults and will persist on future app launches
      */
-    @objc public func pauseWidgetsForAllContentSessions() {
+     public func pauseWidgetsForAllContentSessions() {
         pauseWidgets()
     }
 
@@ -554,7 +702,7 @@ extension EngagementSDK: WidgetCrossSessionPauser {
      Resumes widgets for all ContentSessions
      This is stored in UserDefaults and will persist on future app launches
      */
-    @objc public func resumeWidgetsForAllContentSessions() {
+     public func resumeWidgetsForAllContentSessions() {
         resumeWidgets()
     }
 }

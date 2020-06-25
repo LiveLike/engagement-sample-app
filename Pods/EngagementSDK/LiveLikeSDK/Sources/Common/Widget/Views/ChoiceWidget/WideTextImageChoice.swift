@@ -82,7 +82,7 @@ class WideTextImageChoice: ChoiceWidgetOptionButton {
     }
 
     func setImage(_ imageURL: URL) {
-        optionImageView.setImage(key: imageURL.absoluteString)
+        optionImageView.setImage(url: imageURL)
     }
 
     func setBorderColor(_ color: UIColor) {

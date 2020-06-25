@@ -69,11 +69,15 @@ extension GamificationViewManager: WidgetRendererDelegate {
 
 // hook into widget events
 extension GamificationViewManager: WidgetEvents {
-    func actionHandler(event: WidgetEvent) {}
+    func widgetDidEnterState(widget: WidgetViewModel, state: WidgetState) {
+        
+    }
     func widgetInteractionDidBegin(widget: WidgetViewModel) {}    
     func widgetInteractionDidComplete(properties: WidgetInteractedProperties) {
         rewards.getPointsReward(for: properties.widgetId)
     }
+    func widgetDidChangeState(properties: WidgetInteractedProperties) {}
+    func widgetStateCanComplete(widget: WidgetViewModel, state: WidgetState) {}
 }
 
 extension GamificationViewManager: RewardsDelegate {
@@ -90,12 +94,22 @@ extension GamificationViewManager: RewardsDelegate {
         let packagedAwardsViewModel = ["awardsModel": awardsViewModel]
 
         if awardsViewModel.newBadgeEarned != nil {
-            self.storeWidgetProxy.addToFrontOfQueue(event: .badgeCollect(awardsViewModel))
+            self.storeWidgetProxy.addToFrontOfQueue(
+                event: WidgetProxyPublishData(
+                    clientEvent: .badgeCollect(awardsViewModel),
+                    jsonObject: []
+                )
+            )
         }
         
         if !didCompleteTutorial {
             // Enqueue gamification ui tutorial
-            self.storeWidgetProxy.addToFrontOfQueue(event: .pointsTutorial(awardsViewModel))
+            self.storeWidgetProxy.addToFrontOfQueue(
+                event: WidgetProxyPublishData(
+                    clientEvent: .pointsTutorial(awardsViewModel),
+                    jsonObject: []
+                )
+            )
             self.didCompleteTutorial = true
         } else {
             currentWidgetRewardsView?.apply(viewModel: awardsViewModel, animated: true)

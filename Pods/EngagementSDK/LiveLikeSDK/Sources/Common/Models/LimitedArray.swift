@@ -47,7 +47,9 @@ struct LimitedArray<T: Equatable> {
         }
     }
 
-    // add here other methods you might need
+    mutating func removeAll() {
+        storage.removeAll()
+    }
 }
 
 // let's benefit all the awesome operations like map, flatMap, reduce, filter, etc

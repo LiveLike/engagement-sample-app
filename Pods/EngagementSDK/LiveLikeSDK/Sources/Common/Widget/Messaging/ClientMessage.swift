@@ -10,10 +10,10 @@ import Foundation
 enum ClientEvent: CustomStringConvertible {
     case textPredictionCreated(TextPredictionCreated)
     case textPredictionResults(PredictionResults)
-    case textPredictionFollowUp(TextPredictionFollowUp, WidgetVote?)
+    case textPredictionFollowUp(TextPredictionFollowUp)
     case imagePredictionCreated(ImagePredictionCreated)
     case imagePredictionResults(PredictionResults)
-    case imagePredictionFollowUp(ImagePredictionFollowUp, WidgetVote?)
+    case imagePredictionFollowUp(ImagePredictionFollowUp)
     case imagePollCreated(ImagePollCreated)
     case imagePollResults(PollResults)
     case textPollCreated(TextPollCreated)
@@ -34,11 +34,11 @@ enum ClientEvent: CustomStringConvertible {
         switch self {
         case let .textPredictionCreated(payload):
             return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case let .textPredictionFollowUp(payload, _):
+        case let .textPredictionFollowUp(payload):
             return payload.programDateTime?.timeIntervalSince1970.rounded()
         case let .imagePredictionCreated(payload):
             return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case let .imagePredictionFollowUp(payload, _):
+        case let .imagePredictionFollowUp(payload):
             return payload.programDateTime?.timeIntervalSince1970.rounded()
         case let .imagePollCreated(payload):
             return payload.programDateTime?.timeIntervalSince1970.rounded()
@@ -72,11 +72,11 @@ enum ClientEvent: CustomStringConvertible {
         switch self {
         case let .textPredictionCreated(payload):
             return ("\(payload.kind.stringValue) Titled: \(payload.question)")
-        case let .textPredictionFollowUp(payload, _):
+        case let .textPredictionFollowUp(payload):
             return ("\(payload.kind.stringValue) Titled: \(payload.question)")
         case let .imagePredictionCreated(payload):
             return "\(payload.kind.stringValue) Titled: \(payload.question)"
-        case let .imagePredictionFollowUp(payload, _):
+        case let .imagePredictionFollowUp(payload):
             return "\(payload.kind.stringValue) Titled: \(payload.question)"
         case let .imagePollCreated(payload):
             return "\(payload.kind.stringValue) Titled: \(payload.question)"
@@ -117,11 +117,11 @@ enum ClientEvent: CustomStringConvertible {
         switch self {
         case let .textPredictionCreated(payload):
             return payload.kind.stringValue
-        case let .textPredictionFollowUp(payload, _):
+        case let .textPredictionFollowUp(payload):
             return payload.kind.stringValue
         case let .imagePredictionCreated(payload):
             return payload.kind.stringValue
-        case let .imagePredictionFollowUp(payload, _):
+        case let .imagePredictionFollowUp(payload):
             return payload.kind.stringValue
         case let .imagePollCreated(payload):
             return payload.kind.stringValue

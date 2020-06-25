@@ -20,6 +20,8 @@ class SpoilerFreeChatSession: InternalChatSessionProtocol {
         return realChatRoom.roomID
     }
     
+    var title: String?
+    
     /// The array of messages that have been synced
     var messages: [ChatMessage] = []
     
@@ -30,10 +32,12 @@ class SpoilerFreeChatSession: InternalChatSessionProtocol {
     var reactionsVendor: ReactionVendor {
         return realChatRoom.reactionsVendor
     }
-
+    
     var stickerRepository: StickerRepository {
         return realChatRoom.stickerRepository
     }
+    
+    var recentlyUsedStickers: LimitedArray<Sticker> = LimitedArray<Sticker>(maxSize: 30)
 
     var reactionsViewModelFactory: ReactionsViewModelFactory {
         return realChatRoom.reactionsViewModelFactory
@@ -59,6 +63,7 @@ class SpoilerFreeChatSession: InternalChatSessionProtocol {
     init(realChatRoom: InternalChatSessionProtocol, playerTimeSource: PlayerTimeSource?) {
         self.realChatRoom = realChatRoom
         self.playerTimeSource = playerTimeSource
+        self.title = realChatRoom.title
         
         self.realChatRoom.addDelegate(self)
         self.realChatRoom.addInternalDelegate(self)
@@ -93,10 +98,6 @@ class SpoilerFreeChatSession: InternalChatSessionProtocol {
         var clientMessage = clientMessage
         clientMessage.timeStamp = self.playerTimeSource?()
         return realChatRoom.sendMessage(clientMessage)
-    }
-
-    func updateMessage(_ clientMessage: ClientMessage, messageID: String) -> Promise<ChatMessageID> {
-        return realChatRoom.updateMessage(clientMessage, messageID: messageID)
     }
 
     func deleteMessage(_ clientMessage: ClientMessage, messageID: String) -> Promise<ChatMessageID> {

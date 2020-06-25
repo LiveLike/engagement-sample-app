@@ -34,7 +34,7 @@ class InternalContentSession: ContentSession {
 
     var status: SessionStatus = .uninitialized {
         didSet {
-            delegate?.session?(self, didChangeStatus: status)
+            delegate?.session(self, didChangeStatus: status)
         }
     }
 
@@ -58,7 +58,7 @@ class InternalContentSession: ContentSession {
 
     var playerTimeSource: PlayerTimeSource?
     var recentlyUsedStickers = LimitedArray<Sticker>(maxSize: 30)
-
+    
     let superPropertyRecorder: SuperPropertyRecorder
     let peoplePropertyRecorder: PeoplePropertyRecorder
 
@@ -69,17 +69,14 @@ class InternalContentSession: ContentSession {
 
     private let chatHistoryLimitRange = 0 ... 200
     private let whenMessagingClients: Promise<InternalContentSession.MessagingClients>
-    private let sdkInstance: EngagementSDK
+    let sdkInstance: EngagementSDK
     private let livelikeIDVendor: LiveLikeIDVendor
     let nicknameVendor: UserNicknameVendor
     private(set) var userPointsVendor: UserPointsVendor
     private let whenAccessToken: Promise<AccessToken>
 
-    let reactionsVendor: ReactionVendor
-    let appConfigVendor: ApplicationConfigVendor
-    let stickerRepository: StickerRepository
-    let reactionsViewModelFactory: ReactionsViewModelFactory
-    var widgetVotes = WidgetVotes()
+    let livelikeRestAPIService: LiveLikeRestAPIServicable
+    let widgetVotes: WidgetVotes
     var sessionDidEnd: (() -> Void)?
     weak var delegate: ContentSessionDelegate? {
         didSet {
@@ -95,11 +92,8 @@ class InternalContentSession: ContentSession {
                 // Assume that this is the first time chatDelegate assigned
                 // Automatically join the program chat room
                 firstly {
-                    Promises.zip(
-                        self.whenProgramDetail,
-                        self.whenMessageReporter
-                    )
-                }.then { (programDetail, messageReporter) -> Promise<Void> in
+                        self.whenProgramDetail
+                }.then { programDetail -> Promise<Void> in
                     guard let chatRoomResource = programDetail.defaultChatRoom else {
                         return Promise(error: ContentSessionError.failedSettingsChatSessionDelegate)
                     }
@@ -114,9 +108,7 @@ class InternalContentSession: ContentSession {
                         chatConfig.syncTimeSource = self.playerTimeSource
                         
                         self.sdkInstance.connectChatRoom(
-                            config: chatConfig,
-                            reactionsVendor: self.reactionsVendor,
-                            messageReporter: messageReporter
+                            config: chatConfig
                         ) { result in
                             switch result {
                             case .success(let currentChatRoom):
@@ -144,6 +136,7 @@ class InternalContentSession: ContentSession {
     var gamificationManager: GamificationViewManager?
     var rankClient: RankClient?
     private var whenRankClient = Promise<RankClient>()
+    private var nextWidgetTimelineUrl: String?
 
     // Analytics properties
 
@@ -152,24 +145,15 @@ class InternalContentSession: ContentSession {
     private var timeWidgetPauseStatusChanged: Date = Date()
     private var timeChatPauseStatusChanged: Date = Date()
     
-    private var installedPlugins: [PluginRoot] = [PluginRoot]()
     private var sessionIsValid: Bool {
         if status == .ready {
             return true
         }
-        delegate?.session?(self, didReceiveError: SessionError.invalidSessionStatus(status))
+        delegate?.session(self, didReceiveError: SessionError.invalidSessionStatus(status))
         return false
     }
 
     private let whenProgramDetail: Promise<ProgramDetail>
-
-    lazy var whenMessageReporter: Promise<MessageReporter> = {
-        firstly {
-            Promises.zip(whenProgramDetail, whenAccessToken)
-        }.then { programDetails, accessToken -> MessageReporter in
-            return APIMessageReporter(reportURL: programDetails.reportUrl, accessToken: accessToken)
-        }
-    }()
     
     private var storeWidgetProxy: StoreWidgetProxy = StoreWidgetProxy()
     
@@ -196,7 +180,6 @@ class InternalContentSession: ContentSession {
             widgetClient.addListener(syncWidgetProxy, toChannel: channel)
             
             let widgetQueue = syncWidgetProxy
-                .addProxy { NoVoteDiscardProxy(voteRepo: self.widgetVotes) }
                 .addProxy { self.storeWidgetProxy }
                 .addProxy {
                     let pauseProxy = PauseWidgetProxy(playerTimeSource: self.playerTimeSource,
@@ -208,6 +191,28 @@ class InternalContentSession: ContentSession {
                 .addProxy { ImageDownloadProxy() }
                 .addProxy { ImpressionProxy(userSessionId: livelikeID.asString, accessToken: accessToken) }
                 .addProxy { WidgetLoggerProxy(playerTimeSource: self.playerTimeSource) }
+                .addProxy {
+                    OnPublishProxy { [weak self] publishData in
+                        guard let self = self else { return }
+                        DispatchQueue.main.async {
+                            self.delegate?.widget(self, didBecomeReady: publishData.jsonObject)
+                            
+                            let widgetFactory = ClientEventWidgetFactory(
+                                event: publishData.clientEvent,
+                                voteRepo: self.widgetVotes,
+                                widgetMessagingOutput: widgetClient,
+                                accessToken: accessToken,
+                                eventRecorder: self.eventRecorder
+                            )
+                            if let widgetController = widgetFactory.create(
+                                theme: Theme(),
+                                widgetConfig: WidgetConfig()
+                            ) {
+                                self.delegate?.widget(self, didBecomeReady: widgetController)
+                            }
+                        }
+                    }
+                }
                 .addProxy {
                     WidgetQueue(widgetProcessor: self.storeWidgetProxy,
                                 voteRepo: self.widgetVotes,
@@ -259,13 +264,12 @@ class InternalContentSession: ContentSession {
                   nicknameVendor: UserNicknameVendor,
                   userPointsVendor: UserPointsVendor,
                   programDetailVendor: ProgramDetailVendor,
-                  stickerRepository: StickerRepository,
                   whenAccessToken: Promise<AccessToken>,
                   eventRecorder: EventRecorder,
                   superPropertyRecorder: SuperPropertyRecorder,
                   peoplePropertyRecorder: PeoplePropertyRecorder,
-                  reactionVendor: ReactionVendor,
-                  appConfigVendor: ApplicationConfigVendor,
+                  livelikeRestAPIService: LiveLikeRestAPIServicable,
+                  widgetVotes: WidgetVotes,
                   delegate: ContentSessionDelegate? = nil)
     {
         self.config = config
@@ -277,15 +281,13 @@ class InternalContentSession: ContentSession {
         programID = config.programID
         self.sdkInstance = sdkInstance
         widgetPauseStatus = sdkInstance.widgetPauseStatus
-        self.stickerRepository = stickerRepository
         self.whenAccessToken = whenAccessToken
         self.whenProgramDetail = programDetailVendor.getProgramDetails()
         self.eventRecorder = eventRecorder
         self.superPropertyRecorder = superPropertyRecorder
         self.peoplePropertyRecorder = peoplePropertyRecorder
-        self.reactionsVendor = reactionVendor
-        self.appConfigVendor = appConfigVendor
-        self.reactionsViewModelFactory = ReactionsViewModelFactory(reactionAssetsVendor: reactionVendor, cache: Cache.shared)
+        self.livelikeRestAPIService = livelikeRestAPIService
+        self.widgetVotes = widgetVotes
         sdkInstance.setDelegate(self)
 
         initializeDelegatePlayheadTimeSource()
@@ -302,19 +304,25 @@ class InternalContentSession: ContentSession {
         }.catch {
             log.error($0.localizedDescription)
         }
-        
-        stickerRepository.retrieve(programID: programID)
     }
     
     private func initializeDelegatePlayheadTimeSource() {
-        playerTimeSource = { [weak self] in
-            if
-                let self = self,
-                let delegate = self.delegate
-            {
-                return delegate.playheadTimeSource?(self)?.timeIntervalSince1970
+        // If syncTimeSource given in config use that
+        // Otherwise use the delegate until playheadTimeSource removed from delegate IOSSDK-1228
+        if config.syncTimeSource != nil {
+            playerTimeSource = { [weak self] in
+                self?.config.syncTimeSource?()
             }
-            return nil
+        } else {
+            playerTimeSource = { [weak self] in
+                if
+                    let self = self,
+                    let delegate = self.delegate
+                {
+                    return delegate.playheadTimeSource(self)?.timeIntervalSince1970
+                }
+                return nil
+            }
         }
     }
     
@@ -394,7 +402,7 @@ class InternalContentSession: ContentSession {
             self.status = .ready
         }.catch { error in
             self.status = .error
-            self.delegate?.session?(self, didReceiveError: error)
+            self.delegate?.session(self, didReceiveError: error)
             
             switch error {
             case NetworkClientError.badRequest:
@@ -441,28 +449,64 @@ class InternalContentSession: ContentSession {
         guard sessionIsValid else { return }
         teardownSession()
     }
-
-    func install(plugin: Plugin) {
-        let pluginName = String(describing: type(of: plugin))
-
-        if let resolvablePlugin = plugin as? ResolveablePlugin {
-            log.info("Installing plugin: \(pluginName)")
-            whenWidgetQueue.then { widgetQueue in
-                let deps: [String: Any] = [
-                    String(describing: WidgetRenderer.self): widgetQueue,
-                    String(describing: WidgetPauser.self): WeakWidgetPauser(self),
-                    String(describing: WidgetCrossSessionPauser.self): self.sdkInstance,
-                    String(describing: EventRecorder.self): self.eventRecorder
-                ]
-                guard let pluginRoot = resolvablePlugin.resolve(deps) else {
-                    return
-                }
-                self.installedPlugins.append(pluginRoot)
-
-                log.info("Finished installing plugin: \(pluginName)")
-            }.catch {
-                log.error($0.localizedDescription)
+    
+    func getPostedWidgets(page: WidgetPagination,
+                          completion: @escaping (Result<[Widget]?, Error>) -> Void) {
+        firstly {
+            whenProgramDetail
+        }.then { program in
+            
+            var timelineUrlString: String?
+            switch page {
+            case .first:
+                timelineUrlString = program.timelineUrl
+            case .next:
+                timelineUrlString = self.nextWidgetTimelineUrl
             }
+            
+            guard let timelineUrl = timelineUrlString,
+                let timelineURL = URL(string: timelineUrl) else {
+                    log.debug("No more posted widgets available")
+                    completion(.success(nil))
+                    return
+            }
+            
+            EngagementSDK.networking.urlSession.dataTask(with: timelineURL) { [weak self] (data, _, error) in
+                if let error = error {
+                    completion(.failure(error))
+                }
+                
+                guard let data = data else { return }
+                
+                do {
+                    let json = try JSONSerialization.jsonObject(with: data, options: [])
+                    
+                    guard let dictionary = json as? [String: Any],
+                        let jsonWidgets = dictionary["results"] as? [[String: Any]],
+                        jsonWidgets.count > 0 else {
+                        return completion(.success(nil))
+                    }
+                       
+                    self?.nextWidgetTimelineUrl = dictionary["next"] as? String ?? nil
+                    
+                    self?.sdkInstance.createWidgets(widgetJSONObjects: jsonWidgets) { result in
+                        switch result {
+                        case .success(let widgets):
+                            completion(.success(widgets))
+                        case .failure(let error):
+                            completion(.failure(error))
+                        }
+                    }
+                } catch {
+                    log.debug("Error occured on getting posted widgets: \(error.localizedDescription)")
+                    completion(.failure(error))
+                }
+                
+            }.resume()
+        }
+        .catch { error in
+            log.debug("Error occured on getting posted widgets: \(error.localizedDescription)")
+            completion(.failure(error))
         }
     }
 }

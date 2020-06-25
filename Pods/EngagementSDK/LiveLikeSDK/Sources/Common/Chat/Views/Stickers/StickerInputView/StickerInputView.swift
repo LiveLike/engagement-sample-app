@@ -28,8 +28,6 @@ class StickerInputView: UIView {
 
     var stickerPacks = [StickerPack]() {
         didSet {
-            packsCollectionView.reloadData()
-            stickerPacksCollectionView.reloadData()
             showStickerPack(at: lastIndexPath)
         }
     }
@@ -125,8 +123,8 @@ extension StickerInputView: UICollectionViewDelegate, UICollectionViewDataSource
         } else {
             guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: StickerPackPreviewCell.reuseIdentifier, for: indexPath) as? StickerPackPreviewCell else { return UICollectionViewCell() }
 
-            let stickerKey = stickerPacks[indexPath.row].file.absoluteString
-            cell.imageView.setImage(key: stickerKey)
+            let stickerURL = stickerPacks[indexPath.row].file
+            cell.imageView.setImage(url: stickerURL)
             cell.setTheme(theme: theme, stickerName: stickerPacks[indexPath.row].name)
             return cell
         }
@@ -143,6 +141,10 @@ extension StickerInputView: UICollectionViewDelegate, UICollectionViewDataSource
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if collectionView == packsCollectionView {
             lastIndexPath = indexPath
+            packsCollectionView.reloadData()
+            stickerPacksCollectionView.reloadData()
+            showStickerPack(at: lastIndexPath)
+            stickerPacksCollectionView.layoutIfNeeded()
             stickerPacksCollectionView.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: true)
         }
     }

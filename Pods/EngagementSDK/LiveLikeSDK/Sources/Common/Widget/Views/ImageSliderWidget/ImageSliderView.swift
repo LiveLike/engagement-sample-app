@@ -11,7 +11,8 @@ import UIKit
 class ImageSliderView: UIView {
     private let minimumSize: Float = 36
     private let maximumSize: Float = 54
-    private let thumbImages: [UIImage]
+    private var thumbImages = [UIImage]()
+    private let thumbImageUrls: [URL]
     private let initialSliderValue: Float
     private let timerAnimationFilepath: String
 
@@ -131,13 +132,25 @@ class ImageSliderView: UIView {
 
     // MARK: - Init
 
-    init(thumbImages: [UIImage], initialSliderValue: Float, timerAnimationFilepath: String) {
-        self.thumbImages = thumbImages
+    init(thumbImageUrls: [URL], initialSliderValue: Float, timerAnimationFilepath: String) {
+        self.thumbImageUrls = thumbImageUrls
         self.initialSliderValue = initialSliderValue
         self.timerAnimationFilepath = timerAnimationFilepath
         super.init(frame: CGRect.zero)
-        configureSlider()
-        configureLayout()
+        self.configureLayout()
+        Cache.shared.downloadAndCacheImages(urls: thumbImageUrls) { [weak self] in
+            guard let self = self else { return }
+            thumbImageUrls.forEach { imageUrl in
+                Cache.shared.get(key: imageUrl.absoluteString) { (data: Data?) in
+                    guard let data = data else { return }
+                    guard let image = UIImage.decode(data) else { return }
+                    self.thumbImages.append(image)
+                }
+            }
+            
+            self.configureSlider()
+            
+        }
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -177,6 +190,7 @@ class ImageSliderView: UIView {
         coreWidgetView.headerView = titleView
         coreWidgetView.contentView = bodyView
         addSubview(coreWidgetView)
+        coreWidgetView.constraintsFill(to: self)
 
         titleView.addSubview(timerView)
         titleView.addSubview(titleLabel)
@@ -242,11 +256,14 @@ class ImageSliderView: UIView {
     }
 
     private func configureSlider() {
-        sliderView.addTarget(self, action: #selector(sliderValueChanged), for: .valueChanged)
-        sliderView.setValue(initialSliderValue, animated: true)
-        let newThumbSize = getThumbSize()
-        let newThumbImage = getThumbImage().scaleToSize(newSize: newThumbSize)
-        sliderView.setThumbImage(newThumbImage, for: .normal)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.sliderView.addTarget(self, action: #selector(self.sliderValueChanged), for: .valueChanged)
+            self.sliderView.setValue(self.initialSliderValue, animated: true)
+            let newThumbSize = self.getThumbSize()
+            let newThumbImage = self.getThumbImage().scaleToSize(newSize: newThumbSize)
+            self.sliderView.setThumbImage(newThumbImage, for: .normal)
+        }
     }
 
     private func getThumbSize() -> CGSize {

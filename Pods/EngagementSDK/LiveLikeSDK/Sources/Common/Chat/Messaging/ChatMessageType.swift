@@ -39,6 +39,17 @@ import UIKit
     
     // chat cell body image size (image attachment)
     let bodyImageSize: CGSize?
+    
+    // The message after it has been filtered.
+    public var filteredMessage: String?
+    
+    // The reason(s) why a message was filtered.
+    public var filteredReasons: Set<ChatFilter>
+    
+    // Has the message been filtered.
+    public var isMessageFiltered: Bool {
+        return filteredReasons.count > 0
+    }
 
     /// The timestamp of when this message was created
     public let timestamp: Date
@@ -56,7 +67,9 @@ import UIKit
         profileImageUrl: URL?,
         createdAt: TimeToken,
         bodyImageUrl: URL?,
-        bodyImageSize: CGSize?
+        bodyImageSize: CGSize?,
+        filteredMessage: String?,
+        filteredReasons: Set<ChatFilter>
     ) {
         self.id = id
         self.roomID = roomID
@@ -69,6 +82,8 @@ import UIKit
         self.createdAt = createdAt
         self.bodyImageUrl = bodyImageUrl
         self.bodyImageSize = bodyImageSize
+        self.filteredMessage = filteredMessage
+        self.filteredReasons = filteredReasons
     }
 
     public override var hash: Int {
@@ -131,7 +146,9 @@ extension ChatMessage {
             profileImageUrl: chatPubnubMessage.senderImageUrl,
             createdAt: timetoken,
             bodyImageUrl: nil,
-            bodyImageSize: nil
+            bodyImageSize: nil,
+            filteredMessage: chatPubnubMessage.filteredMessage,
+            filteredReasons: chatPubnubMessage.filteredSet
         )
     }
 
@@ -180,8 +197,19 @@ extension ChatMessage {
             profileImageUrl: chatPubnubMessage.senderImageUrl,
             createdAt: timetoken,
             bodyImageUrl: chatPubnubMessage.imageUrl,
-            bodyImageSize: CGSize(width: chatPubnubMessage.imageWidth, height: chatPubnubMessage.imageHeight)
+            bodyImageSize: CGSize(width: chatPubnubMessage.imageWidth, height: chatPubnubMessage.imageHeight),
+            filteredMessage: nil,
+            filteredReasons: Set()
         )
     }
 
+}
+
+/// The filter type that has been applied to the chat message
+public enum ChatFilter: String, Codable {
+    /// Catch-all type for any kind of filtering
+    case filtered
+    
+    /// Chat message has been filtered for profanity
+    case profanity
 }

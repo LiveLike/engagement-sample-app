@@ -1,6 +1,6 @@
 PODS:
   - Bugsnag (5.22.10)
-  - EngagementSDK (2.0):
+  - EngagementSDK (2.4):
     - Bugsnag (~> 5.22.0)
     - lottie-ios (~> 3.0.0)
     - Mixpanel-swift (~> 2.5.8)
@@ -26,7 +26,7 @@ SPEC REPOS:
 
 SPEC CHECKSUMS:
   Bugsnag: 3e33e950f0b410d3c6eb9e15159e6677c8b50ab2
-  EngagementSDK: d22173c3eb8e44fb9d3a8492ab7d91d853b26d54
+  EngagementSDK: d41e9f8ba2e429d664c69ca72cb66792bf313928
   lottie-ios: c38c3178ae8c4a8f200661aa5f80b9f1ca7f56b3
   Mixpanel-swift: 4a2e061c8b7a5000ed7f72d2a6196884b5de8b49
   PubNub: 44e2eb39746e7231b98b978a8e3b9726b11dca9c

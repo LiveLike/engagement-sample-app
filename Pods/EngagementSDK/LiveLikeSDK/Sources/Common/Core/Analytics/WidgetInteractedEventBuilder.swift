@@ -24,11 +24,17 @@ class WidgetInteractedEventBuilder {
 }
 
 extension WidgetInteractedEventBuilder: WidgetEvents {
-    func actionHandler(event: WidgetEvent) {}
-    func widgetInteractionDidBegin(widget: WidgetViewModel) {}
-
-    func widgetInteractionDidComplete(properties: WidgetInteractedProperties) {
-        pendingWidgetInteractedProperties[properties.widgetId] = properties
+    
+    func widgetDidEnterState(widget: WidgetViewModel, state: WidgetState) {
+        
+    }
+    
+    func widgetDidChangeState(properties: WidgetInteractedProperties) {
+        
+    }
+    
+    func widgetStateCanComplete(widget: WidgetViewModel, state: WidgetState) {
+        
     }
 }
 

@@ -30,7 +30,9 @@ public extension ChatViewController {
             profileImageUrl: nil,
             createdAt: TimeToken(pubnubTimetoken: 0),
             bodyImageUrl: nil,
-            bodyImageSize: nil
+            bodyImageSize: nil,
+            filteredMessage: nil,
+            filteredReasons: Set()
         )
         self.chatAdapter?.publish(newMessage: chatMessageType)
     }

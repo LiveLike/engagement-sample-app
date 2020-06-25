@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2757FD31249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2757FD30249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift */; };
 		276401B3243BB0080016C2FC /* Utils+UserDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276401B2243BB0080016C2FC /* Utils+UserDefaults.swift */; };
 		276401B6243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276401B5243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift */; };
 		27C83D02243B8D44009F35DA /* WidgetsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27C83D01243B8D44009F35DA /* WidgetsUseCase.swift */; };
@@ -22,6 +23,7 @@
 
 /* Begin PBXFileReference section */
 		18CA8D5CBB21254E2489C76B /* Pods-Sample App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.release.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.release.xcconfig"; sourceTree = "<group>"; };
+		2757FD30249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateEnterChatRoomUseCase.swift; sourceTree = "<group>"; };
 		276401B2243BB0080016C2FC /* Utils+UserDefaults.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Utils+UserDefaults.swift"; sourceTree = "<group>"; };
 		276401B5243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetChatSpoilerPreventionUseCase.swift; sourceTree = "<group>"; };
 		27C83D01243B8D44009F35DA /* WidgetsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetsUseCase.swift; sourceTree = "<group>"; };
@@ -65,6 +67,7 @@
 				767AFD56243B8B2600F85E8A /* ChatUseCase.swift */,
 				27C83D01243B8D44009F35DA /* WidgetsUseCase.swift */,
 				276401B5243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift */,
+				2757FD30249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift */,
 			);
 			path = "Use Cases";
 			sourceTree = "<group>";
@@ -232,6 +235,7 @@
 				76FE3E962437990E003F179B /* HomeViewController.swift in Sources */,
 				767AFD57243B8B2600F85E8A /* ChatUseCase.swift in Sources */,
 				76FE3E922437990E003F179B /* AppDelegate.swift in Sources */,
+				2757FD31249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift in Sources */,
 				76FE3E942437990E003F179B /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

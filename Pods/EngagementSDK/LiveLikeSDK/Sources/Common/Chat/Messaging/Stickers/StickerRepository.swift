@@ -8,92 +8,81 @@
 import Foundation
 
 class StickerRepository {
-    private var stickerPacks = [StickerPack]()
-    private var stickers = [String: Sticker]()
+    private var cachedStickerPacks: [StickerPack]?
+    private var cachedStickersByID: [String: Sticker]?
 
     private let stickerPacksURL: URL
+    private let mediaRepository: MediaRepository = EngagementSDK.mediaRepository
 
-    init(apiBaseURL: URL) {
-        stickerPacksURL = apiBaseURL.appendingPathComponent("sticker-packs")
+    init(stickerPacksURL: URL) {
+        self.stickerPacksURL = stickerPacksURL
     }
+    
+    private var whenStickerPackResource: Promise<StickerPackResponse>?
 
-    func getStickerPacks() -> [StickerPack] {
-        return stickerPacks
-    }
-
-    func getAll() -> [Sticker] {
-        return stickers.map { $1 }
-    }
-
-    func get(id: String) -> Sticker? {
-        return stickers[id]
-    }
-
-    func create(item: Sticker) {
-        stickers[item.shortcode] = item
-    }
-
-    func update(item: Sticker) {
-        stickers[item.shortcode] = item
-    }
-
-    func delete(item: Sticker) {
-        stickers.removeValue(forKey: item.shortcode)
-    }
-}
-
-extension StickerRepository {
-    @discardableResult
-    func retrieve(programID: String) -> Promise<StickerPackResponse> {
-        guard let stickerPackPromise = getStickerPack(programID: programID) else {
-            log.warning("Unable to retrieve sticker pack for programID: \(programID)")
-            return Promise<StickerPackResponse>(error: StickerRepositoryError.invalidURL)
+    func getStickerPacks(completion: @escaping (Result<[StickerPack], Error>) -> Void) {
+        if let cachedStickerPacks = self.cachedStickerPacks {
+            completion(.success(cachedStickerPacks))
+            return
         }
-
-        stickerPackPromise.then { [weak self] stickerPackResponse in
-            self?.setupStickerSet(stickerPacks: stickerPackResponse.results)
+        
+        let resource = Resource<StickerPackResponse>(get: stickerPacksURL)
+        let request = whenStickerPackResource ?? EngagementSDK.networking.load(resource)
+        
+        // Debounce consecutive calls
+        if whenStickerPackResource == nil {
+            self.whenStickerPackResource = request
+        }
+        
+        firstly {
+            request
+        }.then { stickerPackResource in
+            self.cachedStickerPacks = stickerPackResource.results
+            var cachedStickersByID: [String: Sticker] = [:]
+            for stickerPack in stickerPackResource.results {
+                for sticker in stickerPack.stickers {
+                    cachedStickersByID[sticker.shortcode] = sticker
+                }
+            }
+            self.cachedStickersByID = cachedStickersByID
+            completion(.success(stickerPackResource.results))
         }.catch { error in
-            log.error("StickerManager.retrieveStickerPacks: \(error.localizedDescription)")
+            completion(.failure(error))
         }
-
-        return stickerPackPromise
     }
-
-    private func setupStickerSet(stickerPacks: [StickerPack]) {
-        self.stickerPacks = stickerPacks
-        for stickerPack in stickerPacks {
-            for sticker in stickerPack.stickers {
-                stickers[sticker.shortcode] = sticker
+    
+    func getSticker(id: String, completion: @escaping (Result<Sticker, Error>) -> Void) {
+        self.getStickerPacks { result in
+            switch result {
+            case .success(let stickerPacks):
+                if let sticker = stickerPacks.flatMap({ $0.stickers }).first(where: { $0.shortcode == id }) {
+                    completion(.success(sticker))
+                } else {
+                    completion(.failure(NilError()))
+                }
+            case .failure(let error):
+                completion(.failure(error))
             }
         }
-        cacheStickerPackIcons()
-        cacheStickerSet()
     }
-
-    private func cacheStickerPackIcons() {
-        let imageURLs = stickerPacks.map { $0.file }
-        Cache.shared.downloadAndCacheImages(urls: imageURLs, completion: nil)
-    }
-
-    private func cacheStickerSet() {
-        let imageURLs = stickers.map { $1.file }
-        Cache.shared.downloadAndCacheImages(urls: imageURLs, completion: nil)
-    }
-}
-
-extension StickerRepository: StickerPackRetriever {
-    func getStickerPack(programID: String) -> Promise<StickerPackResponse>? {
-        var components = URLComponents(url: stickerPacksURL, resolvingAgainstBaseURL: false)
-        components?.queryItems = [
-            URLQueryItem(name: "program_id", value: programID)
-        ]
-
-        guard let url = components?.url else {
-            return nil
+    
+    private var prefetchStickersPromise: Promise<StickerPackResponse>?
+    
+    private func prefetchStickers(stickerPackResource: StickerPackResponse) -> Promise<StickerPackResponse> {
+        if let prefetchStickersPromise = prefetchStickersPromise {
+            return prefetchStickersPromise
         }
-
-        let resource = Resource<StickerPackResponse>(get: url)
-        return EngagementSDK.networking.load(resource)
+        
+        let allStickerPackIconURLs = stickerPackResource.results.compactMap { $0.file }
+        let allStickerURLs = stickerPackResource.results.flatMap{ $0.stickers }.map { $0.file }
+        let allPrefecthPromises = (allStickerPackIconURLs + allStickerURLs).map { mediaRepository.prefetchMediaPromise(url: $0)}
+        let prefetchPromise = firstly {
+            Promises.all(allPrefecthPromises)
+        }.then { _ in
+            return Promise(value: stickerPackResource)
+        }
+        self.prefetchStickersPromise = prefetchPromise
+        return prefetchPromise
     }
 }
 

@@ -73,8 +73,8 @@ extension ImageSliderViewController: ViewInjectable {
         NSLayoutConstraint.activate([
             newView.widthAnchor.constraint(equalToConstant: 100),
             newView.heightAnchor.constraint(equalToConstant: 30),
-            newView.topAnchor.constraint(equalTo: coreWidgetView.baseView.bottomAnchor, constant: 8),
-            newView.centerXAnchor.constraint(equalTo: coreWidgetView.baseView.centerXAnchor)
+            newView.topAnchor.constraint(equalTo: view.bottomAnchor, constant: 8),
+            newView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         ])
     }
 }
@@ -85,8 +85,8 @@ extension CheerMeterWidgetViewController: ViewInjectable {
         NSLayoutConstraint.activate([
             newView.widthAnchor.constraint(equalToConstant: 100),
             newView.heightAnchor.constraint(equalToConstant: 30),
-            newView.topAnchor.constraint(equalTo: coreWidgetView.baseView.bottomAnchor),
-            newView.centerXAnchor.constraint(equalTo: coreWidgetView.baseView.centerXAnchor)
+            newView.topAnchor.constraint(equalTo: view.bottomAnchor),
+            newView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         ])
     }
 }

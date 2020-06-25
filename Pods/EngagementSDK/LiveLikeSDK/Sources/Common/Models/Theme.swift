@@ -268,6 +268,8 @@ public class Theme: NSObject {
      */
     @objc public var filepathsForLottieLosingAnimations: [String]
     
+    public var filepathsForLottieTieAnimations: [String]
+    
     /// Overrides the timer animation for widgets
     public var filepathsForWidgetTimerLottieAnimation: String
     
@@ -404,6 +406,7 @@ public class Theme: NSObject {
         filepathsForLottieWinningAnimations = Theme.defaultFilepathsForCorrectLottieAnimations
         filepathsForLottieLosingAnimations = Theme.defaultFilepathsForIncorrectLottieAnimations
         filepathsForWidgetTimerLottieAnimation = Bundle(for: EngagementSDK.self).path(forResource: "timer", ofType: "json")!
+        filepathsForLottieTieAnimations = Theme.defaultFilepathsForLottieTieAnimations
         
         // MARK: Chat Cell Image Init
         chatImageWidth = 0.0
@@ -454,6 +457,21 @@ internal extension Theme {
             return randomFilepath
         } else {
             return Theme.defaultFilepathsForIncorrectLottieAnimations.randomElement()!
+        }
+    }
+    
+    private static var defaultFilepathsForLottieTieAnimations: [String] = {
+        let bundle = Bundle(for: EngagementSDK.self)
+        return [
+            bundle.path(forResource: "draw-1", ofType: "json")!,
+        ]
+    }()
+    
+    func randomTieAnimationFilepath() -> String {
+        if let randomFilepath = filepathsForLottieTieAnimations.randomElement() {
+            return randomFilepath
+        } else {
+            return Theme.defaultFilepathsForLottieTieAnimations.randomElement()!
         }
     }
 }

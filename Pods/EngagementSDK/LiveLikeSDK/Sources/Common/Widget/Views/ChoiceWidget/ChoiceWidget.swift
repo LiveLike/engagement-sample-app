@@ -17,5 +17,6 @@ enum ChoiceWidgetViewType {
 protocol ChoiceWidget {
     var titleView: WidgetTitleView { get }
     var coreWidgetView: CoreWidgetView { get }
-    func playOverlayAnimation(animationFilepath: String)
+    func playOverlayAnimation(animationFilepath: String, completion: (() -> Void)?)
+    func stopOverlayAnimation()
 }

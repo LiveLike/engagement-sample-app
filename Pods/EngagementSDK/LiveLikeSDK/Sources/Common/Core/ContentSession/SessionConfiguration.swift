@@ -13,6 +13,9 @@ public class SessionConfiguration: NSObject {
     /// A unique ID to identify the content currently being played.
     @objc public let programID: String
 
+    /// A timesource used for Spoiler Free Sync
+    public var syncTimeSource: PlayerTimeSource?
+    
     /// The preloaded chat history limit. Default is 50, up to a maximum of 200.
     @objc public let chatHistoryLimit: Int
 

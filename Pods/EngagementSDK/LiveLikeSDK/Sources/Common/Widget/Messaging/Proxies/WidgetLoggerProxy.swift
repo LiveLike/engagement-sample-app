@@ -16,10 +16,10 @@ class WidgetLoggerProxy: WidgetProxy {
         self.playerTimeSource = playerTimeSource
     }
 
-    func publish(event: ClientEvent) {
+    func publish(event: WidgetProxyPublishData) {
         var message: String = "Widget"
 
-        if let minimumScheduledTime = event.minimumScheduledTime, let playerTimeSource = playerTimeSource?() {
+        if let minimumScheduledTime = event.clientEvent.minimumScheduledTime, let playerTimeSource = playerTimeSource?() {
             message.append(" [widget \(DateFormatter.currentTimeZoneTime.string(from: Date(timeIntervalSince1970: minimumScheduledTime))) | \(DateFormatter.currentTimeZoneTime.string(from: Date(timeIntervalSince1970: playerTimeSource))) video]")
         }
 
