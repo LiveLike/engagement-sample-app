@@ -8,8 +8,8 @@
 import Foundation
 
 extension EngagementSDK: WidgetMessagingClientFactory {
-    func widgetMessagingClient(subcribeKey: String, origin: String?) -> WidgetClient {
-        return PubSubWidgetClient(subscribeKey: subcribeKey, origin: origin)
+    func widgetMessagingClient(subcribeKey: String, origin: String?, userID: String) -> WidgetClient {
+        return PubSubWidgetClient(subscribeKey: subcribeKey, origin: origin, userID: userID)
     }
 }
 

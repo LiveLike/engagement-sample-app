@@ -9,11 +9,6 @@ import UIKit
 
 class MediaRepository {
     
-    enum MediaRepositoryError: Error {
-        case downloadFailedWithNoError
-        case mediaNotUIImage
-    }
-    
     private let mediaCache: Cache
     
     init(cache: Cache) {
@@ -79,6 +74,30 @@ class MediaRepository {
                     case .failure(let error):
                         completion(.failure(error))
                     }
+                }
+            }
+        }
+    }
+
+    /// Fails if any image fails to download
+    /// Result maintains order of 'urls'
+    func getImages(urls: [URL], completion: @escaping (Result<[GetImageResult], Error>) -> Void) {
+        var results: [GetImageResult?] = [GetImageResult?](repeating: nil, count: urls.count)
+        var getImageCompleteCount = 0
+
+        urls.enumerated().forEach { index, url in
+            self.getImage(url: url ) {
+                switch $0 {
+                case .success(let result):
+                    results[index] = result
+                case .failure(let error):
+                    completion(.failure(error))
+                }
+                getImageCompleteCount += 1
+
+                /// Success result if finished all downloads
+                if getImageCompleteCount == urls.count {
+                    completion(.success(results.compactMap { $0 }))
                 }
             }
         }

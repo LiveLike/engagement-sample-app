@@ -20,12 +20,8 @@ extension ChatViewController {
 
     // MARK: Show/Hide Chat
 
-    /**
-     Hides the Chat view by animating it off the screen.
-
-     @note The direction of the animation can be changed using `animationDirection`
-     */
-    @objc public func show() {
+    @available(*, deprecated, message: "We recommend implementing chat showing functionality on your app's view hierarchy")
+    public func show() {
         guard chatVisibilityStatus == .hidden else {
             log.verbose("Chat is already showing.")
             return
@@ -44,14 +40,10 @@ extension ChatViewController {
 
         pauseTimer?.invalidate()
         pauseTimer = nil
-
-        resume()
     }
 
-    /**
-     Shows the Chat view by animating it back onto the screen.
-     */
-    @objc public func hide() {
+    @available(*, deprecated, message: "We recommend implementing chat hiding functionality on your app's view hierarchy")
+    public func hide() {
         guard chatVisibilityStatus == .shown else {
             log.verbose("Chat is already hidden.")
             return
@@ -62,7 +54,7 @@ extension ChatViewController {
         timeVisibilityChanged = Date()
 
         pauseTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
-            self?.pause()
+                self?.pause()
         }
 
         isOnScreen = false

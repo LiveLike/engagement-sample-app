@@ -47,7 +47,7 @@ private extension SynchronizedWidgetProxy {
         timer.schedule(deadline: .now(), repeating: .milliseconds(200))
         timer.setEventHandler { [weak self] in
             guard let self = self else { return }
-            guard let event = self.queue.peek() else { return }
+            guard let event = self.queue.peek()  else { return }
 
             // Send widget immediately if widget is unscheduled or no time source.
             if event.clientEvent.minimumScheduledTime == nil || self.playerTimeSource?() == nil {

@@ -12,7 +12,7 @@ class SpoilerFreeChatSession: InternalChatSessionProtocol {
     private let queue = Queue<ChatMessage>()
     private var playerTimeSource: PlayerTimeSource?
     private var timer: DispatchSourceTimer?
-    
+    var userChatRoomImageUrl: URL?
     private let publicDelegates: Listener<ChatSessionDelegate> = Listener()
     private let delegates: Listener<InternalChatSessionDelegate> = Listener()
     
@@ -39,25 +39,33 @@ class SpoilerFreeChatSession: InternalChatSessionProtocol {
     
     var recentlyUsedStickers: LimitedArray<Sticker> = LimitedArray<Sticker>(maxSize: 30)
 
-    var reactionsViewModelFactory: ReactionsViewModelFactory {
-        return realChatRoom.reactionsViewModelFactory
-    }
-
-    var availableReactions: [ReactionID] {
-        get{
-            return realChatRoom.availableReactions
-        }
-        set {
-            return realChatRoom.availableReactions = newValue
-        }
-    }
-
     var blockList: BlockList {
         return realChatRoom.blockList
     }
 
     var eventRecorder: EventRecorder {
         return realChatRoom.eventRecorder
+    }
+
+    var superPropertyRecorder: SuperPropertyRecorder {
+        return realChatRoom.superPropertyRecorder
+    }
+
+    var peoplePropertyRecorder: PeoplePropertyRecorder {
+        return realChatRoom.peoplePropertyRecorder
+    }
+    
+    var isAvatarDisplayed: Bool {
+        return realChatRoom.isAvatarDisplayed
+    }
+    
+    var avatarURL: URL? {
+        get {
+            return realChatRoom.avatarURL
+        }
+        set {
+            realChatRoom.avatarURL = newValue
+        }
     }
 
     init(realChatRoom: InternalChatSessionProtocol, playerTimeSource: PlayerTimeSource?) {
@@ -130,17 +138,9 @@ class SpoilerFreeChatSession: InternalChatSessionProtocol {
         realChatRoom.unsubscribeFromAllChannels()
     }
 
-    func updateUserChatImage(url: URL) -> Promise<Void> {
-        return realChatRoom.updateUserChatImage(url: url)
-    }
+    func pause() {}
 
-    func pause() {
-        realChatRoom.pause()
-    }
-
-    func resume() {
-        realChatRoom.resume()
-    }
+    func resume() {}
     
     func getMessageCount(since timestamp: TimeToken, completion: @escaping (Result<Int, Error>) -> Void) {
         realChatRoom.getMessageCount(since: timestamp, completion: completion)
@@ -148,6 +148,11 @@ class SpoilerFreeChatSession: InternalChatSessionProtocol {
     
     func getMessages(since timestamp: TimeToken, completion: @escaping (Result<[ChatMessage], Error>) -> Void) {
         realChatRoom.getMessages(since: timestamp, completion: completion)
+    }
+    
+    func updateUserChatRoomImage(url: URL, completion: @escaping (Result<Void, Error>) -> Void) {
+        realChatRoom.avatarURL = url
+        completion(.success(()))
     }
 
 }

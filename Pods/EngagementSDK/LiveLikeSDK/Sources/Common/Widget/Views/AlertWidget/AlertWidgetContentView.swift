@@ -7,9 +7,9 @@
 
 import UIKit
 
-class AlertWidgetContentView: UIView {
+class AlertWidgetContentView: ThemeableView {
     // MARK: UI Properties
-
+    
     lazy var textLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -33,7 +33,7 @@ class AlertWidgetContentView: UIView {
 
     init(type: AlertWidgetViewType) {
         self.type = type
-        super.init(frame: .zero)
+        super.init()
         configure()
     }
 

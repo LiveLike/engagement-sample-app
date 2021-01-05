@@ -7,105 +7,69 @@
 
 import Foundation
 
-enum ClientEvent: CustomStringConvertible {
-    case textPredictionCreated(TextPredictionCreated)
-    case textPredictionResults(PredictionResults)
-    case textPredictionFollowUp(TextPredictionFollowUp)
-    case imagePredictionCreated(ImagePredictionCreated)
-    case imagePredictionResults(PredictionResults)
-    case imagePredictionFollowUp(ImagePredictionFollowUp)
-    case imagePollCreated(ImagePollCreated)
-    case imagePollResults(PollResults)
-    case textPollCreated(TextPollCreated)
-    case alertCreated(AlertCreated)
-    case textQuizCreated(TextQuizCreated)
-    case textQuizResults(QuizResults)
-    case imageQuizCreated(ImageQuizCreated)
-    case imageQuizResults(QuizResults)
-    case imageSliderCreated(ImageSliderCreated)
-    case imageSliderResults(ImageSliderResults)
-    case cheerMeterCreated(CheerMeterCreated)
-    case cheerMeterResults(CheerMeterResults)
-    
-    case pointsTutorial(AwardsViewModel)
-    case badgeCollect(AwardsViewModel)
+enum ClientEvent: CustomStringConvertible, Decodable {
+    enum CodingKeys: CodingKey {
+        case event
+        case payload
+    }
 
-    var minimumScheduledTime: EpochTime? {
-        switch self {
-        case let .textPredictionCreated(payload):
-            return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case let .textPredictionFollowUp(payload):
-            return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case let .imagePredictionCreated(payload):
-            return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case let .imagePredictionFollowUp(payload):
-            return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case let .imagePollCreated(payload):
-            return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case .imagePollResults:
-            return nil
-        case let .textPollCreated(payload):
-            return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case let .alertCreated(payload):
-            return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case let .textQuizCreated(payload):
-            return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case let .imageQuizCreated(payload):
-            return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case let .imageSliderCreated(payload):
-            return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case let .cheerMeterCreated(payload):
-            return payload.programDateTime?.timeIntervalSince1970.rounded()
-        case .textQuizResults,
-             .imageQuizResults,
-             .imageSliderResults,
-             .cheerMeterResults,
-             .textPredictionResults,
-             .imagePredictionResults:
-            return nil
-        case .pointsTutorial, .badgeCollect:
-            return nil
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let event = try container.decode(EventName.self, forKey: .event)
+
+        switch event {
+        case .textPredictionCreated,
+             .textPredictionFollowUpCreated,
+             .imagePredictionCreated,
+             .imagePredictionFollowUpCreated,
+             .imagePollCreated,
+             .textPollCreated,
+             .alertCreated,
+             .textQuizCreated,
+             .imageQuizCreated,
+             .imageSliderCreated,
+             .cheerMeterCreated:
+            self = try .widget(container.decode(WidgetResource.self, forKey: .payload))
+        case .textPredictionResults:
+            self = try .textPredictionResults(container.decode(PredictionResults.self, forKey: .payload))
+        case .imagePredictionResults:
+            self = try .imagePredictionResults(container.decode(PredictionResults.self, forKey: .payload))
+        case .imagePollResults, .textPollResults:
+            self = try .imagePollResults(container.decode(PollResults.self, forKey: .payload))
+        case .textQuizResults:
+            self = try .textQuizResults(container.decode(QuizResults.self, forKey: .payload))
+        case .imageQuizResults:
+            self = try .imageQuizResults(container.decode(QuizResults.self, forKey: .payload))
+        case .imageSliderResults:
+            self = try .imageSliderResults(container.decode(ImageSliderResults.self, forKey: .payload))
+        case .cheerMeterResults:
+            self = try .cheerMeterResults(container.decode(CheerMeterResults.self, forKey: .payload))
         }
     }
 
+    case widget(WidgetResource)
+    case textPredictionResults(PredictionResults)
+    case imagePredictionResults(PredictionResults)
+    case imagePollResults(PollResults)
+    case textQuizResults(QuizResults)
+    case imageQuizResults(QuizResults)
+    case imageSliderResults(ImageSliderResults)
+    case cheerMeterResults(CheerMeterResults)
+
     var description: String {
         switch self {
-        case let .textPredictionCreated(payload):
-            return ("\(payload.kind.stringValue) Titled: \(payload.question)")
-        case let .textPredictionFollowUp(payload):
-            return ("\(payload.kind.stringValue) Titled: \(payload.question)")
-        case let .imagePredictionCreated(payload):
-            return "\(payload.kind.stringValue) Titled: \(payload.question)"
-        case let .imagePredictionFollowUp(payload):
-            return "\(payload.kind.stringValue) Titled: \(payload.question)"
-        case let .imagePollCreated(payload):
-            return "\(payload.kind.stringValue) Titled: \(payload.question)"
+        case .widget(let resource):
+            return resource.description
         case .imagePollResults:
             return "Image Poll Results"
-        case let .textPollCreated(payload):
-            return "\(payload.kind.stringValue) Titled: \(payload.question)"
-        case .alertCreated:
-            return "Alert Created Widget"
-        case let .textQuizCreated(payload):
-            return "\(payload.kind.stringValue) Titled: \(payload.question)"
-        case let .imageQuizCreated(payload):
-            return "\(payload.kind.stringValue) Titled: \(payload.question)"
         case .textQuizResults:
             return "Text Quiz Results"
         case .imageQuizResults:
             return "Image Quiz Results"
-        case let .imageSliderCreated(payload):
-            return "\(payload.kind.stringValue) Titled: \(payload.question)"
         case .imageSliderResults:
             return "Image Slider Results"
-        case let .cheerMeterCreated(payload):
-            return "\(payload.kind.stringValue) Titled: \(payload.question)"
         case .cheerMeterResults:
             return "Cheer Meter Results"
-        case .pointsTutorial:
-            return "Points Tutorial"
-        case .badgeCollect:
-            return "Badge Collect"
         case .textPredictionResults:
             return "Text Prediction Results"
         case .imagePredictionResults:
@@ -113,40 +77,19 @@ enum ClientEvent: CustomStringConvertible {
         }
     }
 
-    var kind: String {
+    var minimumScheduledTime: EpochTime? {
         switch self {
-        case let .textPredictionCreated(payload):
-            return payload.kind.stringValue
-        case let .textPredictionFollowUp(payload):
-            return payload.kind.stringValue
-        case let .imagePredictionCreated(payload):
-            return payload.kind.stringValue
-        case let .imagePredictionFollowUp(payload):
-            return payload.kind.stringValue
-        case let .imagePollCreated(payload):
-            return payload.kind.stringValue
-        case let .textPollCreated(payload):
-            return payload.kind.stringValue
-        case let .alertCreated(payload):
-            return payload.kind.stringValue
-        case let .textQuizCreated(payload):
-            return payload.kind.stringValue
-        case let .imageQuizCreated(payload):
-            return payload.kind.stringValue
-        case let .imageSliderCreated(payload):
-            return payload.kind.stringValue
-        case let .cheerMeterCreated(payload):
-            return payload.kind.stringValue
-        case .textQuizResults,
+        case .widget(let resource):
+            return resource.minimumScheduledTime
+        case .imagePollResults,
+             .textQuizResults,
              .imageQuizResults,
              .imageSliderResults,
-             .imagePollResults,
              .cheerMeterResults,
-             .pointsTutorial,
-             .badgeCollect,
              .textPredictionResults,
              .imagePredictionResults:
-            return "undefined"
+            return nil
         }
     }
+
 }

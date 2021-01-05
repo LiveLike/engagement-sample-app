@@ -10,7 +10,8 @@ import Foundation
 struct ChatSentMessageProperties {
     let characterCount: Int
     let messageId: String
-    let stickerIDs: [String]
+    let chatRoomId: String
+    let stickerShortcodes: [String]
     let stickerCount: Int
     let stickerIndices: [[Int: Int]]
     let hasExternalImage: Bool

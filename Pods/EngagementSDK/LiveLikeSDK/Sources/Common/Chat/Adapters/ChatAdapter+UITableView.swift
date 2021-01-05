@@ -17,12 +17,6 @@ internal extension ChatAdapter {
         return blockList.contains(user: sender)
     }
 
-    func resetCell(_ cell: UITableViewCell) {
-        cell.contentView.subviews.forEach { $0.removeFromSuperview() }
-        cell.backgroundColor = UIColor.clear
-        cell.selectionStyle = .none
-    }
-
     /// Tries to update table with inserts or appends
     func updateTable() {
         if !updatingTable {
@@ -167,29 +161,23 @@ extension ChatAdapter: UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard
             let cell = tableView
-                .dequeueReusableCell(withIdentifier: chatCellIdentifier)
-                as? ProxyTableViewCell
+                .dequeueReusableCell(withIdentifier: chatCellIdentifier, for: indexPath)
+                as? ChatMessageTableViewCell
             else {
                 assertionFailure("ChatAdapter couldn't find a cell with the reuse identifier 'chatMessageCell'")
                 return UITableViewCell()
         }
-        
-        let messageViewModel = messagesDisplayed[indexPath.row]
-        resetCell(cell)
-        
-        let cellView = chatViewFactory(
-            ChatViewHandlerConfig(
-                messageViewModel: messageViewModel,
-                indexPath: indexPath,
-                theme: theme,
-                timestampFormatter: self.timestampFormatter,
-                shouldDisplayDebugVideoTime: shouldDisplayDebugVideoTime
-            )
-        )
-        cell.contentView.addSubview(cellView)
-        cellView.constraintsFill(to: cell.contentView)
-        cell.selectableView = cellView
-        cell.accessibilityLabel = messageViewModel.accessibilityLabel
+
+        cell.resetForReuse()
+                
+        let config = ChatViewHandlerConfig(
+            messageViewModel: messagesDisplayed[indexPath.row],
+            indexPath: indexPath,
+            theme: theme,
+            timestampFormatter: self.timestampFormatter,
+            shouldDisplayDebugVideoTime: self.shouldDisplayDebugVideoTime,
+            shouldDisplayAvatar: chatSession.isAvatarDisplayed)
+        cell.configure(config: config)
         return cell
     }
 }
@@ -220,7 +208,7 @@ extension ChatAdapter: UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard let cell = tableView.cellForRow(at: indexPath) as? ProxyTableViewCell else {
+        guard let cell = tableView.cellForRow(at: indexPath) as? ChatMessageTableViewCell else {
             return
         }
 
@@ -228,7 +216,7 @@ extension ChatAdapter: UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
-        guard let cell = tableView.cellForRow(at: indexPath) as? ProxyTableViewCell else {
+        guard let cell = tableView.cellForRow(at: indexPath) as? ChatMessageTableViewCell else {
             return
         }
         
@@ -247,6 +235,11 @@ extension ChatAdapter: UITableViewDelegate {
                 }
             }
         }
+
+        if let message = messagesDisplayed[safe: indexPath.row] {
+            eventRecorder.record(.chatMessageDisplayed(for: message))
+        }
+
     }
     
     func tableView(_ tableView: UITableView, didEndDisplaying cell: UITableViewCell, forRowAt indexPath: IndexPath) {
@@ -255,11 +248,18 @@ extension ChatAdapter: UITableViewDelegate {
             scrollingState = .active
             chatScrollInitiated()
         }
+        
+        if let customCell = cell as? ChatMessageTableViewCell {
+            customCell.releaseImageData()
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return UITableView.automaticDimension
     }
     
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
         isDragging = true
-        didInteractWithMessageView = true
         if lastMessageIsVisible {
             if let firstIndex = tableView?.indexPathsForVisibleRows?.first {
                 oldestMessageIndex = firstIndex.row

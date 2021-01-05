@@ -9,6 +9,27 @@
 import PubNub
 import UIKit
 
+/// Delegate methods to the WidgetViewController
+public protocol WidgetViewControllerDelegate: AnyObject {
+    /// Called when a Widget is about to animate into the view
+    func widgetViewController(_ widgetViewController: WidgetViewController, willDisplay widget: Widget)
+    /// Called immediately after a Widget has finished animating into the view
+    func widgetViewController(_ widgetViewController: WidgetViewController, didDisplay widget: Widget)
+    /// Called when a Widget is about to animate out of the view
+    func widgetViewController(_ widgetViewController: WidgetViewController, willDismiss widget: Widget)
+    /// Called immediately after a Widget has finished animating out of the view
+    func widgetViewController(_ widgetViewController: WidgetViewController, didDismiss widget: Widget)
+    /// Called when the WidgetViewController receives a widget and will enqueue it to be displayed
+    /// Return nil to not display the Widget
+    func widgetViewController(_ widgetViewController: WidgetViewController, willEnqueueWidget widgetModel: WidgetModel) -> Widget?
+}
+
+public extension WidgetViewControllerDelegate {
+    func widgetViewController(_ widgetViewController: WidgetViewController, willEnqueueWidget widgetModel: WidgetModel) -> Widget? {
+        return DefaultWidgetFactory.makeWidget(from: widgetModel)
+    }
+}
+
 /**
  A `WidgetViewController` instance represents a view controller that handles widgets for the `EngagementSDK`.
 
@@ -30,6 +51,15 @@ public class WidgetViewController: UIViewController {
             session?.delegate = self
         }
     }
+
+    /// The `Widget` currently displayed in the view (if any)
+    public internal(set) var currentWidget: Widget?
+
+    public weak var delegate: WidgetViewControllerDelegate?
+
+    private var eventRecorder: EventRecorder? {
+        return (session as? InternalContentSession)?.eventRecorder
+    }
     
     private var widgetsToDisplayQueue: Queue<Widget> = Queue()
     /// A container view for handling animations and swipe gesture
@@ -38,16 +68,9 @@ public class WidgetViewController: UIViewController {
     private var widgetContainerTopAnchorConstraint: NSLayoutConstraint!
     private var swipeGesture: UISwipeGestureRecognizer?
     private var theme: Theme = .dark
-    private var displayedWidget: Widget?
-    private lazy var widgetStateController: DefaultWidgetStateController = {
-        return DefaultWidgetStateController(
-            closeButtonAction: { [weak self] in
-                self?.dismissWidget(direction: .up, dismissAction: .tapX)
-            },
-            widgetFinishedCompletion: { [weak self] in
-                self?.dismissWidget(direction: .up, dismissAction: .complete)
-            })
-    }()
+    private var timeWidgetDisplayed: Date?
+
+    private var widgetStateController: DefaultWidgetStateController!
 
     // MARK: Init Functions
 
@@ -64,6 +87,17 @@ public class WidgetViewController: UIViewController {
         view = PassthroughView()
         view.backgroundColor = .clear
         view.clipsToBounds = true
+        
+        widgetStateController = DefaultWidgetStateController(
+            closeButtonAction: { [weak self] in
+                self?.dismissWidget(direction: .up, dismissAction: .tapX)
+            },
+            widgetFinishedCompletion: { [weak self] widget in
+                guard let self = self else { return }
+                guard widget.id == self.currentWidget?.id else { return }
+                self.dismissWidget(direction: .up, dismissAction: .complete)
+            }
+        )
     }
 
     /// :nodoc:
@@ -100,6 +134,7 @@ public class WidgetViewController: UIViewController {
      */
     public func setTheme(_ theme: Theme) {
         self.theme = theme
+        self.currentWidget?.theme = theme
         log.info("Theme was applied to the WidgetViewController")
     }
 
@@ -148,20 +183,55 @@ public class WidgetViewController: UIViewController {
     }
 
     private func clearDisplayedWidget() {
-        displayedWidget?.view.removeFromSuperview()
-        displayedWidget?.removeFromParent()
-        displayedWidget = nil
+        guard let displayedWidget = currentWidget else { return }
+
+        displayedWidget.delegate = nil
+        displayedWidget.view.removeFromSuperview()
+        displayedWidget.removeFromParent()
+        self.currentWidget = nil
+        timeWidgetDisplayed = nil
+        self.delegate?.widgetViewController(self, didDismiss: displayedWidget)
     }
     
     private func dismissWidget(direction: Direction, dismissAction: DismissAction) {
+        guard let currentWidget = currentWidget else { return }
+        self.delegate?.widgetViewController(self, willDismiss: currentWidget)
+
         animateOut(
             direction: direction,
-            completion: {
+            completion: { [weak self] in
+                guard let self = self else { return }
+                self.recordWidgetDismissedAnalytics(dismissAction: dismissAction)
                 self.clearDisplayedWidget()
                 // immediately show next widget if any in queue
                 self.showNextWidgetInQueue()
             }
         )
+    }
+
+    private func recordWidgetDismissedAnalytics(dismissAction: DismissAction) {
+        guard
+            let eventRecorder = self.eventRecorder,
+            let displayedWidget = self.currentWidget,
+            let timeWidgetDisplayed = self.timeWidgetDisplayed
+        else {
+            return
+        }
+
+        if dismissAction.userDismissed {
+            var properties = WidgetDismissedProperties(
+                widgetId: displayedWidget.id,
+                widgetKind: displayedWidget.kind.analyticsName,
+                dismissAction: dismissAction,
+                numberOfTaps: displayedWidget.interactionCount,
+                dismissSecondsSinceStart: Date().timeIntervalSince(timeWidgetDisplayed)
+            )
+            if let lastTapTime = displayedWidget.timeOfLastInteraction {
+                properties.dismissSecondsSinceLastTap = Date().timeIntervalSince(lastTapTime)
+            }
+            properties.interactableState = displayedWidget.interactableState
+            eventRecorder.record(.widgetUserDismissed(properties: properties))
+        }
     }
     
     private func showNextWidgetInQueue() {
@@ -170,20 +240,12 @@ public class WidgetViewController: UIViewController {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             if
-                self.displayedWidget == nil,
+                self.currentWidget == nil,
                 let nextWidget = self.widgetsToDisplayQueue.dequeue()
             {
-                // Don't show follow up widgets if there is no vote
-                if nextWidget.kind == .textPredictionFollowUp || nextWidget.kind == .imagePredictionFollowUp {
-                    if session.widgetVotes.findVote(for: nextWidget.id) == nil {
-                        log.info("Not showing follow up prediction because no vote found.")
-                        self.showNextWidgetInQueue() // recursive
-                        return
-                    }
-                }
-                
                 self.clearDisplayedWidget()
-                self.displayedWidget = nextWidget
+                self.delegate?.widgetViewController(self, willDisplay: nextWidget)
+                self.currentWidget = nextWidget
                 
                 nextWidget.view.translatesAutoresizingMaskIntoConstraints = false
                 self.addChild(nextWidget)
@@ -191,12 +253,24 @@ public class WidgetViewController: UIViewController {
                 nextWidget.didMove(toParent: self)
                 
                 nextWidget.view.constraintsFill(to: self.widgetContainer)
+                nextWidget.theme = self.theme
+                
+                // Determine if a widget contains a link to be used for analytics
+                var widgetLink: URL?
+                if let internalWidgetLink = nextWidget.widgetLink {
+                    widgetLink = internalWidgetLink
+                }
                 
                 self.animateIn { [weak self] in
                     guard let self = self else { return }
                     nextWidget.delegate = self.widgetStateController
                     nextWidget.moveToNextState()
                     self.addSwipeToDismissGesture(to: nextWidget.dismissSwipeableView)
+                    self.eventRecorder?.record(
+                        .widgetDisplayed(kind: nextWidget.kind.analyticsName, widgetId: nextWidget.id, widgetLink: widgetLink)
+                    )
+                    self.timeWidgetDisplayed = Date()
+                    self.delegate?.widgetViewController(self, didDisplay: nextWidget)
                 }
             }
         }
@@ -260,6 +334,15 @@ public class WidgetViewController: UIViewController {
             }
         )
     }
+
+    /// Makes a widget from the delegate or from the DefaultWidgetFactory
+    private func makeWidget(from widgetModel: WidgetModel) -> Widget? {
+        if let delegate = delegate {
+            return delegate.widgetViewController(self, willEnqueueWidget: widgetModel)
+        } else {
+            return DefaultWidgetFactory.makeWidget(from: widgetModel)
+        }
+    }
 }
 
 // MARK: - Content Session Delelgate
@@ -283,9 +366,27 @@ extension WidgetViewController: ContentSessionDelegate {
     
     public func widget(_ session: ContentSession, didBecomeReady jsonObject: Any) { }
     
-    public func widget(_ session: ContentSession, didBecomeReady widget: Widget) {
-        self.widgetsToDisplayQueue.enqueue(element: widget)
-        self.showNextWidgetInQueue()
+    public func widget(_ session: ContentSession, didBecomeReady widget: Widget) { }
+
+    public func contentSession(_ session: ContentSession, didReceiveWidget widgetModel: WidgetModel) {
+        if case let WidgetModel.predictionFollowUp(predictionFollowUpModel) = widgetModel {
+            // Don't enqueue prediction follow up if there is no user vote
+            predictionFollowUpModel.getVote { [weak self] result in
+                guard let self = self else { return }
+                switch result {
+                case .success:
+                    guard let widget = self.makeWidget(from: widgetModel) else { return }
+                    self.widgetsToDisplayQueue.enqueue(element: widget)
+                    self.showNextWidgetInQueue()
+                case .failure:
+                    return
+                }
+            }
+        } else {
+            guard let widget = self.makeWidget(from: widgetModel) else { return }
+            self.widgetsToDisplayQueue.enqueue(element: widget)
+            self.showNextWidgetInQueue()
+        }
     }
 }
 

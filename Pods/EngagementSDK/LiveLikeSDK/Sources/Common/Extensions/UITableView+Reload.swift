@@ -34,9 +34,9 @@ extension UITableView {
     
     func insertMessagesAnimated(at indexPaths: [IndexPath], updateData: () -> Void, completion: @escaping (Bool) -> Void){
         if #available(iOS 11.0, *) {
-            performBatchUpdates({
+            performBatchUpdates({ [weak self] in
                 updateData()
-                self.insertRows(at: indexPaths, with: .bottom)
+                self?.insertRows(at: indexPaths, with: .bottom)
             }, completion: completion)
         } else {
             CATransaction.begin()

@@ -10,13 +10,4 @@ import Foundation
 /// Represents a publish/subscribe networking service
 protocol PubSubService {
     func subscribe(_ channel: String) -> PubSubChannel
-
-    /// Fetch history for a channel that has not be subscribed to
-    func fetchHistory(
-        channel: String,
-        oldestMessageDate: TimeToken?,
-        newestMessageDate: TimeToken?,
-        limit: UInt,
-        completion: @escaping (Result<PubSubHistoryResult, Error>) -> Void
-    )
 }

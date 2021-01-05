@@ -8,12 +8,11 @@
 import Lottie
 import UIKit
 
-class WidgetTitleView: UIView {
+class WidgetTitleView: ThemeableView {
     // MARK: Private Properties
 
     private let animationViewSize: CGFloat = 18.0
     private var lottieView: AnimationView?
-    private var timeAnimationStarted: TimeInterval?
 
     // MARK: UI Properties
 
@@ -23,12 +22,7 @@ class WidgetTitleView: UIView {
         label.numberOfLines = 0
         return label
     }()
-
-    lazy var gradientView: GradientView = {
-        let gradientView = GradientView(orientation: .horizontal)
-        return gradientView
-    }()
-
+    
     var closeButton: UIButton = {
         let image = UIImage(named: "widget_close", in: Bundle(for: WidgetTitleView.self), compatibleWith: nil)
         let button = UIButton(type: .custom)
@@ -58,10 +52,13 @@ class WidgetTitleView: UIView {
         return view
     }()
 
+    private var timerDuration: TimeInterval?
+    private var interactionTimer: Timer?
+
     // MARK: Initialization
 
-    init() {
-        super.init(frame: .zero)
+    override init() {
+        super.init()
         configure()
     }
 
@@ -73,10 +70,28 @@ class WidgetTitleView: UIView {
     // MARK: Private Functions - View Setup
 
     private func configure() {
-        configureGradientView()
         configureAnimationView()
         configureTitleLabel()
         configureLayout()
+
+        NotificationCenter.default.addObserver(self, selector: #selector(didMoveToForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
+    }
+
+    @objc private func didMoveToForeground() {
+        // Restart the timer animation from continuous time since background
+        // We need to do this because when Lottie goes into background it pauses the animation
+        if
+            let interactionTimer = interactionTimer,
+            let lottieView = lottieView,
+            let lottieAnimation = lottieView.animation,
+            let duration = timerDuration
+        {
+            let timeRemaining = interactionTimer.fireDate.timeIntervalSince(Date())
+            let timeScalar = lottieAnimation.duration / duration
+
+            lottieView.currentTime = (duration - timeRemaining) * timeScalar
+            lottieView.play()
+        }
     }
 
     private func configureTitleLabel() {
@@ -89,9 +104,15 @@ class WidgetTitleView: UIView {
     }
 
     func beginTimer(duration: Double, animationFilepath: String, completion: (() -> Void)? = nil) {
+        timerDuration = duration
+        interactionTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false, block: { _ in
+            completion?()
+        })
+
         let lottieView = AnimationView(filePath: animationFilepath)
         lottieView.translatesAutoresizingMaskIntoConstraints = false
         lottieView.contentMode = .scaleAspectFit
+
         if let animationDuration = lottieView.animation?.duration, duration > 0 {
             lottieView.animationSpeed = CGFloat(animationDuration / duration)
         }
@@ -111,11 +132,10 @@ class WidgetTitleView: UIView {
         lottieView.play { finished in
             if finished {
                 lottieView.isHidden = true
-                completion?()
             }
         }
 
-        timeAnimationStarted = Date().timeIntervalSince1970
+        self.lottieView = lottieView
     }
 
     func showCloseButton() {
@@ -127,14 +147,7 @@ class WidgetTitleView: UIView {
         DispatchQueue.main.asyncAfter(deadline: .now() + duration, execute: completion)
     }
 
-    private func configureGradientView() {
-        addSubview(gradientView)
-    }
-
     private func configureLayout() {
-        // Gradient View
-        gradientView.constraintsFill(to: self)
-
         titleBottomConstraint = titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor)
         titleTopConstraint = titleLabel.topAnchor.constraint(equalTo: topAnchor)
         titleLeadingConstraint = titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor)
@@ -164,7 +177,5 @@ extension WidgetTitleView {
     func customizeTitle(font: UIFont, textColor: UIColor, gradientStart: UIColor, gradientEnd: UIColor) {
         titleLabel.textColor = textColor
         titleLabel.font = font
-        gradientView.livelike_startColor = gradientStart
-        gradientView.livelike_endColor = gradientEnd
     }
 }

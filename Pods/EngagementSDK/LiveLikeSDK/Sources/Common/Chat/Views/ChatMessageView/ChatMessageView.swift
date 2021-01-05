@@ -10,7 +10,7 @@ import UIKit
 class ChatMessageView: UIView {
     // MARK: - Outlets
 
-    @IBOutlet weak private var messageLabel: AnimatedLabel!
+    @IBOutlet weak var messageLabel: AnimatedLabel!
     
     @IBOutlet weak private var topBorder: UIView!
     @IBOutlet weak private var topBorderHeight: NSLayoutConstraint!
@@ -23,8 +23,8 @@ class ChatMessageView: UIView {
     @IBOutlet weak private var messageBackground: UIView!
     
     @IBOutlet weak private var badgeImageView: GIFImageView!
-    @IBOutlet var timestampLabel: UILabel!
-    @IBOutlet var alternateTimestampLabel: UILabel!
+    @IBOutlet weak var timestampLabel: UILabel!
+    @IBOutlet weak var alternateTimestampLabel: UILabel!
     @IBOutlet weak private var lhsImageView: GIFImageView!
     @IBOutlet weak private var lhsImageWidth: NSLayoutConstraint!
     @IBOutlet weak private var lhsImageHeight: NSLayoutConstraint!
@@ -34,11 +34,11 @@ class ChatMessageView: UIView {
     @IBOutlet weak private var lhsImageLeadingMargin: NSLayoutConstraint!
     
     // padding
-    @IBOutlet var timestampLabelTrailingPaddingConstraint: NSLayoutConstraint!
-    @IBOutlet var timestampLabelToBadgePaddingConstraint: NSLayoutConstraint!
-    @IBOutlet var alternateTimestampLeadingPaddingConstraint: NSLayoutConstraint!
-    @IBOutlet var alternateTimestampTopPaddingConstraint: NSLayoutConstraint!
-    @IBOutlet var alternateTimestampBottomConstraint: NSLayoutConstraint!
+    @IBOutlet weak var timestampLabelTrailingPaddingConstraint: NSLayoutConstraint!
+    @IBOutlet weak var timestampLabelToBadgePaddingConstraint: NSLayoutConstraint!
+    @IBOutlet weak var alternateTimestampLeadingPaddingConstraint: NSLayoutConstraint!
+    @IBOutlet weak var alternateTimestampTopPaddingConstraint: NSLayoutConstraint!
+    @IBOutlet weak var alternateTimestampBottomConstraint: NSLayoutConstraint!
     @IBOutlet weak private var messageLeadPaddingConstraint: NSLayoutConstraint!
     @IBOutlet weak private var messageTrailingPaddingConstraint: NSLayoutConstraint!
     @IBOutlet weak private var usernameLeadingConstraint: NSLayoutConstraint!
@@ -48,6 +48,12 @@ class ChatMessageView: UIView {
     @IBOutlet weak private var messageBodyTopMargin: NSLayoutConstraint!
     
     lazy var reactionsDisplayView = constraintBased { ReactionsDisplayView() }
+
+    var reactionHintImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
     
     // MARK: - Internal Properties
 
@@ -76,13 +82,13 @@ class ChatMessageView: UIView {
     private var badgeExists: Bool = false
     private var cellImageUrl: URL?
     private var timestampExists: Bool = false
-    private weak var tableView: UITableView?
-    private var indexPath: IndexPath = IndexPath(row: 0, section: 0)
+    private var shouldDisplayAvatar: Bool = false
     
     override func didMoveToSuperview() {
         super.didMoveToSuperview()
         if reactionsDisplayView.superview == nil {
             addSubview(reactionsDisplayView)
+            addSubview(reactionHintImageView)
             
             let xInset = theme.chatCornerRadius + 3
             
@@ -92,7 +98,16 @@ class ChatMessageView: UIView {
                 reactionsDisplayView.rightAnchor
                     .constraint(equalTo: messageViewHolder.rightAnchor, constant: -(xInset)),
                 reactionsDisplayView.leftAnchor
-                    .constraint(greaterThanOrEqualTo: messageViewHolder.leftAnchor, constant: xInset)
+                    .constraint(greaterThanOrEqualTo: messageViewHolder.leftAnchor, constant: xInset),
+
+                reactionHintImageView.centerYAnchor
+                    .constraint(equalTo: messageViewHolder.topAnchor, constant: theme.messageReactionsVerticalOffset),
+                reactionHintImageView.rightAnchor
+                    .constraint(equalTo: messageViewHolder.rightAnchor, constant: -(xInset)),
+                reactionHintImageView.leftAnchor
+                    .constraint(greaterThanOrEqualTo: messageViewHolder.leftAnchor, constant: xInset),
+                reactionHintImageView.heightAnchor.constraint(equalToConstant: 12),
+                reactionHintImageView.widthAnchor.constraint(equalToConstant: 12),
             ])
         }
     }
@@ -103,13 +118,18 @@ class ChatMessageView: UIView {
         for message: MessageViewModel,
         indexPath: IndexPath,
         timestampFormatter: TimestampFormatter?,
-        shouldDisplayDebugVideoTime: Bool
+        shouldDisplayDebugVideoTime: Bool,
+        shouldDisplayAvatar: Bool,
+        theme: Theme
     ) {
+        self.theme = theme
         self.message = message
-        self.messageLabel.attributedText = message.message
+        
         self.isLocalClientMessage = message.isLocalClient
+        self.shouldDisplayAvatar = shouldDisplayAvatar
         self.hideActionsPanel()
-
+        
+        self.messageLabel.attributedText = message.message
         self.timestampExists = timestampFormatter != nil
         self.usernameLabel.text = message.username
         //timestampLabel.text = timestampFormatter?(message.createdAt)
@@ -143,12 +163,24 @@ class ChatMessageView: UIView {
         }
                 
         self.reactionsDisplayView.set(chatReactions: message.chatReactions, theme: self.theme)
+        self.reactionHintImageView.isHidden = message.chatReactions.totalReactionsCount != 0
         
         self.cellImageUrl = message.profileImageUrl
         self.accessibilityLabel = message.accessibilityLabel
+        
+        // Handle Chat Avatar
+        if self.shouldDisplayAvatar {
+            lhsImageView.isHidden = false
+            if let imageUrl = cellImageUrl {
+                lhsImageView.setImage(url: imageUrl)
+            }
+        } else {
+            lhsImageView.isHidden = true
+        }
+        
         self.applyTheme()
     }
-
+    
     func applyTheme() {
         timestampLabel.font = theme.chatMessageTimestampFont
         timestampLabel.textColor = theme.chatMessageTimestampTextColor
@@ -198,20 +230,20 @@ class ChatMessageView: UIView {
             messageTrailingPaddingConstraint.isActive = true
         }
         
-        if theme.chatImageWidth > 0 {
-            if let imageUrl = cellImageUrl {
-                lhsImageView.setImage(url: imageUrl)
+        // Handle Chat Avatar
+        if self.shouldDisplayAvatar {
+            lhsImageWidth.constant = theme.chatImageWidth
+            
+            if theme.chatImageWidth > 0 {
+                lhsImageHeight.constant = theme.chatImageHeight
+                lhsImageView.livelike_cornerRadius = theme.chatImageCornerRadius
+                lhsImageLeadingMargin.constant = -theme.messageMargins.left
             }
+            
+            messageViewHolderLeading.constant = theme.chatImageWidth + theme.chatImageTrailingMargin + theme.messageMargins.left
+        } else {
+            messageViewHolderLeading.constant = theme.messageMargins.left
         }
-        lhsImageWidth.constant = theme.chatImageWidth
-        
-        if theme.chatImageWidth > 0 {
-            lhsImageHeight.constant = theme.chatImageHeight
-            lhsImageView.livelike_cornerRadius = theme.chatImageCornerRadius
-            lhsImageLeadingMargin.constant = -theme.messageMargins.left
-        }
-        
-        messageViewHolderLeading.constant = theme.chatImageWidth + theme.chatImageTrailingMargin + theme.messageMargins.left
         
         switch theme.chatImageVerticalAlignment {
         case .top:
@@ -247,11 +279,18 @@ class ChatMessageView: UIView {
         topBorderHeight.constant = theme.messageTopBorderHeight
         bottomBorder.backgroundColor = theme.messageBottomBorderColor
         bottomBorderHeight.constant = theme.messageBottomBorderHeight
+
+        reactionHintImageView.image = theme.reactionsImageHint
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
         messageViewHolder.layer.cornerRadius = theme.messageCornerRadius
+    }
+    
+    func prepareForReuse() {
+        message = nil
+        messageLabel.prepareForReuse()
     }
 }
 

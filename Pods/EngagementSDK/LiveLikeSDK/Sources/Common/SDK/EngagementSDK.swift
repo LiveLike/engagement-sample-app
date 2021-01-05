@@ -7,8 +7,6 @@
 //
 
 import UIKit
-import Bugsnag
-
 /**
   The entry point for all interaction with the EngagementSDK.
 
@@ -62,7 +60,8 @@ public class EngagementSDK: NSObject {
     private let userPointsVendor: UserPointsVendor
     private let userProfileVendor: UserProfileVendor
     private let sdkErrorReporter: InternalErrorReporter
-    private let widgetVotes = WidgetVotes()
+    private let predictionVoteRepo: PredictionVoteRepository
+    private let leaderboardsManager: LeaderboardsManager = LeaderboardsManager()
 
     private let widgetPauseDelegates: Listener<PauseDelegate> = Listener<PauseDelegate>()
     private let analytics: Analytics
@@ -70,6 +69,47 @@ public class EngagementSDK: NSObject {
     private lazy var orientationAnalytics = OrientationChangeAnalytics(eventRecorder: self.eventRecorder,
                                                                        superPropertyRecorder: self.superPropertyRecorder,
                                                                        peoplePropertyRecorder: self.peoplePropertyRecorder)
+    struct PaginationProgress {
+        var next: URL?
+        var previous: URL?
+        var total: Int = 0
+    }
+    var chatRoomMembershipPagination: PaginationProgress
+    var userChatRoomMembershipPagination: PaginationProgress
+    var leaderboardEntriesPagination: PaginationProgress
+    private let leaderboardEnriesPromiseQueue = PromiseQueue(name: "com.livelike.leaderboardEntries",
+                                                             maxConcurrentPromises: 1)
+    
+    private(set) lazy var whenUserProfile: Promise<UserProfile> = {
+        return firstly {
+            Promises.zip(self.accessTokenVendor.whenAccessToken, self.livelikeIDVendor.whenLiveLikeID)
+        }.then { accessToken, livelikeID in
+            return UserProfile(userID: livelikeID, accessToken: accessToken)
+        }
+    }()
+
+    private lazy var whenWidgetModelFactory: Promise<WidgetModelFactory> = {
+        return firstly {
+            Promises.zip(
+                self.whenMessagingClients,
+                self.accessTokenVendor.whenAccessToken,
+                self.whenUserProfile
+            )
+        }.then { messagingClient, accessToken, userProfile in
+            guard let widgetClient = messagingClient.widgetMessagingClient else { return Promise(error: ContentSessionError.missingWidgetClient) }
+            let widgetModelFactory = WidgetModelFactory(
+                eventRecorder: self.eventRecorder,
+                userProfile: userProfile,
+                rewardItems: [],
+                leaderboardsManager: self.leaderboardsManager,
+                accessToken: accessToken,
+                widgetClient: widgetClient,
+                livelikeRestAPIService: self.livelikeRestAPIService,
+                predictionVoteRepo: self.predictionVoteRepo
+            )
+            return Promise(value: widgetModelFactory)
+        }
+    }()
 
     // MARK: - Initialization
     
@@ -77,26 +117,10 @@ public class EngagementSDK: NSObject {
     /// - Parameter config: An EngagementSDKConfig object
     public convenience init(config: EngagementSDKConfig) {
         let livelikeRestAPIService = LiveLikeRestAPIServices(apiBaseURL: config.apiOrigin, clientID: config.clientID)
-        
         let sdkErrorReporter = InternalErrorReporter()
-        let accessTokenGenerator = APIAccessTokenGenerator(livelikeRestAPIService: livelikeRestAPIService)
-        let userProfileService = APIUserProfileService(livelikeRestAPIService: livelikeRestAPIService)
-        
         let userResolver = UserResolver(accessTokenStorage: config.accessTokenStorage,
-                                        userProfileService: userProfileService,
-                                        accessTokenGenerator: accessTokenGenerator,
+                                        livelikeAPI: livelikeRestAPIService,
                                         sdkDelegate: sdkErrorReporter)
-        
-        let bugsnagAPIKey: String = {
-            guard
-                let key = Bundle(for: EngagementSDK.self).object(forInfoDictionaryKey: "BugsnagAPIKey") as? String,
-                key != ""
-            else {
-                log.error("Failed to find Bugsnag API Key.")
-                return ""
-            }
-            return key
-        }()
 
         self.init(
             config: config,
@@ -107,8 +131,7 @@ public class EngagementSDK: NSObject {
             userPointsVendor: userResolver,
             userProfileVendor: userResolver,
             awardsProfileVendor: userResolver,
-            sdkErrorReporter: sdkErrorReporter,
-            bugsnagAPIKey: bugsnagAPIKey
+            sdkErrorReporter: sdkErrorReporter
         )
     }
 
@@ -121,10 +144,10 @@ public class EngagementSDK: NSObject {
         userPointsVendor: UserPointsVendor,
         userProfileVendor: UserProfileVendor,
         awardsProfileVendor: AwardsProfileVendor,
-        sdkErrorReporter: InternalErrorReporter,
-        bugsnagAPIKey: String
+        sdkErrorReporter: InternalErrorReporter
     ) {
         self.config = config
+        self.predictionVoteRepo = config.widget.predictionVoteRepository
         self.accessTokenVendor = accessTokenVendor
         self.livelikeRestAPIService = livelikeRestAPIService
         self.livelikeIDVendor = livelikeIDVendor
@@ -136,6 +159,10 @@ public class EngagementSDK: NSObject {
         whenProgramURLTemplate = Promise<String>()
         log.info("Initializing EngagementSDK using client id: '\(config.clientID)'")
         widgetPauseStatus = UserDefaults.standard.bool(forKey: EngagementSDK.permanentPauseUserDefaultsKey) == true ? .paused : .unpaused
+        self.chatRoomMembershipPagination = PaginationProgress()
+        self.userChatRoomMembershipPagination = PaginationProgress()
+        self.leaderboardEntriesPagination = PaginationProgress()
+
         super.init()
         sdkErrorReporter.delegate = self
         awardsProfileVendor.addDelegate(self)
@@ -168,27 +195,17 @@ public class EngagementSDK: NSObject {
         
         /// 1. Load application resource
         /// 2. Load profile resource
-        /// 3. Initialize third parties (Bugsnag)
         firstly {
             Promises.zip(
                 self.livelikeRestAPIService.whenApplicationConfig,
                 self.userNicknameService.whenInitialNickname,
                 self.livelikeIDVendor.whenLiveLikeID
             )
-        }.then { appConfig, nickname, livelikeID in
-            if config.isBugsnagEnabled {
-                self.initializeBugsnag(
-                    apiKey: bugsnagAPIKey,
-                    organizationID: appConfig.organizationId,
-                    organizationName: appConfig.organizationName,
-                    userID: livelikeID.asString,
-                    userNickname: nickname
-                )
-            }
+        }.then { _, _, _ in
             self.delegate?.sdk?(setupCompleted: self)
         }.catch { error in
             switch error {
-            case NetworkClientError.badRequest:
+            case NetworkClientError.badRequest, NetworkClientError.notFound404:
                 if config.apiOrigin != EngagementSDKConfig.defaultAPIOrigin {
                     self.delegate?.sdk?(self, setupFailedWithError: SetupError.invalidAPIOrigin)
                 } else {
@@ -199,71 +216,74 @@ public class EngagementSDK: NSObject {
             }
         }
     }
-    
-    /// Create an instance of a `Widget` which can be placed into your view.
-    /// - Parameters:
-    ///   - jsonObject: A JSON object compatable with `JSONSerialization.data(withJSONObject:options:)`
-    ///   - completion: A result containing the `Widget`
-    func createWidget(withJSONObject jsonObject: Any, completion: @escaping (Result<WidgetController, Error>) -> Void) {
+
+    struct LeaderboardAndCurrentEntry {
+        let leaderboard: LeaderboardResource
+        let currentEntry: LeaderboardEntryResource?
+    }
+
+    func getLeaderboardAndCurrentEntry(leaderboardID: String, profileID: String) -> Promise<LeaderboardAndCurrentEntry> {
         firstly {
-            Promises.zip(
-                self.whenMessagingClients,
-                self.accessTokenVendor.whenAccessToken
-            )
-        }.then { messagingClients, accessToken in
-            guard let widgetClient = messagingClients.widgetMessagingClient else {
-                return
+            self.livelikeRestAPIService.getLeaderboard(leaderboardID: leaderboardID)
+        }.then { leaderboard in
+            return self.getLeaderboardAndCurrentEntry(leaderboard: leaderboard, profileID: profileID)
+        }
+    }
+
+    func getLeaderboardAndCurrentEntry(leaderboard: LeaderboardResource, profileID: String) -> Promise<LeaderboardAndCurrentEntry> {
+        firstly {
+            self.accessTokenVendor.whenAccessToken
+        }.then { accessToken -> Promise<LeaderboardEntryResource> in
+            guard let entryURL = leaderboard.getEntryURL(profileID: profileID) else {
+                return Promise(error: LLGamificationError.leaderboardUrlCreationFailure)
             }
-            let clientEvent = try WidgetPayloadParser.parse(jsonObject)
-            let widgetFactory = ClientEventWidgetFactory(
-                event: clientEvent,
-                voteRepo: self.widgetVotes,
-                widgetMessagingOutput: widgetClient,
-                accessToken: accessToken,
-                eventRecorder: self.eventRecorder
+            return self.livelikeRestAPIService.getLeaderboardEntry(url: entryURL, accessToken: accessToken)
+        }.then { leaderboardEntry in
+            let leaderboardAndCurrentEntry = LeaderboardAndCurrentEntry(
+                leaderboard: leaderboard,
+                currentEntry: leaderboardEntry
             )
-            guard let widget = widgetFactory.create(widgetConfig: WidgetConfig()) else {
-                return
+            return Promise(value: leaderboardAndCurrentEntry)
+        }.recover { error in
+            // If the user's entry is not found then recover with nil
+            // A user will not have an entry until they earn their first points
+            if case NetworkClientError.notFound404 = error {
+                return Promise(value: LeaderboardAndCurrentEntry(
+                    leaderboard: leaderboard,
+                    currentEntry: nil)
+                )
+            } else {
+                return Promise(error: error)
+            }
+        }
+    }
+    
+    /// Gets the current user's profile
+    func getCurrentUserProfile(completion: @escaping (Result<UserProfile, Error>) -> Void) {
+        firstly {
+            whenUserProfile
+        }.then {
+            completion(.success($0))
+        }.catch {
+            completion(.failure($0))
+        }
+    }
+
+    func createWidget(withJSONObject jsonObject: Any, completion: @escaping (Result<Widget, Error>) -> Void) {
+        firstly {
+            whenWidgetModelFactory
+        }.then { widgetModelFactory in
+            let widgetResource = try WidgetPayloadParser.parse(jsonObject)
+            let widgetModel = try widgetModelFactory.make(from: widgetResource)
+            guard let widget = DefaultWidgetFactory.makeWidget(from: widgetModel) else {
+                throw GetWidgetError.widgetDoesNotExist
             }
             completion(.success(widget))
-        }.catch { error in
-            completion(.failure(error))
+        }.catch {
+            completion(.failure($0))
         }
     }
-    
-    func createWidgets(
-        widgetJSONObjects jsonObjects: [Any],
-        completion: @escaping (Result<[Widget], Error>) -> Void
-    ) {
-        firstly {
-            Promises.zip(
-                self.whenMessagingClients,
-                self.accessTokenVendor.whenAccessToken
-            )
-        }.then { messagingClients, accessToken in
-            guard let widgetClient = messagingClients.widgetMessagingClient else {
-                return
-            }
-            DispatchQueue.main.async {
-                let widgets: [Widget] = jsonObjects.compactMap { jsonObject in
-                    guard let clientEvent = try? WidgetPayloadParser.parse(jsonObject) else {
-                        return nil
-                    }
-                    let widgetFactory = ClientEventWidgetFactory(
-                        event: clientEvent,
-                        voteRepo: self.widgetVotes,
-                        widgetMessagingOutput: widgetClient,
-                        accessToken: accessToken,
-                        eventRecorder: self.eventRecorder
-                    )
-                    return widgetFactory.create(widgetConfig: WidgetConfig())
-                }
-                completion(.success(widgets))
-            }
-        }.catch { error in
-            completion(.failure(error))
-        }
-    }
+
 }
 
 // MARK: - Static Public APIs
@@ -312,18 +332,12 @@ public extension EngagementSDK {
         return contentSessionInternal(config: config, delegate: nil)
     }
     
+    // MARK: Chat
+    
     /// Sets a user's display name and calls the completion block
     func setUserDisplayName(_ newDisplayName: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        
-        // swiftlint:disable nesting
-        enum Error: Swift.Error, LocalizedError {
-            case invalidNameLength
-            var errorDescription: String? { return "Display names must be between 1 and 20 characters" }
-        }
-        // swiftlint:enable nesting
-        
         guard (1...20).contains(newDisplayName.count) else {
-            completion(.failure(Error.invalidNameLength))
+            completion(.failure(SetUserDisplayNameError.invalidNameLength))
             return
         }
         
@@ -349,6 +363,20 @@ public extension EngagementSDK {
             case let .failure(error):
                 completion(false, error)
             }
+        }
+    }
+
+    func getUserDisplayName(completion: @escaping (Result<String,Error>) -> Void) {
+        firstly {
+            userNicknameService.whenInitialNickname
+        }.then { _ in
+            guard let currentNickname = self.userNicknameService.currentNickname else {
+                completion(.failure(NilError()))
+                return
+            }
+            completion(.success(currentNickname))
+        }.catch {
+            completion(.failure($0))
         }
     }
     
@@ -391,16 +419,27 @@ public extension EngagementSDK {
         }
     }
     
-    /// Creates a chat room with an optional title
-    func createChatRoom(title: String?,
-                        completion: @escaping (Result<String, Error>) -> Void) {
+    /// Creates a public chat room with an optional title
+    func createChatRoom(title: String?, completion: @escaping (Result<String, Error>) -> Void) {
+        createChatRoom(title: title, visibility: .everyone, completion: completion)
+    }
+    
+    /// Creates a chat room with an optional title and an ability to set the room's visibility
+    func createChatRoom(
+        title: String?,
+        visibility: ChatRoomVisibilty,
+        completion: @escaping (Result<String, Error>) -> Void
+    ) {
         firstly {
             Promises.zip(self.accessTokenVendor.whenAccessToken,
                          self.livelikeRestAPIService.whenApplicationConfig)
         }.then { accessToken, appConfig -> Promise<ChatRoomResource> in
-            self.livelikeRestAPIService.createChatRoomResource(title: title,
-                                                         accessToken: accessToken,
-                                                         appConfig: appConfig)
+            self.livelikeRestAPIService.createChatRoomResource(
+                title: title,
+                visibility: visibility,
+                accessToken: accessToken,
+                appConfig: appConfig
+            )
         }.then { chatRoomResource in
             completion(.success(chatRoomResource.id))
         }.catch { error in
@@ -412,9 +451,11 @@ public extension EngagementSDK {
     /// Retrieve information about a chat room
     func getChatRoomInfo(roomID: String, completion: @escaping (Result<ChatRoomInfo, Error>) -> Void) {
         firstly {
-            livelikeRestAPIService.getChatRoomResource(roomID: roomID)
+            self.accessTokenVendor.whenAccessToken
+        }.then { accessToken -> Promise<ChatRoomResource> in
+            self.livelikeRestAPIService.getChatRoomResource(roomID: roomID, accessToken: accessToken)
         }.then { chatRoomResource in
-            completion(.success(ChatRoomInfo(id: chatRoomResource.id, title: chatRoomResource.title)))
+            completion(.success(ChatRoomInfo(id: chatRoomResource.id, title: chatRoomResource.title, visibility: chatRoomResource.visibility)))
         }.catch { error in
             log.error("Error getting chat room info: \(error.localizedDescription)")
             completion(.failure(error))
@@ -426,13 +467,40 @@ public extension EngagementSDK {
                                 page: ChatRoomMembershipPagination,
                                 completion: @escaping (Result<[ChatRoomMember], Error>) -> Void) {
         firstly {
-           self.accessTokenVendor.whenAccessToken
-        }.then { accessToken -> Promise<[ChatRoomMember]> in
-            self.livelikeRestAPIService.getChatRoomMemberships(roomID: roomID,
-                                                               page: page,
+            self.accessTokenVendor.whenAccessToken
+        }.then { accessToken in
+            return Promises.zip(
+                Promise(value: accessToken),
+                self.livelikeRestAPIService.getChatRoomResource(roomID: roomID, accessToken: accessToken)
+            )
+        }.then { accessToken, chatRoomResource -> Promise<ChatRoomMembershipsResult> in
+            
+            // Handle `.next`, `.previous` cases and their availibility
+            var notFirstMembershipUrl: URL?
+            switch page {
+            case .first:
+                // reset next/prev urls stored from previous calls to a different room
+                self.chatRoomMembershipPagination = PaginationProgress()
+            case .next:
+                guard let nextPageUrl = self.chatRoomMembershipPagination.next  else {
+                    log.info("Next chat room membership page is unavailable")
+                    return Promise(value: ChatRoomMembershipsResult(members: [], next: nil, previous: nil))
+                }
+                notFirstMembershipUrl = nextPageUrl
+            case .previous:
+                guard let previousPageUrl = self.chatRoomMembershipPagination.previous  else {
+                    log.info("Previous chat room membership page is unavailable")
+                    return Promise(value: ChatRoomMembershipsResult(members: [], next: nil, previous: nil))
+                }
+                notFirstMembershipUrl = previousPageUrl
+            }
+            
+            return self.livelikeRestAPIService.getChatRoomMemberships(url: notFirstMembershipUrl ?? chatRoomResource.membershipsUrl,
                                                                accessToken: accessToken)
-        }.then { chatRoomMembers in
-             completion(.success(chatRoomMembers))
+        }.then { response in
+            self.chatRoomMembershipPagination.next = response.next
+            self.chatRoomMembershipPagination.previous = response.previous
+            completion(.success(response.members))
         }.catch { error in
             log.error("Error getting room memberships: \(error.localizedDescription)")
             completion(.failure(error))
@@ -445,12 +513,35 @@ public extension EngagementSDK {
         firstly {
             Promises.zip(self.accessTokenVendor.whenAccessToken,
                          self.userProfileVendor.whenProfileResource)
-        }.then { accessToken, profileResource -> Promise<[ChatRoomInfo]> in
-            self.livelikeRestAPIService.getUserChatRoomMemberships(profile: profileResource,
-                                                                   accessToken: accessToken,
-                                                                   page: page)
-        }.then { userChatRoomMemberships in
-             completion(.success(userChatRoomMemberships))
+        }.then { accessToken, profileResource -> Promise<UserChatRoomMembershipsResult> in
+            
+            // Handle `.next`, `.previous` cases and their availibility
+            var notFirstMembershipUrl: URL?
+            switch page {
+            case .first:
+                // reset next/prev urls stored from previous calls to a different room
+                self.userChatRoomMembershipPagination = PaginationProgress()
+            case .next:
+                guard let nextPageUrl = self.userChatRoomMembershipPagination.next  else {
+                    log.info("Next chat room membership page is unavailable")
+                    return Promise(value: UserChatRoomMembershipsResult(chatRooms: [], next: nil, previous: nil))
+                }
+                notFirstMembershipUrl = nextPageUrl
+            case .previous:
+                guard let previousPageUrl = self.userChatRoomMembershipPagination.previous  else {
+                    log.info("Previous chat room membership page is unavailable")
+                    return Promise(value: UserChatRoomMembershipsResult(chatRooms: [], next: nil, previous: nil))
+                }
+                notFirstMembershipUrl = previousPageUrl
+            }
+            
+            return self.livelikeRestAPIService.getUserChatRoomMemberships(url: notFirstMembershipUrl ?? profileResource.chatRoomMembershipsUrl,
+                                                                          accessToken: accessToken,
+                                                                          page: page)
+        }.then { userChatRoomMembershipsResult in
+            self.userChatRoomMembershipPagination.next = userChatRoomMembershipsResult.next
+            self.userChatRoomMembershipPagination.previous = userChatRoomMembershipsResult.previous
+            completion(.success(userChatRoomMembershipsResult.chatRooms))
         }.catch { error in
             log.error("Error getting user chat room memberships: \(error.localizedDescription)")
             completion(.failure(error))
@@ -486,41 +577,235 @@ public extension EngagementSDK {
             completion(.failure(error))
         }
     }
+    
+    // MARK: Widgets
+    
+    /// Retrieve widget details of a widget by `id` and `kind`
+    func getWidget(id: String,
+                   kind: WidgetKind,
+                   completion: @escaping (Result<Widget, Error>) -> Void) {
+        firstly {
+            Promises.zip(
+                whenWidgetModelFactory,
+                livelikeRestAPIService.getWidget(id: id, kind: kind)
+            )
+        }.then { widgetModelFactory, widgetResource in
+            let widgetModel = try widgetModelFactory.make(from: widgetResource)
+            guard let widget = DefaultWidgetFactory.makeWidget(from: widgetModel) else {
+                throw GetWidgetError.widgetDoesNotExist
+            }
+            completion(.success(widget))
+        }.catch { error in
+            log.error("Error retrieving widget: \(error.localizedDescription)")
+            completion(.failure(error))
+        }
+    }
+
+    func getLeaderboardClients(leaderboardIDs: [String], completion: @escaping (Result<[LeaderboardClient], Error>) -> Void) {
+        firstly {
+            self.livelikeIDVendor.whenLiveLikeID
+        }.then { livelikeID in
+            Promises.all(leaderboardIDs.map {
+                self.getLeaderboardAndCurrentEntry(leaderboardID: $0, profileID: livelikeID.asString)
+            })
+        }.then { leaderboardEntriesResponse in
+            let leaderboards = leaderboardEntriesResponse.map {
+                LeaderboardClient(
+                    leaderboardResource: $0.leaderboard,
+                    currentLeaderboardEntry: $0.currentEntry,
+                    leaderboardsManager: self.leaderboardsManager
+                )
+            }
+            completion(.success(leaderboards))
+        }.catch { error in
+            log.error("Error retrieving Leaderboards: \(error.localizedDescription)")
+            completion(.failure(error))
+        }
+    }
+    
+    // MARK: Gamification
+    
+    /// Retrieves leaderboards for a given program
+    func getLeaderboards(programID: String, completion: @escaping (Result<[Leaderboard], Error>) -> Void) {
+        firstly {
+            livelikeRestAPIService.getLeaderboards(programID: programID)
+        }.then { leaderboardsResources in
+            
+            // Convert to integrator facing class
+            let leaderboards = leaderboardsResources.map { leaderboard -> Leaderboard in
+                let leaderboardReqard = LeaderboardReward(id: leaderboard.rewardItem.id, name: leaderboard.rewardItem.name)
+                return Leaderboard(id: leaderboard.id, name: leaderboard.name, rewardItem: leaderboardReqard)
+            }
+        
+            completion(.success(leaderboards))
+        }.catch { error in
+            log.error("Error retrieving Leaderboards: \(error.localizedDescription)")
+            completion(.failure(error))
+        }
+    }
+    
+    /// Retrieves leaderboard details
+    func getLeaderboard(leaderboardID: String, completion: @escaping (Result<Leaderboard, Error>) -> Void) {
+        firstly {
+            livelikeRestAPIService.getLeaderboard(leaderboardID: leaderboardID)
+        }.then { leaderboard in
+            completion(.success(Leaderboard(id: leaderboard.id,
+                                            name: leaderboard.name,
+                                            rewardItem: LeaderboardReward(id: leaderboard.rewardItem.id,
+                                                                          name: leaderboard.rewardItem.name))))
+        }.catch { error in
+            log.error("Error retrieving Leaderboard: \(error.localizedDescription)")
+            completion(.failure(error))
+        }
+    }
+    
+    /// Retrieves a paginated list of leaderboard entries
+    func getLeaderboardEntries(
+        leaderboardID: String,
+        page: Pagination,
+        completion: @escaping (Result<LeaderboardEntriesResult, Error>) -> Void
+    ) {
+        
+        let leaderboardEntriesPromise = PromiseTask { () -> Promise<Void> in
+            return Promise<Void> { [weak self] fulfill, reject in
+                guard let self = self else { return }
+                
+                firstly {
+                    Promises.zip(self.livelikeRestAPIService.getLeaderboard(leaderboardID: leaderboardID),
+                                 self.accessTokenVendor.whenAccessToken)
+                }.then { leaderboard, accessToken -> Promise<PaginatedResource<LeaderboardEntryResource>> in
+                   
+                    // Handle `.next`, `.previous` cases and their availibility
+                    var notFirstPageUrl: URL?
+                    switch page {
+                    case .first:
+                        // reset next/prev urls stored from previous calls to a different room
+                        self.leaderboardEntriesPagination = PaginationProgress()
+                    case .next:
+                        guard let nextPageUrl = self.leaderboardEntriesPagination.next  else {
+                            log.info("Next leaderboard entries page is unavailable")
+                            return Promise(value: PaginatedResource(previous: nil,
+                                                                      count: self.leaderboardEntriesPagination.total,
+                                                                      next: nil,
+                                                                      results: []))
+                        }
+                        notFirstPageUrl = nextPageUrl
+                    case .previous:
+                        guard let previousPageUrl = self.leaderboardEntriesPagination.previous  else {
+                            log.info("Previous leaderboard entries page is unavailable")
+                            return Promise(value: PaginatedResource(previous: nil,
+                                                                      count: self.leaderboardEntriesPagination.total,
+                                                                      next: nil,
+                                                                      results: []))
+                        }
+                        notFirstPageUrl = previousPageUrl
+                    }
+                    
+                    return self.livelikeRestAPIService.getLeaderboardEntries(
+                        url: notFirstPageUrl ?? leaderboard.entriesUrl,
+                        accessToken: accessToken
+                    )
+                }.then { leaderboardEntriesResult in
+                    self.leaderboardEntriesPagination.total = leaderboardEntriesResult.count
+                    self.leaderboardEntriesPagination.next = leaderboardEntriesResult.next
+                    self.leaderboardEntriesPagination.previous = leaderboardEntriesResult.previous
+                    let hasPrevious: Bool = leaderboardEntriesResult.previous != nil
+                    let hasNext: Bool = leaderboardEntriesResult.next != nil
+                    let leaderboardEntries = leaderboardEntriesResult.results.map { leaderboardEntry -> LeaderboardEntry in
+                        return LeaderboardEntry(percentileRank: leaderboardEntry.percentileRank,
+                                                profileId: leaderboardEntry.profileId,
+                                                rank: leaderboardEntry.rank,
+                                                score: leaderboardEntry.score,
+                                                profileNickname: leaderboardEntry.profileNickname)
+                    }
+                    
+                    completion(.success(LeaderboardEntriesResult(entries: leaderboardEntries,
+                                                                 total: leaderboardEntriesResult.count,
+                                                                 hasPrevious: hasPrevious,
+                                                                 hasNext: hasNext)))
+                    fulfill(())
+                    
+                }.catch { error in
+                    log.error("Error retrieving Leaderboard Entries: \(error.localizedDescription)")
+                    completion(.failure(error))
+                    reject(error)
+                }
+                
+            }
+        }
+        
+        leaderboardEnriesPromiseQueue.enque(promiseTask: leaderboardEntriesPromise)
+        
+    }
+    
+    /// Get a leaderboard entry profile
+    func getLeaderboardEntry(
+        profileID: String,
+        leaderboardID: String,
+        completion: @escaping (Result<LeaderboardEntry, Error>) -> Void
+    ) {
+        firstly {
+            self.getLeaderboardAndCurrentEntry(leaderboardID: leaderboardID, profileID: profileID)
+        }.then { leaderboardAndEntry in
+            guard let entryResource = leaderboardAndEntry.currentEntry else {
+                completion(.failure(NilError()))
+                return
+            }
+            let entry = LeaderboardEntry(
+                percentileRank: entryResource.percentileRank,
+                profileId: profileID,
+                rank: entryResource.rank,
+                score: entryResource.score,
+                profileNickname: entryResource.profileNickname
+            )
+            completion(.success(entry))
+        }.catch { error in
+            log.error("Error retrieving Leaderboard Entries: \(error.localizedDescription)")
+            completion(.failure(error))
+        }
+    }
+    
+    /// Get a leaderboard entry profile
+    func getLeaderboardEntryForCurrentProfile(
+        leaderboardID: String,
+        completion: @escaping (Result<LeaderboardEntry, Error>) -> Void
+    ) {
+        firstly {
+            userProfileVendor.whenProfileResource
+        }.then { userProfile in
+            self.getLeaderboardEntry(profileID: userProfile.id,
+                                     leaderboardID: leaderboardID,
+                                     completion: completion)
+        }.catch { error in
+            log.error("Error retrieving Leaderboard Entries: \(error.localizedDescription)")
+            completion(.failure(error))
+        }
+    }
 }
 
 // MARK: - Private APIs
 
 private extension EngagementSDK {
+    var eventRecorder: EventRecorder { return analytics }
+    var identityRecorder: IdentityRecorder { return analytics }
+    var peoplePropertyRecorder: PeoplePropertyRecorder { return analytics }
+    var superPropertyRecorder: SuperPropertyRecorder { return analytics }
     
-    private func initializeBugsnag(
-        apiKey: String,
-        organizationID: String,
-        organizationName: String,
-        userID: String,
-        userNickname: String
-    ){
-        let config = BugsnagConfiguration()
-        config.apiKey = apiKey
-        config.appVersion = "\(Bundle.main.displayName ?? "UNKNOWN APP NAME") (\(EngagementSDK.version))"
-        #if DEBUG
-        config.releaseStage = "development"
-        #endif
-        config.setUser(userID, withName: userNickname, andEmail: nil)
-        Bugsnag.start(with: config)
-    }
-    
-    private func loadChatRoom(
+    func loadChatRoom(
         config: ChatSessionConfig,
         completion: @escaping (Result<InternalChatSessionProtocol, Error>) -> Void
     ) {
         firstly {
-            self.livelikeRestAPIService.whenApplicationConfig
-        }.then { application in
+            return Promises.zip(
+                self.livelikeRestAPIService.whenApplicationConfig,
+                self.accessTokenVendor.whenAccessToken
+            )
+        }.then { application, accessToken in
             return Promises.zip(
                 .init(value: application),
                 self.livelikeIDVendor.whenLiveLikeID,
                 self.accessTokenVendor.whenAccessToken,
-                self.livelikeRestAPIService.getChatRoomResource(roomID: config.roomID)
+                self.livelikeRestAPIService.getChatRoomResource(roomID: config.roomID, accessToken: accessToken)
             )
         }.then { application, livelikeid, accessToken, chatRoomResource in
             guard let chatPubnubChannel = chatRoomResource.channels.chat.pubnub else {
@@ -545,8 +830,9 @@ private extension EngagementSDK {
                 accessToken: accessToken
             )
            
-            let reactionVendor = ChatRoomReactionVendor(reactionPacksUrl: chatRoomResource.reactionPacksUrl,
-                                                         cache: Cache.shared)
+            let reactionVendor = ChatRoomReactionVendor(
+                reactionPacksUrl: chatRoomResource.reactionPacksUrl
+            )
 
             let messageReporter = APIMessageReporter(
                 reportURL: chatRoomResource.reportMessageUrl,
@@ -561,29 +847,20 @@ private extension EngagementSDK {
                 userID: chatId,
                 nickname: self.userNicknameService,
                 imageUploader: imageUploader,
-                eventRecorder: self.eventRecorder,
-                reactionsViewModelFactory:
-                    ReactionsViewModelFactory(
-                        reactionAssetsVendor: reactionVendor,
-                        mediaRepository: EngagementSDK.mediaRepository
-                    ),
+                analytics: self.analytics,
                 reactionsVendor: reactionVendor,
                 messageHistoryLimit: config.messageHistoryLimit,
                 messageReporter: messageReporter,
                 title: chatRoomResource.title,
                 chatFilters: Set([.filtered]),
-                stickerRepository: stickerRepository
+                stickerRepository: stickerRepository,
+                shouldDisplayAvatar: config.shouldDisplayAvatar
             )
             completion(.success(chatRoom))
         }.catch { error in
             completion(.failure(error))
         }
     }
-
-    var eventRecorder: EventRecorder { return analytics }
-    var identityRecorder: IdentityRecorder { return analytics }
-    var peoplePropertyRecorder: PeoplePropertyRecorder { return analytics }
-    var superPropertyRecorder: SuperPropertyRecorder { return analytics }
 
     func contentSessionInternal(config: SessionConfiguration, delegate: ContentSessionDelegate?) -> ContentSession {
         if whenMessagingClients.isRejected {
@@ -605,7 +882,8 @@ private extension EngagementSDK {
                                       superPropertyRecorder: superPropertyRecorder,
                                       peoplePropertyRecorder: peoplePropertyRecorder,
                                       livelikeRestAPIService: livelikeRestAPIService,
-                                      widgetVotes: widgetVotes,
+                                      widgetVotes: predictionVoteRepo,
+                                      leaderboardsManager: self.leaderboardsManager,
                                       delegate: delegate)
     }
 
@@ -639,19 +917,20 @@ private extension EngagementSDK {
                 }
                 
                 self.orientationAnalytics.shouldRecord = true
+                let userID = ChatUser.ID(idString: id.asString)
                 
                 var widgetClient: WidgetClient?
                 if let subscribeKey = configuration.pubnubSubscribeKey {
                     widgetClient = self.widgetMessagingClient(
                         subcribeKey: subscribeKey,
-                        origin: configuration.pubnubOrigin
+                        origin: configuration.pubnubOrigin,
+                        userID: userID.asString
                     )
                 }
                 
-                let chatId = ChatUser.ID(idString: id.asString)
                 let pubsubService = self.chatMessagingClient(
                     appConfig: configuration,
-                    userID: chatId,
+                    userID: userID,
                     nickname: self.userNicknameService,
                     accessToken: accessToken
                 )

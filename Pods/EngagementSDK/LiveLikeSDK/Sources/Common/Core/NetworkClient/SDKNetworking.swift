@@ -45,6 +45,8 @@ extension SDKNetworking {
                         rejected(NetworkClientError.unauthorized)
                     } else if httpResponse.statusCode == 403 {
                         rejected(NetworkClientError.forbidden)
+                    } else if httpResponse.statusCode == 404 {
+                        rejected(NetworkClientError.notFound404)
                     } else if 400 ..< 500 ~= httpResponse.statusCode {
                         rejected(NetworkClientError.badRequest)
                     } else if 500 ..< 600 ~= httpResponse.statusCode {

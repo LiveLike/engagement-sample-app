@@ -44,12 +44,8 @@ public protocol ContentSessionDelegate: AnyObject {
     /// Notifies the delegate that a widget was recieved on the `ContentSession`
     /// - Parameters:
     ///   - session: The content session object informing the delegate of this event
-    ///   - jsonObject: The JSON object of the widget that became ready
-    func widget(_ session: ContentSession, didBecomeReady jsonObject: Any)
-    
-    /// Notifies the delegate that a widget was recieved on the `ContentSession`
-    /// - Parameters:
-    ///   - session: The content session object informing the delegate of this event
     ///   - widget: The `WidgetViewModel` of the widget that became ready
     func widget(_ session: ContentSession, didBecomeReady widget: Widget)
+    
+    func contentSession(_ session: ContentSession, didReceiveWidget widget: WidgetModel)
 }

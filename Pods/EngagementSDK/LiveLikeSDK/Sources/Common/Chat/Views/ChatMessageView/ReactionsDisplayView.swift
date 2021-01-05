@@ -22,6 +22,7 @@ class ReactionsDisplayView: UIView {
     }()
     private var reactionImageViewsByID: [String: UIImageView] = [:]
     private let customSpacingAfterLastReaction = CGFloat(3.0)
+    private let mediaRepository = EngagementSDK.mediaRepository
     
     init() {
         super.init(frame: .zero)
@@ -33,27 +34,12 @@ class ReactionsDisplayView: UIView {
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    private let reactionHintID = ReactionID(fromString: "LLReactionHint")
+
     private var theme: Theme?
-    lazy private var reactionHint: ReactionButtonViewModel? = {
-        
-        // if theme.reactionsImageHint == nil then the integrator
-        // decided to turn off reaction hint
-        if let reactionsHintImage = theme?.reactionsImageHint {
-            return ReactionButtonViewModel(id: reactionHintID,
-                                               voteCount: 0,
-                                               isMine: false,
-                                               myVoteID: nil,
-                                               image: reactionsHintImage,
-                                               name: "Reaction Hint")
-        }
-        return nil
-    }()
 
     private func makeImageView(for chatReaction: ReactionButtonViewModel) -> UIImageView {
-        let imageView = constraintBased {
-            UIImageView(image: chatReaction.image)
-        }
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
             imageView.widthAnchor.constraint(equalToConstant: 12.0),
@@ -94,14 +80,6 @@ internal extension ReactionsDisplayView {
             return
         }
         
-        guard chatReactions.totalReactionsCount > 0 else {
-            // add reactions hint image if enabled
-            if let reactionHint = reactionHint {
-                addReactionToStack(reactionModelView: reactionHint)
-            }
-            return
-        }
-        
         chatReactions.reactions.forEach { reaction in
             guard chatReactions.voteCount(forID: reaction.id) > 0 else { return }
             if reactionImageViewsByID[reaction.id.asString] == nil {
@@ -112,16 +90,6 @@ internal extension ReactionsDisplayView {
     }
 
     func update(chatReactions: ReactionButtonListViewModel) {
-        
-        // remove Reactions Hint
-        if let reactionHintImageView = reactionImageViewsByID[reactionHintID.asString] {
-            if chatReactions.totalReactionsCount > 0 {
-                reactionHintImageView.isHidden = true
-                stackView.removeArrangedSubview(reactionHintImageView)
-                reactionImageViewsByID.removeValue(forKey: reactionHintID.asString)
-            }
-        }
-        
         chatReactions.reactions.forEach { reaction in
             if let imageView = reactionImageViewsByID[reaction.id.asString] {
                 //update count - hide reaction image view if new count is 0
@@ -129,12 +97,6 @@ internal extension ReactionsDisplayView {
                     imageView.isHidden = true
                     stackView.removeArrangedSubview(imageView)
                     reactionImageViewsByID.removeValue(forKey: reaction.id.asString)
-                    
-                    if chatReactions.totalReactionsCount == 0 {
-                        if let reactionHint = reactionHint {
-                            addReactionToStack(reactionModelView: reactionHint)
-                        }
-                    }
                 }
             } else {
                 guard chatReactions.voteCount(forID: reaction.id) > 0 else { return }
@@ -160,22 +122,40 @@ internal extension ReactionsDisplayView {
         reactionImageViewsByID[reactionModelView.id.asString] = newImageView
         
         if animated {
-            newImageView.transform = CGAffineTransform(scaleX: 0, y: 0)
-            firstly {
-                UIView.animate(duration: 0.3, animations: {
-                    newImageView.isHidden = false
-                })
-            }.then { _ in
-                UIView.animatePromise(
-                    withDuration: 1.2,
-                    delay: 0,
-                    usingSpringWithDamping: 0.3,
-                    initialSpringVelocity: 0,
-                    options: .curveEaseInOut) {
-                        newImageView.transform = .identity
+            mediaRepository.getImage(url: reactionModelView.imageURL) { result in
+                switch result {
+                case .success(let imageResult):
+                    newImageView.image = imageResult.image
+                    newImageView.transform = CGAffineTransform(scaleX: 0, y: 0)
+                    firstly {
+                        UIView.animate(duration: 0.3, animations: {
+                            newImageView.isHidden = false
+                        })
+                    }.then { _ in
+                        UIView.animatePromise(
+                            withDuration: 1.2,
+                            delay: 0,
+                            usingSpringWithDamping: 0.3,
+                            initialSpringVelocity: 0,
+                            options: .curveEaseInOut) {
+                                newImageView.transform = .identity
+                        }
+                    }.catch {
+                        log.error($0.localizedDescription)
+                    }
+
+                case .failure(let error):
+                    log.error(error.localizedDescription)
                 }
-            }.catch {
-                log.error($0.localizedDescription)
+            }
+        } else {
+            mediaRepository.getImage(url: reactionModelView.imageURL) { result in
+                switch result {
+                case .success(let imageResult):
+                    newImageView.image = imageResult.image
+                case .failure(let error):
+                    log.error(error.localizedDescription)
+                }
             }
         }
     }

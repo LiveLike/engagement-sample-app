@@ -95,17 +95,3 @@ extension Cache {
         }
     }
 }
-
-private enum CacheError: LocalizedError {
-    case nilObjectFoundInCache
-    case promiseRejectedDueToNilSelf
-
-    var errorDescription: String? {
-        switch self {
-        case .nilObjectFoundInCache:
-            return "Disk cache found object but it was nil"
-        case .promiseRejectedDueToNilSelf:
-            return "Promise rejected due to self being nil"
-        }
-    }
-}

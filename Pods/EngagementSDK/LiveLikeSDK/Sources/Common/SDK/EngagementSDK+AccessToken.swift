@@ -24,17 +24,3 @@ class UserDefaultsAccessTokenStorage: AccessTokenStorage {
         UserDefaults.standard.set(accessToken, forKey: defaultKey)
     }
 }
-
-extension EngagementSDK {
-    static func generateAccessToken(apiEndpoint: URL, clientID: String, completion: @escaping (String) -> Void) {
-        firstly {
-            LiveLikeAPI.getApplicationConfiguration(apiBaseURL: apiEndpoint, clientID: clientID)
-        }.then { appConfig in
-            LiveLikeAPI.requestAccessTokenResource(url: appConfig.profileUrl)
-        }.then { accessTokenResource in
-            completion(accessTokenResource.accessToken)
-        }.catch {
-            log.error($0.localizedDescription)
-        }
-    }
-}

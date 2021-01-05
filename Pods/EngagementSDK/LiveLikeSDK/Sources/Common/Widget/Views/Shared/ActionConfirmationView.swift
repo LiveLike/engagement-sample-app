@@ -71,7 +71,7 @@ class ActionConfirmationView: UIView {
 
     private func configureBackground() {
         addSubview(backgroundView)
-        backgroundView.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.8)
+        backgroundView.backgroundColor = UIColor(rInt: 0, gInt: 0, bInt: 0, alpha: 0.8)
 
         let constraints = [
             backgroundView.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.8),

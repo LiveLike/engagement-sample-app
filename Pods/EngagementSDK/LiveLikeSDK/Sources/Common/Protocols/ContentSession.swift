@@ -38,16 +38,16 @@ public protocol ContentSession: AnyObject {
     var delegate: ContentSessionDelegate? { get set }
 
     /**
-     Pauses both Chat and Widget components.
+     Pauses Widget components.
 
-     Pausing the Engagement SDK stops new widgets and chat message from being displayed. Any widgets currently being displayed, will be dimissed.
+     Pausing stops new widgets from being displayed. Any widgets currently being displayed, will be dimissed.
 
      Widgets will still be received by the Engagement SDK, but will only be displayed after `resume()` is called, unless they have timed out.
      */
     func pause()
 
     /**
-     Resumes both Chat and Widget components.
+     Resumes Widget components.
      */
     func resume()
 
@@ -56,7 +56,7 @@ public protocol ContentSession: AnyObject {
      */
     func close()
     
-    /// Sets an image for the user's chat messages in the current chat room
+    @available(*, deprecated, message: "Use `getChatSession()` to retreive `ChatSession` and set `avatarURL`")
     func updateUserChatRoomImage(url: URL, completion: @escaping () -> Void, failure: @escaping (Error) -> Void)
     
     /// Retrieves widgets that have already been posted. Each request returns a maximum of 20 posted widgets.
@@ -64,4 +64,23 @@ public protocol ContentSession: AnyObject {
     ///   - page: Pass the `.next` page parameter to retrieve the next page of the posted widgets.
     ///   - completion: Use the `Result` value to parse an array of posted widgets
     func getPostedWidgets(page: WidgetPagination, completion: @escaping (Result<[Widget]?, Error>) -> Void)
+
+    /// Get the reward items that can be earned on this Program.
+    func getRewardItems(completion: @escaping (Result<[RewardItem], Error>) -> Void)
+
+    /// Get the Leaderboard Clients associated with this Program.
+    func getLeaderboardClients(completion: @escaping (Result<[LeaderboardClient], Error>) -> Void)
+    
+    /// Get Chat Session associated with this Program
+    func getChatSession(completion: @escaping (Result<ChatSession, Error>) -> Void)
+
+    /// Loads the latest widgets from the server
+    func getPostedWidgetModels(page: WidgetPagination, completion: @escaping (Result<[WidgetModel]?, Error>) -> Void)
+
+    /// Loads a widget from the server by id as a WidgetModel
+    func getWidgetModel(byID id: String, kind: WidgetKind, completion: @escaping (Result<WidgetModel, Error>) -> Void)
+
+    /// Makes a WidgetModel from a widget json
+    func createWidgetModel(fromJSON jsonObject: Any, completion: @escaping (Result<WidgetModel, Error>) -> Void)
+
 }

@@ -22,6 +22,8 @@ extension AnalyticsEvent.Attribute {
     typealias Attribute = AnalyticsEvent.Attribute
     static let widgetType: Attribute = "Widget Type"
     static let widgetId: Attribute = "Widget ID"
+    static let programId: Attribute = "Program ID"
+    static let widgetLinkUrl: Attribute = "Link URL"
     static let dismissAction: Attribute = "Dismiss Action"
     static let dismissSecondsSinceStart: Attribute = "Dismiss Seconds Since Start"
     static let interactableState: Attribute = "Interactable State"
@@ -37,7 +39,8 @@ extension AnalyticsEvent.Attribute {
     static let totalSecondsInPreviousOrientation: Attribute = "Total Seconds In Previous Orientation"
     static let chatCharacterLength: Attribute = "Character Length"
     static let chatMessageId: Attribute = "Chat Message ID"
-    static let stickerId: Attribute = "Sticker ID"
+    static let chatRoomId: Attribute = "Chat Room ID"
+    static let stickerShortcodes: Attribute = "Sticker Shortcodes"
     static let stickerCount: Attribute = "Sticker Count"
     static let stickerKeyboardIndices: Attribute = "Sticker Keyboard Indices"
     static let keyboardType: Attribute = "Keyboard Type"
@@ -55,4 +58,5 @@ extension AnalyticsEvent.Attribute {
     static let pointsInCurrentLevel: Attribute = "Points In Current Level"
     static let pointsToNextLevel: Attribute = "Points To Next Level"
     static let chatMessageHasExternalImage: Attribute = "Has External Image"
+    static let alertId: Attribute = "Alert Id"
 }

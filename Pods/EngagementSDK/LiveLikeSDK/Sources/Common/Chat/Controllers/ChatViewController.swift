@@ -24,23 +24,6 @@ public typealias TimestampFormatter = (Date) -> String
 public class ChatViewController: UIViewController {
     // MARK: Properties
 
-    var chatAdapter: ChatAdapter? {
-        didSet {
-            messageVC.chatAdapter = chatAdapter
-            chatAdapter?.hideSnapToLive = { [weak self] hide in
-                self?.snapToLiveIsHidden(hide)
-            }
-            chatAdapter?.didScrollToTop = { [weak self] in
-                self?.loadMoreHistory()
-            }
-            chatAdapter?.timestampFormatter = self.messageTimestampFormatter
-            chatAdapter?.shouldDisplayDebugVideoTime = self.shouldDisplayDebugVideoTime
-            chatInputViewAccessory.supportExternalImages = self.shouldSupportChatImagePosting
-            
-            chatAdapter?.setTheme(theme)
-        }
-    }
-
     var chatSession: InternalChatSessionProtocol?
     /// The current Chat Session being displayed if any
     public var currentChatSession: ChatSession? {
@@ -49,58 +32,18 @@ public class ChatViewController: UIViewController {
     
     /// Removes the current chat session if there is one set.
     public func clearChatSession() {
-        self.chatSession?.removeInternalDelegate(self)
         self.chatSession = nil
-        self.chatAdapter = nil
-        self.stickerPacks = []
+        messageViewController.clearChatSession()
+        chatInputView.clearChatSession()
     }
     
     /// Sets the chat session to be displayed.
     /// Replaces the current chat session if there is one set.
     public func setChatSession(_ chatSession: ChatSession) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.clearChatSession()
-            
-            guard let chatSession = chatSession as? InternalChatSessionProtocol else { return }
-            self.chatSession = chatSession
-            self.messageVC.chatSession = chatSession
-            
-            chatSession.stickerRepository.getStickerPacks { [weak self] result in
-                guard let self = self else { return}
-                
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success(let stickerPacks):
-                        self.stickerPacks = stickerPacks
-                    case .failure(let error):
-                        log.error("Failed to get sticker packs with error: \(error)")
-                    }
+        self.chatSession = chatSession as? InternalChatSessionProtocol
+        messageViewController.setChatSession(chatSession)
+        chatInputView.setChatSession(chatSession)
 
-                    self.stickerInputView.stickerPacks = self.recentlyUsedStickerPacks + self.stickerPacks
-                    self.chatInputViewAccessory.keyboardToggleButton.isHidden = !self.doStickersExist(stickerPacks: self.stickerPacks)
-                    
-                    let factory = MessageViewModelFactory(
-                        stickerPacks: self.stickerPacks,
-                        channel: "",
-                        reactionsFactory: chatSession.reactionsViewModelFactory,
-                        mediaRepository: EngagementSDK.mediaRepository
-                    )
-
-                    let adapter = ChatAdapter(
-                        messageViewModelFactory: factory,
-                        eventRecorder: chatSession.eventRecorder,
-                        blockList: chatSession.blockList,
-                        chatSession: chatSession
-                    )
-                    
-                    chatSession.addInternalDelegate(self)
-                    
-                    self.chatAdapter = adapter
-                    self.chatSession(chatSession, didRecieveMessageHistory: chatSession.messages)
-                }
-            }
-        }
     }
 
     /// A `ContentSession` used by the ChatController to link with the program on the CMS.
@@ -114,10 +57,19 @@ public class ChatViewController: UIViewController {
                 log.error("Failed to setup chat adapter due to error: \($0)")
             }
 
-            sessionImpl.chatDelegate = self
             eventRecorder = sessionImpl.eventRecorder
             superPropertyRecorder = sessionImpl.superPropertyRecorder
             peoplePropertyRecorder = sessionImpl.peoplePropertyRecorder
+
+            sessionImpl.getChatSession { [weak self] result in
+                guard let self = self else { return }
+                switch result {
+                case .success(let chatSession):
+                    self.setChatSession(chatSession)
+                case .failure(let error):
+                    log.error(error)
+                }
+            }
 
             firstly {
                 sessionImpl.whenRewards
@@ -180,33 +132,70 @@ public class ChatViewController: UIViewController {
 
     /// The formatter used print timestamp labels on the chat message.
     /// Set to nil to hide the timestamp labels.
-    public var messageTimestampFormatter: TimestampFormatter? = { date in
-        let dateFormatter = DateFormatter()
-        dateFormatter.amSymbol = "am"
-        dateFormatter.pmSymbol = "pm"
-        dateFormatter.setLocalizedDateFormatFromTemplate("MMM d hh:mm")
-        return dateFormatter.string(from: date)
+    public var messageTimestampFormatter: TimestampFormatter? {
+        get {
+            messageViewController.messageTimestampFormatter
+        }
+        set {
+            messageViewController.messageTimestampFormatter = newValue
+        }
     }
 
     /// Determines whether the user is able to post images into chat
-    public var shouldSupportChatImagePosting: Bool = true {
+    public var shouldSupportChatImagePosting: Bool {
+        get {
+            return chatInputView.supportExternalImages
+        }
+        set {
+            chatInputView.supportExternalImages = newValue
+        }
+    }
+
+    /// Show or hide the input field for chat
+    public var isChatInputVisible: Bool = true {
         didSet {
-            self.chatInputViewAccessory.supportExternalImages = shouldSupportChatImagePosting
+            self.inputViewHeightConstraint.constant = isChatInputVisible ? 52 : 0
+            self.chatInputView.reset()
         }
     }
     
+    /// Toggles whether new message will be displayed. Messages received while `false` will catch up when set to `true`
+    public var shouldShowIncomingMessages: Bool = true {
+        didSet {
+            self.messageViewController.shouldShowIncomingMessages = shouldShowIncomingMessages
+        }
+    }
+
     /// Determines whether the user is able to post images into chat
-    public var shouldDisplayDebugVideoTime: Bool = false
-    
-    var stickerPacks: [StickerPack] = []
+    public var shouldDisplayDebugVideoTime: Bool {
+        get {
+            messageViewController.shouldDisplayDebugVideoTime
+        }
+        set {
+            messageViewController.shouldDisplayDebugVideoTime = newValue
+        }
+    }
 
     // MARK: Internal Properties
 
-    lazy var messageVC: MessageViewController = {
+    public var messageViewController: MessageViewController = {
         let messagesVC = MessageViewController()
-        messagesVC.setTheme(theme)
-        messagesVC.chatAdapter = chatAdapter
         return messagesVC
+    }()
+    
+    public var chatInputView: ChatInputView = {
+        ChatInputView.instanceFromNib()
+    }()
+
+    public var ignoreSizeRestrictions = false
+    
+    lazy var gradientLayer: CAGradientLayer = {
+        let gradient = CAGradientLayer()
+        gradient.frame = self.messageContainerView.bounds
+        gradient.colors = [UIColor.clear.cgColor, UIColor.clear.cgColor, UIColor.black.cgColor, UIColor.black.cgColor, UIColor.clear.cgColor]
+        gradient.locations = [0.0, 0.0, 0.1, 0.95, 1.0]
+        self.messageContainerView.layer.mask = gradient
+        return gradient
     }()
 
     lazy var inputContainerView: UIView = {
@@ -231,17 +220,27 @@ public class ChatViewController: UIViewController {
 
     var inputContainerBottomConstraint: NSLayoutConstraint!
     var profileStatusBarHeightConstraint: NSLayoutConstraint?
-
-    var ignoreSizeRestrictions = false
     var isOnScreen = true
     var pauseTimer: Timer?
-
     var keyboardNotificationTokens = [NSObjectProtocol]()
+    var recentlyUsedStickers = LimitedArray<Sticker>(maxSize: 30)
+    var isRotating = false
+    var keyboardType: KeyboardType = .standard
+    
+    // Analytic Properties
+    var eventRecorder: EventRecorder?
+    var superPropertyRecorder: SuperPropertyRecorder?
+    var peoplePropertyRecorder: PeoplePropertyRecorder?
+    var chatVisibilityStatus: VisibilityStatus = .shown
+    var timeVisibilityChanged: Date = Date()
+    var timeChatPauseStatusChanged: Date = Date()
+    lazy var tapGesture: UITapGestureRecognizer = {
+        let gesture = UITapGestureRecognizer(target: self, action: #selector(didRecognizeTapGesture))
+        gesture.cancelsTouchesInView = false
+        return gesture
+    }()
 
     // MARK: Private Properties
-
-    private var snapToLiveButton = SnapToLiveButton()
-    private var snapToLiveBottomConstraint: NSLayoutConstraint?
 
     private let minimumContainerWidth: CGFloat = 292
     private var currentContainerWidth: CGFloat = 0 {
@@ -249,38 +248,9 @@ public class ChatViewController: UIViewController {
             validateContainerWidth()
         }
     }
-
-    lazy var tapGesture: UITapGestureRecognizer = {
-        let gesture = UITapGestureRecognizer(target: self, action: #selector(didRecognizeTapGesture))
-        gesture.cancelsTouchesInView = false
-        return gesture
-    }()
-
-    lazy var chatInputViewAccessory: ChatInputView = {
-        ChatInputView.instanceFromNib()
-    }()
-
-    lazy var stickerInputView: StickerInputView = {
-        let stickerInputView = StickerInputView.instanceFromNib()
-        stickerInputView.delegate = self
-        return stickerInputView
-    }()
-    
-    var recentlyUsedStickers = LimitedArray<Sticker>(maxSize: 30)
-
+    private lazy var inputViewHeightConstraint: NSLayoutConstraint = inputContainerView.heightAnchor.constraint(equalToConstant: 52.0)
     private var theme: Theme = .dark
     private var displayNameVendor: UserNicknameVendor?
-    var isRotating = false
-
-    var keyboardIsVisible = false
-    var keyboardType: KeyboardType = .standard
-
-    // Analytic Properties
-    var eventRecorder: EventRecorder?
-    var superPropertyRecorder: SuperPropertyRecorder?
-    var peoplePropertyRecorder: PeoplePropertyRecorder?
-    var chatVisibilityStatus: VisibilityStatus = .shown
-    var timeVisibilityChanged: Date = Date()
 
     // MARK: Initializers
 
@@ -301,12 +271,11 @@ public class ChatViewController: UIViewController {
         view.isHidden = true
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.setTheme(self.theme)
             self.setupContainerViews()
             self.setupInputViews()
             self.setupMessageView()
-            self.setupSnapToLiveButton()
             self.addKeyboardNotifications()
+            self.setTheme(self.theme)
         }
     }
 
@@ -314,7 +283,7 @@ public class ChatViewController: UIViewController {
     public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         addKeyboardDismissGesture()
-        UIAccessibility.post(notification: .layoutChanged, argument: self.chatInputViewAccessory.textField)
+        UIAccessibility.post(notification: .layoutChanged, argument: self.chatInputView.textField)
     }
 
     /// :nodoc:
@@ -328,6 +297,11 @@ public class ChatViewController: UIViewController {
     public override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         currentContainerWidth = view.frame.width
+
+        CATransaction.begin()
+        CATransaction.setValue(true, forKey: kCATransactionDisableActions)
+        gradientLayer.frame = self.messageContainerView.bounds
+        CATransaction.commit()
     }
 
     /// :nodoc:
@@ -336,10 +310,10 @@ public class ChatViewController: UIViewController {
         coordinator.animate(alongsideTransition: { [weak self] _ in
             // Save the visible row position
             self?.isRotating = true
-            self?.chatAdapter?.orientationWillChange()
+            self?.messageViewController.orientationWillChange()
         }, completion: { [weak self] _ in
             // Scroll to the saved position prior to screen rotate
-            self?.chatAdapter?.orientationDidChange()
+            self?.messageViewController.orientationDidChange()
             self?.isRotating = false
         })
         super.willTransition(to: newCollection, with: coordinator)
@@ -359,7 +333,7 @@ public class ChatViewController: UIViewController {
             inputContainerBottomConstraint!,
             inputContainerView.trailingAnchor.constraint(equalTo: view.safeTrailingAnchor),
             inputContainerView.leadingAnchor.constraint(equalTo: view.safeLeadingAnchor),
-            inputContainerView.heightAnchor.constraint(equalToConstant: 52.0),
+            inputViewHeightConstraint,
             messageContainerView.topAnchor.constraint(equalTo: view.topAnchor),
             messageContainerView.trailingAnchor.constraint(equalTo: view.safeTrailingAnchor),
             messageContainerView.leadingAnchor.constraint(equalTo: view.safeLeadingAnchor),
@@ -375,108 +349,18 @@ public class ChatViewController: UIViewController {
     }
 
     private func setupMessageView() {
-        addChild(viewController: messageVC, into: messageContainerView)
+        addChild(viewController: messageViewController, into: messageContainerView)
     }
 
     private func setupInputViews() {
-        chatInputViewAccessory.setTheme(theme)
-        chatInputViewAccessory.delegate = self
+        chatInputView.setTheme(theme)
+        chatInputView.delegate = self
 
-        inputContainerView.addSubview(chatInputViewAccessory)
-        chatInputViewAccessory.constraintsFill(to: inputContainerView)
+        inputContainerView.addSubview(chatInputView)
+        chatInputView.constraintsFill(to: inputContainerView)
 
         refreshProfileStatusBarVisibility()
         profileStatusBar.isHidden = true
-    }
-
-    // MARK: Snap to live
-
-    private func setupSnapToLiveButton() {
-        snapToLiveButton.translatesAutoresizingMaskIntoConstraints = false
-        snapToLiveButton.alpha = 0.0
-        view.addSubview(snapToLiveButton)
-        snapToLiveButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20).isActive = true
-        snapToLiveBottomConstraint = snapToLiveButton.bottomAnchor.constraint(equalTo: inputContainerView.topAnchor)
-        snapToLiveBottomConstraint?.isActive = true
-        snapToLiveButton.addGestureRecognizer({
-            let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(snapToLive))
-            tapGestureRecognizer.numberOfTapsRequired = 1
-            return tapGestureRecognizer
-        }())
-        snapToLiveIsHidden(true)
-    }
-
-    @objc func snapToLive() {
-        chatAdapter?.shouldScrollToNewestMessageOnArrival = true
-        chatAdapter?.scrollToMostRecent(force: true, returnMethod: .snapToLive)
-    }
-
-    private func snapToLiveIsHidden(_ isHidden: Bool) {
-        view.layoutIfNeeded()
-        UIView.animate(withDuration: 0.3, delay: 0.0, options: .curveEaseInOut, animations: {
-            self.snapToLiveBottomConstraint?.constant = isHidden ? self.snapToLiveButton.bounds.height : -16
-            self.view.layoutIfNeeded()
-            self.snapToLiveButton.alpha = isHidden ? 0 : 1
-        }, completion: nil)
-    }
-
-    func sendMessage(_ message: ChatInputMessage) {
-        guard let chatSession = chatSession else {
-            return
-        }
-
-        let clientMessage = ClientMessage(
-            message: message.message,
-            imageURL: message.imageURL,
-            imageSize: message.imageSize
-        )
-        chatSession.sendMessage(clientMessage).then { [weak self] chatMessageID in
-    
-            guard let self = self else { return }
-            guard let messageText = message.message else { return }
-            
-            let stickerIDs = messageText.stickerIDs
-            let indices = ChatSentMessageProperties.calculateStickerIndices(stickerIDs: stickerIDs, stickers: self.stickerPacks)
-            let sentProperties = ChatSentMessageProperties(
-                characterCount: messageText.count,
-                messageId: chatMessageID.asString,
-                stickerIDs: stickerIDs,
-                stickerCount: stickerIDs.count,
-                stickerIndices: indices,
-                hasExternalImage: message.imageURL != nil
-            )
-            self.eventRecorder?.record(.chatMessageSent(properties: sentProperties))
-
-            var superProps = [SuperProperty]()
-            let now = Date()
-            superProps.append(.timeOfLastChatMessage(time: now))
-            if messageText.containsEmoji {
-                superProps.append(.timeOfLastEmoji(time: now))
-            }
-            self.superPropertyRecorder?.register(superProps)
-
-            self.peoplePropertyRecorder?.record([.timeOfLastChatMessage(time: now)])
-
-            let keyboardProperties = KeyboardHiddenProperties(keyboardType: self.keyboardType, keyboardHideMethod: .messageSent, messageID: chatMessageID.asString)
-            self.eventRecorder?.record(.keyboardHidden(properties: keyboardProperties))
-        }.catch {
-            log.error($0.localizedDescription)
-        }
-    }
-
-    // MARK: Chat history
-
-    func loadMoreHistory(){
-        guard let chatSession = chatSession else { return }
-        messageVC.isLoading(true)
-        
-        firstly {
-            chatSession.loadPreviousMessagesFromHistory()
-        }.always {
-            self.messageVC.isLoading(false)
-        }.catch { error in
-            log.error("Failed to load history: \(error.localizedDescription)")
-        }
     }
 
     // MARK: Customization
@@ -488,51 +372,17 @@ public class ChatViewController: UIViewController {
 
      - note: A theme can be applied at any time and will update the view immediately
      */
-    
     public func setTheme(_ theme: Theme) {
         self.theme = theme
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.chatAdapter?.setTheme(theme)
-            self.messageVC.setTheme(theme)
-            self.snapToLiveButton.setTheme(theme)
-            self.chatInputViewAccessory.setTheme(theme)
-            self.stickerInputView.setTheme(theme)
+            self.messageViewController.setTheme(theme)
+            self.chatInputView.setTheme(theme)
             self.profileStatusBar.setTheme(theme)
 
             self.view.backgroundColor = theme.chatBodyColor
 
             log.info("Theme was applied to the ChatViewController")
-        }
-    }
-}
-
-extension ChatViewController: InternalChatSessionDelegate {
-    func chatSession(_ chatSession: ChatSession, didRecieveError error: Error) {
-        
-    }
-    
-    public func chatSession(_ chatSession: ChatSession, didRecieveNewMessage message: ChatMessage) {
-        DispatchQueue.main.async {
-            self.chatAdapter?.publish(newMessage: message)
-        }
-    }
-    
-    public func chatSession(_ chatSession: ChatSession, didRecieveMessageHistory messages: [ChatMessage]) {
-        DispatchQueue.main.async {
-            self.chatAdapter?.publish(messagesFromHistory: messages)
-        }
-    }
-    
-    public func chatSession(_ chatSession: ChatSession, didRecieveMessageUpdate message: ChatMessage) {
-        DispatchQueue.main.async {
-            self.chatAdapter?.publish(messageUpdated: message)
-        }
-    }
-    
-    public func chatSession(_ chatSession: ChatSession, didRecieveMessageDeleted messageID: ChatMessageID) {
-        DispatchQueue.main.async {
-            self.chatAdapter?.deleteMessage(messageId: messageID)
         }
     }
 }
@@ -553,19 +403,6 @@ private extension ChatViewController {
     }
 
     private func bindToSessionEvents(session: InternalContentSession) -> Promise<Void> {
-        // Return success since chatAdapter is already setup
-        guard chatAdapter == nil else {
-            return .init(value: ())
-        }
-
-        /// Normally this would be done in the session `didSet` observer
-        /// however when a property is weak the observer does not get notified
-        /// when it's set to nil.
-        /// See dicussion at https://stackoverflow.com/a/24317758/1615621
-        session.sessionDidEnd = { [weak self] in
-            self?.chatAdapter = nil
-        }
-
         session.nicknameVendor.nicknameDidChange.append { [weak self] nickname in
             guard let self = self else { return }
             DispatchQueue.main.async {
@@ -576,28 +413,5 @@ private extension ChatViewController {
         }
 
         return Promise(value: ())
-    }
-}
-
-extension ChatViewController: ContentSessionChatDelegate {
-    func chatSession(chatSessionDidChange chatSession: InternalChatSessionProtocol?) {
-        if let chatSession = chatSession {
-            self.setChatSession(chatSession)
-        } else {
-            self.clearChatSession()
-        }
-    }
-
-    func chatSession(pauseStatusDidChange pauseStatus: PauseStatus) {
-        switch pauseStatus {
-        case .paused:
-            self.chatAdapter?.didInteractWithMessageView = false // reset user interaction when paused
-        case .unpaused:
-            guard let session = session as? InternalContentSession else {
-                log.debug("Resume not necessary when session is nil.")
-                return
-            }
-            session.rankClient?.getUserRank()
-        }
     }
 }

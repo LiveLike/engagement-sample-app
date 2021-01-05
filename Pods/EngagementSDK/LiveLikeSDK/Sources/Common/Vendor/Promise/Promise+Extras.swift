@@ -149,6 +149,22 @@ enum Promises {
             last.then({ _ in resolver() }, reject)
         })
     }
+
+    /// Zips 5 promises of different types into a single Promise whose
+    /// type is a tuple of 5 elements.
+    static func zip<T1, T2, T3, T4, T5>(_ p1: Promise<T1>, _ p2: Promise<T2>, _ p3: Promise<T3>, _ p4: Promise<T4>, _ last: Promise<T5>) -> Promise<(T1, T2, T3, T4, T5)> {
+        return Promise<(T1, T2, T3, T4, T5)>(work: { (fulfill: @escaping ((T1, T2, T3, T4, T5)) -> Void, reject: @escaping (Error) -> Void) in
+            let zipped: Promise<(T1, T2, T3, T4)> = zip(p1, p2, p3, p4)
+
+            func resolver() {
+                if let zippedValue = zipped.value, let lastValue = last.value {
+                    fulfill((zippedValue.0, zippedValue.1, zippedValue.2, zippedValue.3, lastValue))
+                }
+            }
+            zipped.then({ _ in resolver() }, reject)
+            last.then({ _ in resolver() }, reject)
+        })
+    }
 }
 
 extension Promise {

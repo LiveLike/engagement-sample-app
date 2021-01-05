@@ -30,7 +30,8 @@ class MessageViewModel: Equatable {
     let username: String
     let isLocalClient: Bool
     let syncPublishTimecode: String?
-    let channel: String
+    let chatRoomId: String
+    let channelName: String // PubNub Channel Name
     private(set) var isDeleted: Bool = false
     var badgeImageURL: URL?
     let createdAt: Date
@@ -45,6 +46,8 @@ class MessageViewModel: Equatable {
     var videoPlayerDebugTime: Date?
     
     var accessibilityLabel: String?
+
+    let stickerShortcodesInMessage: [String]
     
     init(id: ChatMessageID,
          message: NSAttributedString,
@@ -52,6 +55,7 @@ class MessageViewModel: Equatable {
          username: String,
          isLocalClient: Bool,
          syncPublishTimecode: String?,
+         chatRoomId: String,
          channel: String,
          badgeImageURL: URL?,
          chatReactions: ReactionButtonListViewModel,
@@ -59,20 +63,24 @@ class MessageViewModel: Equatable {
          createdAt: Date,
          bodyImageUrl: URL?,
          bodyImageSize: CGSize?,
-         accessibilityLabel: String) {
+         accessibilityLabel: String,
+         stickerShortcodesInMessage: [String]
+    ) {
         self.id = id
         self.message = message
         self.sender = sender
         self.username = username
         self.isLocalClient = isLocalClient
         self.syncPublishTimecode = syncPublishTimecode
-        self.channel = channel
+        self.channelName = channel
         self.badgeImageURL = badgeImageURL
         self.chatReactions = chatReactions
         self.profileImageUrl = profileImageUrl
         self.createdAt = createdAt
         self.bodyImageUrl = bodyImageUrl
         self.bodyImageSize = bodyImageSize
+        self.stickerShortcodesInMessage = stickerShortcodesInMessage
+        self.chatRoomId = chatRoomId
         
         if let videoTimestamp = syncPublishTimecode,
             let videoTimestampInterval = TimeInterval(videoTimestamp) {
@@ -87,7 +95,7 @@ class MessageViewModel: Equatable {
             NSAttributedString.Key.foregroundColor: theme.messageTextColor
         ]
         let attributedString = NSMutableAttributedString(
-            string: "This message has been removed.",
+            string: "EngagementSDK.chat.messageCell.msgDeleted".localized(),
             attributes: attributes
         )
         self.message = attributedString

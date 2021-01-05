@@ -17,9 +17,7 @@ class StickerAttachment: NSTextAttachment {
     private let largeImageHeight = CGFloat(100)
     private var verticalOffset: CGFloat = 0.0
     private var isLargeImage = false
-    private lazy var imageView: GIFImageView = {
-        GIFImageView(frame: .zero)
-    }()
+    private lazy var imageView: GIFImageView = GIFImageView(frame: .zero)
 
     private var stickerURL: URL!
 
@@ -66,11 +64,14 @@ class StickerAttachment: NSTextAttachment {
     }
 
     func prepareForReuse() {
+        containerView = nil
         imageView.prepareForReuse()
         imageView.removeFromSuperview()
+        imageView = GIFImageView(frame: .zero)
     }
 
     deinit {
+        imageView.prepareForReuse()
         imageView.removeFromSuperview()
     }
 }

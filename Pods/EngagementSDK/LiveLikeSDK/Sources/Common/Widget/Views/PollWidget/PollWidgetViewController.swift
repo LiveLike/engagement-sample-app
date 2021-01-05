@@ -7,305 +7,298 @@
 
 import UIKit
 
-class PollWidgetViewController: WidgetController {
+class PollWidgetViewController: Widget {
 
     // MARK: Internal Properties
-
-    let id: String
-    let kind: WidgetKind
-    var interactionTimeInterval: TimeInterval?
-    
-    weak var delegate: WidgetEvents?
-    var coreWidgetView: CoreWidgetView {
-        return widgetView.coreWidgetView
+    override var theme: Theme {
+        didSet {
+            self.applyTheme(theme)
+            
+            self.widgetView.options.forEach { optionView in
+                switch optionView.optionThemeStyle {
+                case .selected:
+                    self.applyOptionTheme(
+                        optionView: optionView,
+                        optionTheme: theme.widgets.poll.selectedOption
+                    )
+                case .unselected:
+                    self.applyOptionTheme(
+                        optionView: optionView,
+                        optionTheme: theme.widgets.poll.unselectedOption
+                    )
+                default:
+                    break
+                }
+            }
+        }
     }
     
-    var height: CGFloat {
-        return coreWidgetView.bounds.height + 32
-    }
-
-    var dismissSwipeableView: UIView {
-        return self.view
-    }
-
-    var widgetTitle: String?
-    var correctOptions: Set<WidgetOption>?
-    var options: Set<WidgetOption>?
-    var customData: String?
-    var userDidInteract: Bool = false
-    var previousState: WidgetState?
-    var currentState: WidgetState = .ready {
+    override var currentState: WidgetState {
         willSet {
             previousState = self.currentState
         }
         didSet {
-            self.delegate?.widgetDidEnterState(widget: self, state: currentState)
-            switch currentState {
-            case .ready:
-                break
-            case .interacting:
-                self.enterInteractingState()
-            case .results:
-                self.enterResultsState()
-            case .finished:
-                self.enterFinishedState()
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.delegate?.widgetDidEnterState(widget: self, state: self.currentState)
+                switch self.currentState {
+                case .ready:
+                    break
+                case .interacting:
+                    self.enterInteractingState()
+                case .results:
+                    self.enterResultsState()
+                case .finished:
+                    self.enterFinishedState()
+                }
             }
         }
     }
 
     // MARK: Private Properties
-
-    private(set) var widgetView: PollWidgetView
-    private let pollVoteClient: PollWidgetVoteClient
-    private var pollResultsClient: PollWidgetResultsClient
-    private var updateChannel: String
-    private var widgetVotePromise: Promise<WidgetVote>?
-    private let debouncer = Debouncer<PollSelection>(delay: 0.5)
     
-    // MARK: Analytics
-
-    private let eventRecorder: EventRecorder
-    private var timeDisplayed: Date = Date()
     private var firstTapTime: Date?
-    private var lastTapTime: Date?
-    private var tapCount = 0
-    private var interactableState: InteractableState = .openToInteraction
-
-    // MARK: Consts
-
-    private let additionalTimeToViewResults: Double = 6.0
-
-    // MARK: State Properties
-
-    private var widgetVote: WidgetVote?
+    private var myPollSelection: WidgetOption?
+    private let optionType: ChoiceWidgetOptionButton.Type
+    private lazy var widgetView: ChoiceWidget = {
+        let view = VerticalChoiceWidget(optionType: self.optionType)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    private let mediaRepository: MediaRepository = EngagementSDK.mediaRepository
+    private let model: PollWidgetModel
     
-    convenience init(payload: ImagePollCreated,
-                     pollWidgetView: PollWidgetView,
-                     pollVoteClient: PollWidgetVoteClient,
-                     pollResultsClient: PollWidgetResultsClient,
-                     eventRecorder: EventRecorder,
-                     options: Set<WidgetOption> = Set())
-    {
-        self.init(id: payload.id,
-                  kind: payload.kind,
-                  pollWidgetView: pollWidgetView,
-                  pollVoteClient: pollVoteClient,
-                  pollResultsClient: pollResultsClient,
-                  updateChannel: payload.subscribeChannel,
-                  eventRecorder: eventRecorder,
-                  interactionTimeInterval: payload.timeout.timeInterval,
-                  title: payload.question,
-                  options: Set(payload.options.map({ WidgetOption(id: $0.id, text: $0.description, image: nil)})),
-                  metadata: payload.customData)
-        
+    override init(model: PollWidgetModel) {
+        self.model = model
+        self.optionType = model.containsImages ? WideTextImageChoice.self : TextChoiceWidgetOptionButton.self
+        super.init(model: model)
     }
     
-    convenience init(payload: TextPollCreated,
-                     pollWidgetView: PollWidgetView,
-                     pollVoteClient: PollWidgetVoteClient,
-                     pollResultsClient: PollWidgetResultsClient,
-                     eventRecorder: EventRecorder,
-                     options: Set<WidgetOption> = Set())
-    {
-        self.init(id: payload.id,
-                  kind: payload.kind,
-                  pollWidgetView: pollWidgetView,
-                  pollVoteClient: pollVoteClient,
-                  pollResultsClient: pollResultsClient,
-                  updateChannel: payload.subscribeChannel,
-                  eventRecorder: eventRecorder,
-                  interactionTimeInterval: payload.timeout.timeInterval,
-                  title: payload.question,
-                  options: Set(payload.options.map({ WidgetOption(id: $0.id, text: $0.description, image: nil)})),
-                  metadata: payload.customData)
-        
-    }
-
-    private init(id: String,
-                 kind: WidgetKind,
-                 pollWidgetView: PollWidgetView,
-                 pollVoteClient: PollWidgetVoteClient,
-                 pollResultsClient: PollWidgetResultsClient,
-                 updateChannel: String,
-                 eventRecorder: EventRecorder,
-                 interactionTimeInterval: TimeInterval,
-                 title: String = "",
-                 options: Set<WidgetOption> = Set(),
-                 metadata: String?)
-    {
-        widgetView = pollWidgetView
-        self.id = id
-        self.pollResultsClient = pollResultsClient
-        self.pollVoteClient = pollVoteClient
-        self.updateChannel = updateChannel
-        self.kind = kind
-        self.eventRecorder = eventRecorder
-        self.widgetTitle = title
-        self.options = options
-        self.interactionTimeInterval = interactionTimeInterval
-        self.customData = metadata
-        super.init(nibName: nil, bundle: nil)
-
-        configureVoteDebouncer()
-        widgetView.setOptionsLocked(true)
-        pollResultsClient.subscribeToUpdateChannel(self.updateChannel)
-
-        widgetView.onSelectionAction = { [weak self] selection in
-            guard let self = self else { return }
-            self.userDidInteract = true
-            self.debouncer.call(value: selection)
-            let now = Date()
-            if self.firstTapTime == nil {
-                self.firstTapTime = now
-            }
-            self.lastTapTime = now
-            self.tapCount += 1
-        }
-
-        self.pollResultsClient.didReceivePollResults = { [weak self] in
-            self?.widgetView.updateResults(results: $0)
-        }
-    }
-
     required init?(coder aDecoder: NSCoder) {
         assertionFailure("init(coder:) has not been implemented")
         return nil
     }
     
+    // MARK: Lifecycle Overrides
     override func viewDidLoad() {
         super.viewDidLoad()
+        widgetView.isUserInteractionEnabled = false
         view.addSubview(widgetView)
         widgetView.constraintsFill(to: view)
-    }
 
-    // MARK: Lifecycle Overrides
+        widgetView.titleView.closeButton.addTarget(self, action: #selector(closeButtonPressed), for: .touchUpInside)
+        widgetView.titleView.titleLabel.text = widgetTitle
+        self.optionsArray?.forEach { optionData in
+            self.widgetView.addOption(withID: optionData.id) { optionView in
+                optionView.text = optionData.text
+                if let imageUrl = optionData.imageUrl {
+                    mediaRepository.getImage(url: imageUrl) { result in
+                        switch result {
+                        case .success(let imageResult):
+                            optionView.image = imageResult.image
+                        case .failure(let error):
+                            log.error(error)
+                        }
+                    }
+                }
+                optionView.delegate = self
+                self.applyOptionTheme(
+                    optionView: optionView,
+                    optionTheme: theme.widgets.poll.unselectedOption
+                )
+            }
+        }
+        applyTheme(theme)
+        
+        self.model.delegate = self
+        self.model.registerImpression()
+    }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        pollResultsClient.unsubscribeFromUpdateChannel(updateChannel)
+    }
+    
+    // MARK: UI Functionality
+
+    private var closeButtonCompletion: ((WidgetViewModel) -> Void)?
+    
+    override func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) {
+        self.widgetView.titleView.showCloseButton()
+        closeButtonCompletion = completion
+    }
+    
+    @objc private func closeButtonPressed() {
+        closeButtonCompletion?(self)
+    }
+    
+    override func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
+        self.widgetView.titleView.beginTimer(
+            duration: seconds,
+            animationFilepath: theme.lottieFilepaths.timer
+        ) { [weak self] in
+            guard let self = self else { return }
+            completion(self)
+        }
+    }
+    
+    private func applyTheme(_ theme: Theme) {
+        widgetView.applyContainerProperties(theme.widgets.poll.main)
+        widgetView.titleView.titleMargins = theme.choiceWidgetTitleMargins
+        widgetView.bodyBackground = .fill(color: theme.widgetBodyColor)
+        widgetView.optionSpacing = theme.interOptionSpacing
+        widgetView.headerBodySpacing = theme.titleBodySpacing
+        widgetView.titleView.titleLabel.textColor = theme.widgets.poll.title.color
+        widgetView.titleView.titleLabel.font = theme.widgets.poll.title.font
+        widgetView.titleView.applyContainerProperties(theme.widgets.poll.header)
     }
 
-    func moveToNextState() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            switch self.currentState {
-            case .ready:
-                self.currentState = .interacting
-            case .interacting:
-                self.currentState = .results
-            case .results:
-                self.currentState = .finished
-            case .finished:
-                break
+    private func applyOptionTheme(
+        optionView: ChoiceWidgetOption,
+        optionTheme: Theme.ChoiceWidget.Option
+    ) {
+        optionView.descriptionTextColor = optionTheme.description.color
+        optionView.descriptionFont = optionTheme.description.font
+        optionView.barBackground = optionTheme.progressBar.background
+        optionView.barCornerRadii = optionTheme.progressBar.cornerRadii
+        optionView.percentageFont = optionTheme.percentage.font
+        optionView.percentageTextColor = optionTheme.percentage.color
+        optionView.applyContainerProperties(optionTheme.container)
+    }
+    
+    // MARK: Results
+
+    /// Shows results from `WidgetOption` data that already exists
+    private func showResultsFromWidgetOptions() {
+        
+        guard let pollOptions = options else { return }
+        let totalVoteCount = pollOptions.map { $0.voteCount ?? 0 }.reduce(0, +)
+      
+        for optionButton in widgetView.options {
+            for updateOption in pollOptions where optionButton.id == updateOption.id {
+                let votePercentage: CGFloat = totalVoteCount > 0 ? CGFloat(updateOption.voteCount!) / CGFloat(totalVoteCount) : 0
+                                
+                if votePercentage > 0.0 {
+                    self.applyOptionTheme(
+                        optionView: optionButton,
+                        optionTheme: theme.widgets.poll.selectedOption
+                    )
+                    optionButton.borderWidth = 0.0
+                }
+                optionButton.setProgress(votePercentage)
             }
         }
     }
-    
-    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) {
-        self.widgetView.showCloseButton { [weak self] in
-            guard let self = self else { return }
-            completion(self)
-        }
-    }
-    
-    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
-        self.widgetView.beginTimer(seconds: seconds) { [weak self] in
-            guard let self = self else { return }
-            completion(self)
-        }
-    }
 
-    private func enterInteractingState() {
-        self.widgetView.setOptionsLocked(false)
-        self.widgetView.revealResults()
-        self.interactableState = .closedToInteraction
-        if let firstTapTime = self.firstTapTime, let lastTapTime = self.lastTapTime {
-            // Analytics
-            let properties = WidgetInteractedProperties(
-                widgetId: self.id,
-                widgetKind: self.kind.analyticsName,
-                firstTapTime: firstTapTime,
-                lastTapTime: lastTapTime,
-                numberOfTaps: self.tapCount,
-                interactionTimeInterval: self.interactionTimeInterval,
-                widgetViewModel: self,
-                previousState: .interacting,
-                currentState: .finished
-            )
+    // MARK: Widget States
+    override func moveToNextState() {
+        switch self.currentState {
+        case .ready:
+            self.currentState = .interacting
+        case .interacting:
+            self.currentState = .results
+        case .results:
+            self.currentState = .finished
+        case .finished:
+            break
         }
-        
+    }
+    
+    private func enterInteractingState() {
+        widgetView.isUserInteractionEnabled = true
+        self.interactableState = .openToInteraction
+        self.widgetView.options.forEach {
+            $0.isUserInteractionEnabled = true
+        }
         self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
     }
     
     private func enterResultsState() {
-        self.widgetView.setOptionsLocked(true)
+        if myPollSelection == nil {
+            showResultsFromWidgetOptions()
+        }
+        
+        widgetView.isUserInteractionEnabled = false
+        self.interactableState = .closedToInteraction
+        if let firstTapTime = self.firstTapTime, let lastTapTime = self.timeOfLastInteraction {
+            self.model.eventRecorder.record(
+                .widgetInteracted(
+                    properties: WidgetInteractedProperties(
+                        widgetId: self.model.id,
+                        widgetKind: self.model.kind.analyticsName,
+                        firstTapTime: firstTapTime,
+                        lastTapTime: lastTapTime,
+                        numberOfTaps: self.interactionCount
+                    )
+                )
+            )
+        }
+        self.widgetView.options.forEach {
+            $0.isUserInteractionEnabled = false
+        }
+
         self.delegate?.widgetStateCanComplete(widget: self, state: .results)
     }
     
     private func enterFinishedState() {
+        
+        // Display results from `WidgetOptions` if entering `finished` state without casting a vote
+        if myPollSelection == nil {
+            showResultsFromWidgetOptions()
+        }
+        
+        widgetView.isUserInteractionEnabled = false
         self.delegate?.widgetStateCanComplete(widget: self, state: .finished)
     }
+}
 
-    func willDismiss(dismissAction: DismissAction) {
-        if dismissAction.userDismissed {
-            var properties = WidgetDismissedProperties(
-                widgetId: id,
-                widgetKind: kind.analyticsName,
-                dismissAction: dismissAction,
-                numberOfTaps: tapCount,
-                dismissSecondsSinceStart: Date().timeIntervalSince(timeDisplayed)
+extension PollWidgetViewController: ChoiceWidgetOptionDelegate {
+    func wasSelected(_ option: ChoiceWidgetOption) {
+      
+        guard let widgetOption = self.options?.first(where: { $0.id == option.id }) else {
+            return
+        }
+        myPollSelection = widgetOption
+        self.userDidInteract = true
+        
+        // unselect all
+        widgetView.options.forEach { optionView in
+            optionView.optionThemeStyle = .unselected
+            self.applyOptionTheme(
+                optionView: optionView,
+                optionTheme: theme.widgets.poll.unselectedOption
             )
-            if let lastTapTime = self.lastTapTime {
-                properties.dismissSecondsSinceLastTap = Date().timeIntervalSince(lastTapTime)
-            }
-            properties.interactableState = interactableState
-            eventRecorder.record(.widgetUserDismissed(properties: properties))
         }
+        
+        // select selection
+        option.optionThemeStyle = .selected
+        self.applyOptionTheme(
+            optionView: option,
+            optionTheme: theme.widgets.poll.selectedOption
+        )
+
+        let now = Date()
+        if firstTapTime == nil {
+            firstTapTime = now
+        }
+        timeOfLastInteraction = now
+        interactionCount += 1
+        model.submitVote(optionID: option.id)
+        self.delegate?.userDidInteract(self)
     }
+    
+    func wasDeselected(_ option: ChoiceWidgetOption) {}
+}
 
-    // MARK: - Vote
-
-    private func configureVoteDebouncer() {
-        debouncer.callback = { [weak self] selection in
+// MARK: - Receiving a vote
+extension PollWidgetViewController: PollWidgetModelDelegate {
+    func pollWidgetModel(_ model: PollWidgetModel, voteCountDidChange answerCount: Int, forOption optionID: String) {
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            if let votePromise = self.widgetVotePromise {
-                // If request is pending recursively call debouncer until first vote is fulfilled or rejected.
-                if votePromise.isPending {
-                    self.debouncer.call(value: selection)
-                    return
-                }
-
-                // If request is fullfilled, update vote.
-                if votePromise.isFulfilled, let widgetVote = self.widgetVote {
-                    self.updateVote(vote: widgetVote, optionId: selection.id)
-                    return
-                }
-                // If request is rejected or widgetvote is nil, retry.
-                self.setVote(selection: selection)
-            } else {
-                self.setVote(selection: selection)
-            }
-        }
-    }
-
-    private func setVote(selection: PollSelection) {
-        widgetVotePromise = pollVoteClient.setVote(url: selection.url)
-
-        widgetVotePromise?.then { vote in
-            self.widgetVote = vote
-            log.debug("Successfully submitted vote for option: \(vote.optionId)")
-        }.catch { error in
-            log.error("Failed to submit vote because: \(error.localizedDescription)")
-        }
-    }
-
-    private func updateVote(vote: WidgetVote, optionId: String) {
-        print("The request option is \(optionId)")
-        pollVoteClient.updateVote(url: vote.url, optionId: optionId).then { updatedVote in
-            self.widgetVote = updatedVote
-            log.debug("Successfully updated vote to option: \(updatedVote.optionId)")
-        }.catch { error in
-            log.error("Failed to update vote because: \(error.localizedDescription)")
+            guard let optionButton = self.widgetView.options.first(where: { $0.id == optionID }) else { return }
+           
+            let totalVotes = model.options.map { $0.voteCount }.reduce(0, +)
+            guard totalVotes > 0 else { return }
+            optionButton.setProgress(CGFloat(answerCount) / CGFloat(totalVotes))
         }
     }
 }

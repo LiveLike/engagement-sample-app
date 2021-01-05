@@ -159,6 +159,8 @@ extension WidgetChatSpoilerPreventionUseCase: EngagementSDKDelegate {
 
 // MARK: - ContentSessionDelegate
 extension WidgetChatSpoilerPreventionUseCase: ContentSessionDelegate {
+    func contentSession(_ session: ContentSession, didReceiveWidget widget: WidgetModel) { }
+    
     func chat(session: ContentSession, roomID: String, newMessage message: ChatMessage) {
         
     }

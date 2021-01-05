@@ -29,6 +29,8 @@ public class SessionConfiguration: NSObject {
         self.widgetConfig = widgetConfig
     }
 
+    /// Show or hide user avatar next to a chat message
+    public var chatShouldDisplayAvatar: Bool = false
     ///
     @objc public convenience init(programID: String, chatHistoryLimit: Int){
         self.init(programID: programID, chatHistoryLimit: chatHistoryLimit, widgetConfig: .default)

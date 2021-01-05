@@ -6,17 +6,37 @@
   
 */
 
-// ************
-// Chat
-// ************
+// MARK: - CHAT
+"EngagementSDK.chat.input.placeholder" = "Say something...";
+"EngagementSDK.chat.messageCell.msgDeleted" = "This message has been removed.";
+"EngagementSDK.chat.accessibility.messageWithImage" = "Image";
 
-"EngagementSDK.chat.input.placeholder.say-something" = "Say something...";
+// MARK: Flag Menu
+"EngagementSDK.chat.flagMsgMenu.blockUser" = "Block this user";
+"EngagementSDK.chat.flagMsgMenu.reportMessage" = "Report message";
+"EngagementSDK.chat.flagMsgMenu.cancel" = "Cancel";
 
-// ************
-// Widgets
-// ************
+"EngagementSDK.chat.blockConfirmationAlert.title" = "Block";
+"EngagementSDK.chat.blockConfirmationAlert.message" = "You will no longer see messages from %@";
+"EngagementSDK.chat.blockConfirmationAlert.confirm" = "OK";
 
-// Dismiss Widget
+"EngagementSDK.chat.reportMsgConfirmationAlert.title" = "Report";
+"EngagementSDK.chat.reportMsgConfirmationAlert.message" = "This message has been reported to the moderators. Thank You.";
+"EngagementSDK.chat.reportMsgConfirmationAlert.confirm" = "OK";
+
+// MARK: Stickers
+"EngagementSDK.chat.stickerKeyboard.placeholder" = "You haven’t posted any stickers yet.\nGo post it!";
+"EngagementSDK.chat.stickerKeyboard.accessibility.stickerCollection" = "Sticker Collection";
+"EngagementSDK.chat.stickerKeyboard.accessibility.stickerPressed" = "%@ Sticker";
+"EngagementSDK.chat.stickerKeyboard.accessibility.stickerTabPressed" = "%@ Sticker Tab";
+
+// MARK: Reactions
+"EngagementSDK.chat.reactions.accessibility.reactionPanelOpened" = "Reactions Panel Opened";
+"EngagementSDK.chat.reactions.accessibility.reactionSelected" = "%@ Reaction Selected";
+
+// MARK: - WIDGETS
+
+// MARK: Dismiss Widget
 "EngagementSDK.widget.DismissWidget.widget" = "WIDGET";
 "EngagementSDK.widget.DismissWidget.on" = "ON";
 "EngagementSDK.widget.DismissWidget.off" = "OFF";
@@ -33,11 +53,11 @@
 "EngagementSDK.widget.DismissWidget.unpause.confirmation.no" = "Alright! You can turn on widgets anytime!";
 "EngagementSDK.widget.DismissWidget.unpause.confirmation.yes" = "Good choice! Enjoy your game!!!";
 
-// Cheer Meter Widget
+// MARK: Cheer Meter Widget
 "EngagementSDK.widget.CheerMeter.scoreTitle" = "MY SCORE";
 "EngagementSDK.widget.CheerMeter.instruction" = "Tap to win the game!";
 
-// Gamifiction Views
+// MARK: Gamifiction Views
 "EngagementSDK.gamification.TutorialWidget.title" = "Great Start!";
 "EngagementSDK.gamification.TutorialWidget.message" = "Keep responding to earn more points and reach the top of the leaderboards!";
 "EngagementSDK.gamification.BadgeCollectWidget.message" = "Congrats! You just unlocked a new badge!";

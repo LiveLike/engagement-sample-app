@@ -7,158 +7,114 @@
 
 import UIKit
 
-typealias QuizSelection = (optionId: String, answerUrl: URL)
-
-class QuizWidgetViewController: WidgetController {
-
+class QuizWidgetViewController: Widget {
     // MARK: - Internal Properties
 
-    let id: String
-    let kind: WidgetKind
-    let interactionTimeInterval: TimeInterval?
-    weak var delegate: WidgetEvents?
-    var dismissSwipeableView: UIView {
-        return self.view
+    override var theme: Theme {
+        didSet {
+            applyTheme(theme)
+            self.quizWidget.options.forEach { optionView in
+                switch optionView.optionThemeStyle {
+                case .unselected:
+                    self.applyOptionTheme(
+                        optionView: optionView,
+                        optionTheme: theme.widgets.quiz.unselectedOption
+                    )
+                case .selected:
+                    self.applyOptionTheme(
+                        optionView: optionView,
+                        optionTheme: theme.widgets.quiz.selectedOption
+                    )
+                case .correct:
+                    self.applyOptionTheme(
+                        optionView: optionView,
+                        optionTheme: theme.widgets.quiz.correctOption
+                    )
+                case .incorrect:
+                    self.applyOptionTheme(
+                        optionView: optionView,
+                        optionTheme: theme.widgets.quiz.incorrectOption
+                    )
+                }
+            }
+        }
     }
-    var widgetTitle: String?
-    var options: Set<WidgetOption>?
-    var customData: String?
-    var userDidInteract: Bool = false
-    var previousState: WidgetState?
-    var currentState: WidgetState = .ready {
+    override var currentState: WidgetState {
         willSet {
             previousState = self.currentState
         }
         didSet {
-            delegate?.widgetDidEnterState(widget: self, state: currentState)
-            switch currentState {
-            case .ready:
-                break
-            case .interacting:
-                enterInteractingState()
-            case .results:
-                enterResultsState()
-            case .finished:
-                enterFinishedState()
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.delegate?.widgetDidEnterState(widget: self, state: self.currentState)
+                switch self.currentState {
+                case .ready:
+                    break
+                case .interacting:
+                    self.enterInteractingState()
+                case .results:
+                    self.enterResultsState()
+                case .finished:
+                    self.enterFinishedState()
+                }
             }
         }
     }
 
+    var closeButtonCompletion: ((WidgetViewModel) -> Void)?
+    
     // MARK: - Private Stored Properties
-
-    private(set) var quizWidget: QuizWidgetView
-    private let quizVoteClient: QuizWidgetVoteClient
-    private var quizResultsClient: QuizWidgetResultsClient
-
-    private var myQuizSelection: QuizSelection?
-
-    // MARK: Analytics
-
-    private let eventRecorder: EventRecorder
-    private var timeDisplayed = Date()
-    private var interactableState: InteractableState = .openToInteraction
+    
+    private let optionType: ChoiceWidgetOptionButton.Type
+    private lazy var quizWidget: ChoiceWidget = {
+        let view = VerticalChoiceWidget(optionType: self.optionType)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    private var myQuizSelection: WidgetOption?
+    private let mediaRepository: MediaRepository = EngagementSDK.mediaRepository
     private var firstTapTime: Date?
-    private var lastTapTime: Date?
-    private var tapCount = 0
-
-    private let additionalTimeAfterAnswerReveal: TimeInterval = 6
+    private let model: QuizWidgetModel
 
     // MARK: - Initializers
     
-    convenience init(payload: TextQuizCreated,
-                     quizWidget: QuizWidgetView,
-                     quizVoteClient: QuizWidgetVoteClient,
-                     quizResultsClient: QuizWidgetResultsClient,
-                     eventRecorder: EventRecorder)
-    {
-        let options = Set(payload.choices.map({
-            WidgetOption(id: $0.id,
-                         text: $0.description,
-                         image: nil,
-                         isCorrect: $0.isCorrect)
-        }))
-        
-        self.init(id: payload.id,
-                  kind: payload.kind,
-                  widgetView: quizWidget,
-                  voteClient: quizVoteClient,
-                  resultsClient: quizResultsClient,
-                  eventRecorder: eventRecorder,
-                  widgetTitle: payload.question,
-                  options: options,
-                  interactionTimeInterval: payload.timeout.timeInterval,
-                  metadata: payload.customData)
-    }
-    
-    convenience init(payload: ImageQuizCreated,
-                     quizWidget: QuizWidgetView,
-                     quizVoteClient: QuizWidgetVoteClient,
-                     quizResultsClient: QuizWidgetResultsClient,
-                     eventRecorder: EventRecorder)
-    {
-        let options = Set(payload.choices.map({
-            WidgetOption(id: $0.id,
-                         text: $0.description,
-                         image: nil,
-                         isCorrect: $0.isCorrect)
-        }))
-        
-        self.init(id: payload.id,
-                  kind: payload.kind,
-                  widgetView: quizWidget,
-                  voteClient: quizVoteClient,
-                  resultsClient: quizResultsClient,
-                  eventRecorder: eventRecorder,
-                  widgetTitle: payload.question,
-                  options: options,
-                  interactionTimeInterval: payload.timeout.timeInterval,
-                  metadata: payload.customData)
-    }
-    
-    private init(id: String,
-                 kind: WidgetKind,
-                 widgetView: QuizWidgetView,
-                 voteClient: QuizWidgetVoteClient,
-                 resultsClient: QuizWidgetResultsClient,
-                 eventRecorder: EventRecorder,
-                 widgetTitle: String,
-                 options: Set<WidgetOption>?,
-                 interactionTimeInterval: TimeInterval?,
-                 metadata: String?)
-    {
-        self.id = id
-        self.kind = kind
-        self.quizWidget = widgetView
-        self.quizVoteClient = voteClient
-        self.quizResultsClient = resultsClient
-        self.eventRecorder = eventRecorder
-        self.widgetTitle = widgetTitle
-        self.options = options
-        self.interactionTimeInterval = interactionTimeInterval
-        self.customData = metadata
-        
-        super.init(nibName: nil, bundle: nil)
-        
-        self.quizWidget.didSelectChoice = { [weak self] in
-            guard let self = self else { return }
-            self.userDidInteract = true
-            self.myQuizSelection = $0
-            let now = Date()
-            if self.firstTapTime == nil {
-                self.firstTapTime = now
-            }
-            self.lastTapTime = now
-            self.tapCount += 1
-        }
-
-        self.quizResultsClient.didReceiveResults = { [weak self] results in
-            self?.quizWidget.updateResults(results)
-        }
+    override init(model: QuizWidgetModel) {
+        self.model = model
+        self.optionType = model.containsImages ? WideTextImageChoice.self : TextChoiceWidgetOptionButton.self
+        super.init(model: model)
     }
 
     required init?(coder aDecoder: NSCoder) {
         assertionFailure("init(coder:) has not been implemented")
         return nil
+    }
+
+    override func moveToNextState() {
+        switch self.currentState {
+        case .ready:
+            self.currentState = .interacting
+        case .interacting:
+            self.currentState = .results
+        case .results:
+            self.currentState = .finished
+        case .finished:
+            break
+        }
+    }
+
+    override func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) {
+        self.closeButtonCompletion = completion
+        quizWidget.titleView.showCloseButton()
+    }
+
+    override func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
+        quizWidget.titleView.beginTimer(
+            duration: seconds,
+            animationFilepath: theme.lottieFilepaths.timer
+        ) { [weak self] in
+            guard let self = self else { return }
+            completion(self)
+        }
     }
 }
 
@@ -170,11 +126,35 @@ extension QuizWidgetViewController {
         view.addSubview(quizWidget)
         quizWidget.constraintsFill(to: view)
         quizWidget.isUserInteractionEnabled = false
-    }
+        
+        quizWidget.titleView.closeButton.addTarget(self, action: #selector(closeButtonPressed), for: .touchUpInside)
 
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        quizResultsClient.unsubscribe()
+        quizWidget.titleView.titleLabel.text = widgetTitle
+        optionsArray?.forEach { option in
+            quizWidget.addOption(withID: option.id) { optionView in
+                optionView.text = option.text
+                if let imageUrl = option.imageUrl {
+                    mediaRepository.getImage(url: imageUrl) { result in
+                        switch result {
+                        case .success(let imageResult):
+                            optionView.image = imageResult.image
+                        case .failure(let error):
+                            log.error(error)
+                        }
+                    }
+                }
+                optionView.delegate = self
+                self.applyOptionTheme(
+                    optionView: optionView,
+                    optionTheme: theme.widgets.quiz.unselectedOption
+                )
+            }
+        }
+    
+        self.applyTheme(theme)
+        self.model.delegate = self
+
+        self.model.registerImpression()
     }
 }
 
@@ -182,52 +162,70 @@ extension QuizWidgetViewController {
 
 extension QuizWidgetViewController {
     
-    func moveToNextState() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            switch self.currentState {
-            case .ready:
-                self.currentState = .interacting
-            case .interacting:
-                self.currentState = .results
-            case .results:
-                self.currentState = .finished
-            case .finished:
-                break
+    private func applyTheme(_ theme: Theme) {
+        quizWidget.titleView.titleMargins = theme.choiceWidgetTitleMargins
+        quizWidget.bodyBackground = theme.widgets.quiz.body.background
+        quizWidget.optionSpacing = theme.interOptionSpacing
+        quizWidget.headerBodySpacing = theme.titleBodySpacing
+        quizWidget.titleView.titleLabel.textColor = theme.widgets.quiz.title.color
+        quizWidget.titleView.titleLabel.font = theme.widgets.quiz.title.font
+        quizWidget.applyContainerProperties(theme.widgets.quiz.main)
+        quizWidget.titleView.applyContainerProperties(theme.widgets.quiz.header)
+    }
+    
+    private func applyOptionTheme(
+        optionView: ChoiceWidgetOption,
+        optionTheme: Theme.ChoiceWidget.Option?
+    ) {
+        guard let optionTheme = optionTheme else { return }
+
+        optionView.descriptionFont = optionTheme.description.font
+        optionView.descriptionTextColor = optionTheme.description.color
+        optionView.percentageFont = optionTheme.percentage.font
+        optionView.percentageTextColor = optionTheme.percentage.color
+        optionView.barBackground = optionTheme.progressBar.background
+        optionView.barCornerRadii = optionTheme.progressBar.cornerRadii
+        optionView.applyContainerProperties(optionTheme.container)
+    }
+
+    /// Shows results from `WidgetOption` data that already exists
+    private func showResultsFromWidgetOptions() {
+        guard let quizResults = options else { return }
+        let totalVoteCount = quizResults.map { $0.voteCount ?? 0 }.reduce(0, +)
+        
+        quizWidget.options.forEach { option in
+            
+            guard let optionData = self.options?.first(where: { $0.id == option.id }) else {
+                return
             }
-        }
-    }
-    
-    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) {
-        quizWidget.showCloseButton {
-            completion(self)
-        }
-    }
-    
-    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
-        quizWidget.beginTimer(seconds: seconds) { [weak self] in
-            guard let self = self else { return }
-            completion(self)
+            
+            let answerCount = quizResults.first(where: { $0.id == option.id })?.voteCount ?? 0
+            let votePercentage: CGFloat = totalVoteCount > 0 ? CGFloat(answerCount) / CGFloat(totalVoteCount) : 0
+            let isCorrect = optionData.isCorrect ?? false
+            
+            if isCorrect {
+                self.applyOptionTheme(
+                    optionView: option,
+                    optionTheme: self.theme.widgets.quiz.correctOption
+                )
+            } else {
+                if votePercentage > 0.0 {
+                    self.applyOptionTheme(
+                        optionView: option,
+                        optionTheme: self.theme.widgets.quiz.incorrectOption
+                    )
+                    option.borderWidth = 0.0
+                }
+            }
+            
+            option.setProgress(votePercentage)
         }
     }
 
-    func willDismiss(dismissAction: DismissAction) {
-        if dismissAction.userDismissed {
-            var properties = WidgetDismissedProperties(
-                widgetId: id,
-                widgetKind: kind.analyticsName,
-                dismissAction: dismissAction,
-                numberOfTaps: tapCount,
-                dismissSecondsSinceStart: Date().timeIntervalSince(timeDisplayed)
-            )
-            if let lastTapTime = self.lastTapTime {
-                properties.dismissSecondsSinceLastTap = Date().timeIntervalSince(lastTapTime)
-            }
-            properties.interactableState = interactableState
-            eventRecorder.record(.widgetUserDismissed(properties: properties))
-            currentState = .finished
-        }
+    @objc private func closeButtonPressed() {
+        self.closeButtonCompletion?(self)
     }
+    
 }
 
 // MARK: - Private APIs
@@ -238,52 +236,157 @@ private extension QuizWidgetViewController {
     
     func enterInteractingState() {
         quizWidget.isUserInteractionEnabled = true
-        timeDisplayed = Date()
-        eventRecorder.record(.widgetDisplayed(kind: kind.analyticsName,
-                                              widgetId: id))
+        self.interactableState = .openToInteraction
         self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
     }
     
     func enterResultsState() {
-        quizResultsClient.subscribe()
-        quizWidget.lockSelection()
-        interactableState = .closedToInteraction
+        if let firstTapTime = self.firstTapTime, let lastTapTime = self.timeOfLastInteraction {
+            self.model.eventRecorder.record(
+                .widgetInteracted(
+                    properties: WidgetInteractedProperties(
+                        widgetId: self.id,
+                        widgetKind: self.kind.analyticsName,
+                        firstTapTime: firstTapTime,
+                        lastTapTime: lastTapTime,
+                        numberOfTaps: self.interactionCount
+                    )
+                )
+            )
+        }
+
+        quizWidget.options.forEach {
+            $0.isUserInteractionEnabled = false
+        }
+        self.interactableState = .closedToInteraction
         
         guard let myQuizSelection = self.myQuizSelection else {
+            showResultsFromWidgetOptions()
             self.delegate?.widgetStateCanComplete(widget: self, state: .results)
             return
         }
+
+        // Update local option vote data from selection
+        if let localOption = options?.first(where: { $0.id == myQuizSelection.id }){
+            if let voteCount = localOption.voteCount {
+                localOption.voteCount = voteCount + 1
+            } else {
+                localOption.voteCount = 1
+            }
+        }
         
-        self.quizVoteClient.vote(url: myQuizSelection.answerUrl) { [weak self] result in
+        self.model.lockInAnswer(choiceID: myQuizSelection.id) { [weak self] result in
             guard let self = self else { return }
-            self.quizWidget.revealAnswer(myOptionId: myQuizSelection.optionId) {
-                switch result {
-                case .success:
-                    log.debug("Successfully submitted answer.")
-                case .failure(let error):
-                    log.error("Failed to submit answer: \(error.localizedDescription)")
+            switch result {
+            case .success:
+                self.quizWidget.options.forEach { option in
+                    guard let optionData = self.options?.first(where: { $0.id == option.id }) else {
+                        return
+                    }
+
+                    guard let isCorrect = optionData.isCorrect else {
+                        return
+                    }
+
+                    if isCorrect {
+                        option.optionThemeStyle = .correct
+                        self.applyOptionTheme(
+                            optionView: option,
+                            optionTheme: self.theme.widgets.quiz.correctOption
+                        )
+                    } else if !isCorrect && myQuizSelection.id == optionData.id {
+                        option.optionThemeStyle = .incorrect
+                        self.applyOptionTheme(
+                            optionView: option,
+                            optionTheme: self.theme.widgets.quiz.incorrectOption
+                        )
+                    }
                 }
-                self.delegate?.widgetStateCanComplete(widget: self, state: .results)
+                
+                // Optimistically start showing result graph
+                // from local data prior to the delegate data
+                self.showResultsFromWidgetOptions()
+
+                let animationFilepath: String = {
+                    if myQuizSelection.isCorrect ?? false {
+                        return self.theme.lottieFilepaths.randomWin()
+                    } else {
+                        return self.theme.lottieFilepaths.randomLose()
+                    }
+                }()
+
+                self.quizWidget.playOverlayAnimation(animationFilepath: animationFilepath) {
+                    self.delegate?.widgetStateCanComplete(widget: self, state: .results)
+                }
+            case .failure(let error):
+                log.error(error)
             }
         }
     }
     
     func enterFinishedState() {
-        quizWidget.stopAnswerRevealAnimation()
+        // Display results from `WidgetOptions` if entering `finished` state without casting a vote
+        if self.myQuizSelection == nil {
+            showResultsFromWidgetOptions()
+        }
+        
+        self.quizWidget.stopOverlayAnimation()
         self.delegate?.widgetStateCanComplete(widget: self, state: .finished)
     }
-    
-    func createWidgetInteractedProperties() -> WidgetInteractedProperties {
-        return WidgetInteractedProperties(
-            widgetId: self.id,
-            widgetKind: self.kind.analyticsName,
-            firstTapTime: self.firstTapTime,
-            lastTapTime: self.lastTapTime,
-            numberOfTaps: self.tapCount,
-            interactionTimeInterval: self.interactionTimeInterval,
-            widgetViewModel: self,
-            previousState: previousState ?? .interacting,
-            currentState: currentState
+}
+
+extension QuizWidgetViewController: QuizWidgetModelDelegate {
+    func quizWidgetModel(_ model: QuizWidgetModel, answerCountDidChange voteCount: Int, forChoice optionID: String) {
+        guard currentState == .results else { return } // Only update progress while in results state
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            let totalVoteCount = model.choices.map { $0.answerCount }.reduce(0, +)
+            guard totalVoteCount > 0 else {
+                return
+            }
+            guard let optionView = self.quizWidget.options.first(where: { $0.id == optionID }) else { return }
+            optionView.setProgress((CGFloat(voteCount) / CGFloat(totalVoteCount)))
+        }
+    }
+}
+
+extension QuizWidgetViewController: ChoiceWidgetOptionDelegate {
+    func wasSelected(_ option: ChoiceWidgetOption) {
+
+        // Ignore repeated selections
+        guard myQuizSelection?.id != option.id else { return }
+
+        guard let opt = options?.first(where: { $0.id == option.id }) else {
+            return
+        }
+        self.userDidInteract = true
+        
+        self.myQuizSelection = opt
+        
+        quizWidget.options.forEach {
+            $0.optionThemeStyle = .unselected
+            self.applyOptionTheme(
+                optionView: $0,
+                optionTheme: theme.widgets.quiz.unselectedOption
+            )
+        }
+        option.optionThemeStyle = .selected
+        self.applyOptionTheme(
+            optionView: option,
+            optionTheme: theme.widgets.quiz.selectedOption
         )
+
+        let now = Date()
+        if firstTapTime == nil {
+            firstTapTime = now
+        }
+        timeOfLastInteraction = now
+        interactionCount += 1
+        self.delegate?.userDidInteract(self)
+    }
+    
+    func wasDeselected(_ option: ChoiceWidgetOption) {
+    
     }
 }

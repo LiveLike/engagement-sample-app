@@ -64,7 +64,7 @@ class ImageUploader {
             }
 
             guard let data = data else {
-                return completion(.failure(Errors.noDataInResponse))
+                return completion(.failure(ImageUploaderError.noDataInResponse))
             }
 
             let decoder = JSONDecoder()
@@ -75,7 +75,7 @@ class ImageUploader {
                 completion(.success(imageResource))
             } catch {
                 log.error("\(error)")
-                completion(.failure(Errors.failedToDecodeDataAsImageResource))
+                completion(.failure(ImageUploaderError.failedToDecodeDataAsImageResource))
             }
         }
         task.resume()
@@ -112,12 +112,6 @@ class ImageUploader {
 
     private func generateBoundaryString() -> String {
         return "Boundary-\(NSUUID().uuidString.lowercased())"
-    }
-
-    private enum Errors: LocalizedError {
-        case failedToGetJPEG
-        case noDataInResponse
-        case failedToDecodeDataAsImageResource
     }
 }
 

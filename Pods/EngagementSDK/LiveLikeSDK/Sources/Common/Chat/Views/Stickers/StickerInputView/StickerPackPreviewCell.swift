@@ -65,7 +65,7 @@ class StickerPackPreviewCell: UICollectionViewCell {
     
     private func setUpAccessibility(stickerName: String) {
         imageView.isAccessibilityElement = true
-        imageView.accessibilityLabel = "\(stickerName) Sticker Tab"
+        imageView.accessibilityLabel = "EngagementSDK.chat.StickerKeyboard.accessibility.stickerTabPressed".localized(withParam: stickerName)
         imageView.accessibilityTraits = .button
     }
 

@@ -13,7 +13,7 @@ enum AlertWidgetViewType {
     case both
 }
 
-class AlertWidget: WidgetView {
+class AlertWidget: ThemeableView {
     let coreWidgetView: CoreWidgetView = {
         let coreWidgetView = CoreWidgetView()
         coreWidgetView.translatesAutoresizingMaskIntoConstraints = false
@@ -43,7 +43,7 @@ class AlertWidget: WidgetView {
 
     init(type: AlertWidgetViewType) {
         self.type = type
-        super.init(frame: .zero)
+        super.init()
         configure()
     }
 
@@ -54,10 +54,19 @@ class AlertWidget: WidgetView {
 
         let bottomConstraint = coreWidgetView.bottomAnchor.constraint(equalTo: self.bottomAnchor)
         
-        let heightConstraint = coreWidgetView.heightAnchor.constraint(lessThanOrEqualToConstant: 120)
+        let heightConstraint = coreWidgetView.heightAnchor.constraint(lessThanOrEqualToConstant: 150)
         
         bottomConstraint.priority = .defaultLow
         heightConstraint.priority = .defaultHigh
+        
+        let contentViewHeightConstraint: NSLayoutConstraint = {
+            switch type {
+            case .image, .both:
+                return contentView.heightAnchor.constraint(greaterThanOrEqualToConstant: 90)
+            case .text:
+                return contentView.heightAnchor.constraint(greaterThanOrEqualToConstant: 60)
+            }
+        }()
         
         addSubview(coreWidgetView)
         NSLayoutConstraint.activate([
@@ -65,7 +74,8 @@ class AlertWidget: WidgetView {
             coreWidgetView.leadingAnchor.constraint(equalTo: self.leadingAnchor),
             coreWidgetView.trailingAnchor.constraint(equalTo: self.trailingAnchor),
             bottomConstraint,
-            heightConstraint
+            heightConstraint,
+            contentViewHeightConstraint
         ])
     }
 

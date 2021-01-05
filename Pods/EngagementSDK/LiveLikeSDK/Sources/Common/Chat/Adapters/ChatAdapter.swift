@@ -8,9 +8,7 @@
 import UIKit
 
 final class ChatAdapter: NSObject {
-    typealias ChatViewFactoryResult = SelectableView & ChatActionsDelegateContainer
-    typealias ChatViewFactory = (ChatViewHandlerConfig) -> ChatViewFactoryResult
-    let chatCellIdentifier = "chatMessageCell"
+    let chatCellIdentifier = "chatMessageCellID"
 
     weak var actionsDelegate: ChatActionsDelegate?
 
@@ -19,7 +17,10 @@ final class ChatAdapter: NSObject {
             guard let tableView = tableView else { return }
 
             tableView.delegate = self
-            tableView.register(ProxyTableViewCell.self, forCellReuseIdentifier: chatCellIdentifier)
+            let cellNib = UINib(nibName: "ChatMessageTableViewCell", bundle: Bundle(for: ChatMessageTableViewCell.self))
+            tableView.register(cellNib, forCellReuseIdentifier: chatCellIdentifier)
+            tableView.rowHeight = UITableView.automaticDimension
+            tableView.estimatedRowHeight = UITableView.automaticDimension
             tableView.reloadData()
         }
     }
@@ -28,6 +29,7 @@ final class ChatAdapter: NSObject {
     var didScrollToTop: (() -> Void)?
     var timestampFormatter: TimestampFormatter?
     var shouldDisplayDebugVideoTime: Bool = false
+    var shouldShowIncomingMessages: Bool
 
     // Private
     internal var shouldHideSnapToLive = true {
@@ -40,7 +42,7 @@ final class ChatAdapter: NSObject {
     
     internal let messageReporter: MessageReporter?
     internal let eventRecorder: EventRecorder
-    internal var theme: Theme?
+    internal var theme: Theme = Theme()
     internal var messagesDisplayed = [MessageViewModel]() {
         didSet {
             self.actionsDelegate?.chatAdapter(
@@ -57,7 +59,6 @@ final class ChatAdapter: NSObject {
     var messagesToUpdate = [MessageViewModel]()
     internal var blockList: BlockList
     internal var updatingTable = false
-    internal let chatViewFactory: ChatViewFactory
     internal let messageViewModelFactory: MessageViewModelFactory
     internal var isDragging = false {
         didSet {
@@ -75,9 +76,6 @@ final class ChatAdapter: NSObject {
     }
 
     internal var lastRowWasVisible = false
-    /// A `Bool` indicating if the user started interacting with the message view
-    internal var didInteractWithMessageView = false
-
     // Analytics
 
     internal var oldestMessageIndex: Int = Int.max
@@ -106,29 +104,29 @@ final class ChatAdapter: NSObject {
         messageViewModelFactory: MessageViewModelFactory,
         eventRecorder: EventRecorder,
         blockList: BlockList,
-        chatSession: InternalChatSessionProtocol
+        chatSession: InternalChatSessionProtocol,
+        shouldShowIncomingMessages: Bool
     ) {
         self.messageReporter = nil
         self.messageViewModelFactory = messageViewModelFactory
         self.eventRecorder = eventRecorder
-        self.chatViewFactory = ChatAdapter.defaultViewFactory
         self.blockList = blockList
         self.chatSession = chatSession
+        self.shouldShowIncomingMessages = shouldShowIncomingMessages
         super.init()
 
         updateTimer = DispatchSource.makeTimerSource(flags: [], queue: .main)
         updateTimer?.schedule(deadline: .now(), repeating: .milliseconds(200))
         updateTimer?.setEventHandler { [weak self] in
-            self?.updateTable()
+            guard let self = self else { return }
+            if self.shouldShowIncomingMessages == true {
+                self.updateTable()
+            }
         }
         updateTimer?.resume()
     }
 
     deinit {
-        messagesDisplayed.removeAll()
-        messagesToInsert.removeAll()
-        messagesToAppend.removeAll()
-        tableView?.reloadData()
         updateTimer?.cancel()
         updateTimer = nil
     }
@@ -276,10 +274,11 @@ extension ChatAdapter {
         }
         self.messagesDisplayed[indexToUpdate] = messageViewModel
         if (self.tableView?.indexPathsForVisibleRows?.first(where: { $0.row == indexToUpdate })) != nil {
-            if let cell = self.tableView?.cellForRow(at: IndexPath(row: indexToUpdate, section: 0)) as? ProxyTableViewCell {
+            if let cell = self.tableView?.cellForRow(at: IndexPath(row: indexToUpdate, section: 0)) as? ChatMessageTableViewCell {
 
                 if let chatMessageView = cell.contentView.subviews.first(where: { $0 is ChatMessageView}) as? ChatMessageView {
                     chatMessageView.reactionsDisplayView.update(chatReactions: messageViewModel.chatReactions)
+                    chatMessageView.reactionHintImageView.isHidden = messageViewModel.chatReactions.totalReactionsCount != 0
                 }
             }
         }
@@ -294,8 +293,13 @@ extension ChatAdapter {
             return
         }
         
+        // Dismiss reactions panel if it was open
+        if let actionsDelegate = self.actionsDelegate {
+            actionsDelegate.dismissChatMessageActionPanel()
+        }
+        
         // mark messageViewModel as deleted
-        self.messagesDisplayed[indexOfDeletedMessage].redact(theme: self.theme ?? Theme())
+        self.messagesDisplayed[indexOfDeletedMessage].redact(theme: self.theme)
         
         // only reload the tableView if the deleted cell is currently visbile in the tableView
         updateTableViewIfCellVisible(indexOfCell: indexOfDeletedMessage)
@@ -310,36 +314,10 @@ extension ChatAdapter {
     }
 }
 
-// MARK: - Internal
-
-extension ChatAdapter {
-    static let defaultViewFactory: ChatViewFactory = { config in
-        guard
-            let view = Bundle(for: ChatAdapter.self)
-            .loadNibNamed("ChatMessageView", owner: self, options: nil)?
-            .first
-            as? ChatMessageView
-        else {
-            fatalError("Couldn't get view from *ChatMessageView.xib* as a `ChatMessageView`, "
-                + "please fix file")
-        }
-        if let theme = config.theme {
-            view.theme = theme
-        }
-        view.configure(
-            for: config.messageViewModel,
-            indexPath: config.indexPath,
-            timestampFormatter: config.timestampFormatter,
-            shouldDisplayDebugVideoTime: config.shouldDisplayDebugVideoTime
-        )
-        return view
-    }
-}
-
 // MARK: - Private
 
 internal extension ChatAdapter {
-    func selectSelectedMessage(cell: ProxyTableViewCell) {
+    func selectSelectedMessage(cell: ChatMessageTableViewCell) {
         guard let tableView = self.tableView else { return }
         guard let actionsDelegate = self.actionsDelegate else { return }
 
@@ -367,7 +345,7 @@ internal extension ChatAdapter {
             let indexPath = tableView.indexPathForSelectedRow
         {
             tableView.deselectRow(at: indexPath, animated: true)
-            guard let cell = tableView.cellForRow(at: indexPath) as? ProxyTableViewCell else {
+            guard let cell = tableView.cellForRow(at: indexPath) as? ChatMessageTableViewCell else {
                 return
             }
             
@@ -376,10 +354,8 @@ internal extension ChatAdapter {
     }
     
     /// Used to toggle UI elements/flags on message deselection which happens from multiple places
-    func cellDeselected(cell: ProxyTableViewCell, tableView: UITableView) {
-        tableView.beginUpdates()
+    func cellDeselected(cell: ChatMessageTableViewCell, tableView: UITableView) {
         cell.selectableView.isSelected = false
-        tableView.endUpdates()
         isReactionsPanelOpen = false
         
         // Re-enable autoscroll if we are still at bottom of table when closing reaction panel
@@ -431,8 +407,4 @@ extension ChatActionsDelegate {
 
 protocol ChatActionsDelegateContainer {
     var actionsDelegate: ChatActionsDelegate? { get set }
-}
-
-class ProxyTableViewCell: UITableViewCell {
-    var selectableView: SelectableView!
 }

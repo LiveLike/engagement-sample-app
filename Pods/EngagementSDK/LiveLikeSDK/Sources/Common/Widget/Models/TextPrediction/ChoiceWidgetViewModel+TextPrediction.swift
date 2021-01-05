@@ -30,7 +30,9 @@ extension ChoiceWidgetViewModel {
                                               question: textPredictionFollowUp.question,
                                               timeout: textPredictionFollowUp.timeout,
                                               options: followUpOptions,
-                                              customData: nil)
+                                              customData: nil,
+                                              createdAt: textPredictionFollowUp.createdAt,
+                                              publishedAt: textPredictionFollowUp.publishedAt)
         return viewModel
     }
 
@@ -48,7 +50,9 @@ extension ChoiceWidgetViewModel {
                                               question: textPredictionCreated.question,
                                               timeout: textPredictionCreated.timeout,
                                               options: followUpOptions,
-                                              customData: textPredictionCreated.customData)
+                                              customData: textPredictionCreated.customData,
+                                              createdAt: textPredictionCreated.createdAt,
+                                              publishedAt: textPredictionCreated.publishedAt)
 
         viewModel.animationConfirmationAsset = textPredictionCreated.animationConfirmationAsset
         viewModel.confirmationMessage = textPredictionCreated.confirmationMessage

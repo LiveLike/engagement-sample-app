@@ -8,7 +8,7 @@
 import Foundation
 
 extension String {
-    var stickerIDs: [String] {
+    var stickerShortcodes: [String] {
         var stickerIDs = [String]()
         do {
             let regex = try NSRegularExpression(pattern: ":(.*?):", options: [])
@@ -20,7 +20,7 @@ extension String {
                 let r = match.range(at: 1)
                 if let range = Range(r, in: self) {
                     let shortcode = String(self[range])
-                    stickerIDs.append(":\(shortcode):")
+                    stickerIDs.append(shortcode)
                 }
             }
         } catch {}

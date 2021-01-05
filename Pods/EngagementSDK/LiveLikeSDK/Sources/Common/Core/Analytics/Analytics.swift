@@ -7,7 +7,7 @@
 
 import Foundation
 
-class Analytics: EventRecorder {
+class Analytics: AnalyticsProtocol, EventRecorder {
     weak var delegate: EngagementAnalyticsDelegate?
 
     private var widgetPropertyRecorder: WidgetPropertyRecorder?
@@ -174,17 +174,6 @@ extension Analytics: IdentityRecorder {
             mixpanel.alias(alias: alias)
         }.catch {
             log.error($0.localizedDescription)
-        }
-    }
-}
-
-private enum AnalyticsError: LocalizedError {
-    case noTokenProvidedForMixpanel
-    
-    var errorDescription: String? {
-        switch self {
-        case .noTokenProvidedForMixpanel:
-        return "Will not initialize Mixpanel because no token available."
         }
     }
 }

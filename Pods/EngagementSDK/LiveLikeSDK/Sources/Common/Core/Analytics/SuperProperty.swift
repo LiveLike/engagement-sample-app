@@ -31,7 +31,7 @@ extension SuperProperty.Name {
     static var timeOfLastWidgetReceipt: Name = "Time Of Last Widget Receipt"
     static var timeOfLastWidgetInteraction: Name = "Time Of Last Widget Interaction"
     static var programId: Name = "Program ID"
-    static var programName: Name = "Program Name"
+    static var programName: Name = "Program Title"
     static var league: Name = "League"
     static var sport: Name = "Sport"
     static var nickname: Name = "Nickname"

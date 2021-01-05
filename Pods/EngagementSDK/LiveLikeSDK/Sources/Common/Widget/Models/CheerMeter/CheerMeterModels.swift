@@ -7,8 +7,9 @@
 
 import Foundation
 
-struct CheerMeterCreated: Decodable {
+struct CheerMeterCreated: Codable {
     let id: String
+    let programId: String
     let programDateTime: Date?
     let kind: WidgetKind
     var impressionUrl: URL?
@@ -20,13 +21,16 @@ struct CheerMeterCreated: Decodable {
     let customData: String?
 
     let subscribeChannel: String
+    let createdAt: Date
+    let publishedAt: Date?
 }
 
-struct CheerOption: Decodable {
+struct CheerOption: Codable {
     let id: String
     let description: String
     let imageUrl: URL
     let voteUrl: URL
+    let voteCount: Int
 }
 
 struct CheerMeterResults: Decodable {

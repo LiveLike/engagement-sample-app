@@ -9,6 +9,9 @@ import Lottie
 import UIKit
 
 class ImageSliderView: UIView {
+
+    private let mediaRepository: MediaRepository = EngagementSDK.mediaRepository
+
     private let minimumSize: Float = 36
     private let maximumSize: Float = 54
     private var thumbImages = [UIImage]()
@@ -20,7 +23,7 @@ class ImageSliderView: UIView {
 
     var titleView: UIView = {
         let titleView = UIView()
-        titleView.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.8)
+        titleView.backgroundColor = UIColor(rInt: 0, gInt: 0, bInt: 0, alpha: 0.8)
         titleView.translatesAutoresizingMaskIntoConstraints = false
         return titleView
     }()
@@ -37,7 +40,7 @@ class ImageSliderView: UIView {
     var bodyView: UIView = {
         let background = UIView()
         background.translatesAutoresizingMaskIntoConstraints = false
-        background.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.6)
+        background.backgroundColor = UIColor(rInt: 0, gInt: 0, bInt: 0, alpha: 0.6)
         return background
     }()
 
@@ -138,18 +141,16 @@ class ImageSliderView: UIView {
         self.timerAnimationFilepath = timerAnimationFilepath
         super.init(frame: CGRect.zero)
         self.configureLayout()
-        Cache.shared.downloadAndCacheImages(urls: thumbImageUrls) { [weak self] in
+
+        mediaRepository.getImages(urls: thumbImageUrls) { [weak self] in
             guard let self = self else { return }
-            thumbImageUrls.forEach { imageUrl in
-                Cache.shared.get(key: imageUrl.absoluteString) { (data: Data?) in
-                    guard let data = data else { return }
-                    guard let image = UIImage.decode(data) else { return }
-                    self.thumbImages.append(image)
-                }
+            switch $0 {
+            case .success(let imageResults):
+                self.thumbImages = imageResults.map { $0.image }
+                self.configureSlider()
+            case.failure(let error):
+                log.error(error)
             }
-            
-            self.configureSlider()
-            
         }
     }
 
@@ -168,10 +169,18 @@ class ImageSliderView: UIView {
         resultsTrackZeroWidthConstraint.priority = .defaultLow
         resultsTrackFinalWidthConstraint.priority = .defaultHigh
     }
+    
+    /// Move thumb to a position
+    func moveSliderThumb(to position: Float) {
+        sliderView.value = position
+        sliderValueChanged()
+        refreshAverageAnimationLeadingConstraint()
+        showResultsTrack()
+    }
 
     // MARK: Private methods
 
-    private func refreshAverageAnimationLeadingConstraint() {
+    func refreshAverageAnimationLeadingConstraint() {
         averageAnimationLeadingConstraint?.isActive = false
 
         let averageXPosition = CGFloat(averageVote) * customSliderTrack.bounds.width

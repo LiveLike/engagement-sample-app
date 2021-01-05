@@ -18,6 +18,7 @@ extension Resource where A: Decodable {
         parse = { data in
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = decodingStrategy
+            decoder.dateDecodingStrategy = .formatted(.iso8601Full)
             return try decoder.decode(A.self, from: data)
         }
     }
@@ -28,6 +29,7 @@ extension Resource where A: Decodable {
         parse = { data in
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = decodingStrategy
+            decoder.dateDecodingStrategy = .formatted(.iso8601Full)
             return try decoder.decode(A.self, from: data)
         }
     }
@@ -46,6 +48,7 @@ extension Resource where A: Decodable {
         parse = { data in
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = decodingStrategy
+            decoder.dateDecodingStrategy = .formatted(.iso8601Full)
             return try decoder.decode(A.self, from: data)
         }
     }

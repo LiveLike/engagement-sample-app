@@ -9,7 +9,7 @@ import UIKit
 
 class LLChatInputTextField: UITextField {
     
-    private let placeholderText = "EngagementSDK.chat.input.placeholder.say-something".localized(withComment: "Placeholder text used in chat message input field")
+    private let placeholderText = "EngagementSDK.chat.input.placeholder".localized(comment: "Placeholder text used in chat message input field")
     
     var imageAttachmentData: Data? {
         didSet {

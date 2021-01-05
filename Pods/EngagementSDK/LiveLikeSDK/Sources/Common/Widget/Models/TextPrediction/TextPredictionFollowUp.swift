@@ -18,6 +18,7 @@ struct TextPredictionFollowUpOption: Decodable {
 struct TextPredictionFollowUp: Decodable {
     let id: String
     let createdAt: Date
+    let publishedAt: Date?
     let kind: WidgetKind
     let options: [TextPredictionFollowUpOption]
     let programId: String
@@ -27,13 +28,16 @@ struct TextPredictionFollowUp: Decodable {
     let timeout: TimeInterval
     let url: URL
     let programDateTime: Date?
-    var impressionUrl: URL?
-    var rewardsUrl: URL?
-    var customData: String?
+    let impressionUrl: URL?
+    let rewardsUrl: URL?
+    let customData: String?
+    let claimUrl: URL
+    let textPredictionId: String
 
     enum CodingKeys: String, CodingKey {
-        case id = "textPredictionId"
+        case id
         case createdAt
+        case publishedAt
         case kind
         case options
         case programId
@@ -46,12 +50,15 @@ struct TextPredictionFollowUp: Decodable {
         case url
         case programDateTime
         case customData
+        case claimUrl
+        case textPredictionId
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
+        publishedAt = try? container.decode(Date.self, forKey: .publishedAt)
         kind = try container.decode(WidgetKind.self, forKey: .kind)
         options = try container.decode([TextPredictionFollowUpOption].self, forKey: .options)
         programId = try container.decode(String.self, forKey: .programId)
@@ -65,6 +72,8 @@ struct TextPredictionFollowUp: Decodable {
         url = try container.decode(URL.self, forKey: .url)
         programDateTime = try? container.decode(Date.self, forKey: .programDateTime)
         customData = try? container.decode(String.self, forKey: .customData)
+        claimUrl = try container.decode(URL.self, forKey: .claimUrl)
+        textPredictionId = try container.decode(String.self, forKey: .textPredictionId)
     }
 }
 

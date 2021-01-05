@@ -10,5 +10,5 @@ import Foundation
 protocol WidgetRendererDelegate: AnyObject {
     func widgetWillStopRendering(widget: WidgetViewModel)
     func widgetDidStopRendering(widget: WidgetViewModel, dismissAction: DismissAction)
-    func widgetDidStartRendering(widget: WidgetController)
+    func widgetDidStartRendering(widget: Widget)
 }

@@ -10,6 +10,17 @@ import Foundation
 // MARK: - Analytics
 
 internal extension AnalyticsEvent {
+
+    static func chatMessageDisplayed(for message: MessageViewModel) -> AnalyticsEvent {
+        return .init(
+            name: .chatMessageDisplayed,
+            data: [
+                .chatMessageID: message.id.asString,
+                .stickerShortcodes: message.stickerShortcodesInMessage.map({ ":\($0):"})
+            ]
+        )
+    }
+
     static func chatFlagButtonPressed(for message: MessageViewModel) -> AnalyticsEvent {
         return .init(name: .chatFlagButtonPressed, data: [
             .targetChatMessageID: message.id.asString,
@@ -28,12 +39,18 @@ internal extension AnalyticsEvent {
     static func chatReactionPanelOpened(for message: MessageViewModel) -> AnalyticsEvent {
         return .init(name: .chatReactionPanelOpened, data: [.chatMessageID: message.id.asString])
     }
-
-    static func chatReactionSelected(for message: MessageViewModel, reaction: ReactionID, isMine: Bool) -> AnalyticsEvent {
-        return .init(name: .chatReactionSelected, data: [.chatMessageID: message.id.asString,
-                                                         .chatReactionID: reaction.asString,
-                                                         .chatReactionAction: isMine ? "Removed" : "Added"])
+    
+    static func chatReactionAdded(for message: MessageViewModel, reactionId: ReactionID) -> AnalyticsEvent {
+        return .init(name: .chatReactionAdded, data: [.chatMessageID: message.id.asString,
+                                                      .chatReactionID: reactionId.asString,
+                                                      .chatRoomID: message.chatRoomId])
     }
+    
+    static func chatReactionRemoved(for message: MessageViewModel, reactionId: ReactionID) -> AnalyticsEvent {
+        return .init(name: .chatReactionRemoved, data: [.chatMessageID: message.id.asString,
+                                                        .chatReactionID: reactionId.asString,
+                                                        .chatRoomID: message.chatRoomId])
+       }
     
     static func senderIDAttributeValue(for message: MessageViewModel) -> String {
         if let senderIDUnwrapped = message.sender?.id.asString {
@@ -78,16 +95,23 @@ extension ChatAdapter {
         eventRecorder.record(.chatReactionPanelOpened(for: messageViewModel))
     }
 
-    func recordChatReactionSelection(for messageViewModel: MessageViewModel, reaction: ReactionID, isMine: Bool) {
-        eventRecorder.record(.chatReactionSelected(for: messageViewModel, reaction: reaction, isMine: isMine))
+    func recordChatReactionAdded(for message: MessageViewModel, reactionId: ReactionID) {
+        eventRecorder.record(.chatReactionAdded(for: message, reactionId: reactionId))
+    }
+    
+    func recordChatReactionRemoved(for message: MessageViewModel, reactionId: ReactionID) {
+        eventRecorder.record(.chatReactionRemoved(for: message, reactionId: reactionId))
     }
 }
 
 private extension AnalyticsEvent.Name {
+    static let chatMessageDisplayed: Name = "Chat Message Displayed"
     static let chatFlagButtonPressed: Name = "Chat Flag Button Pressed"
     static let chatFlagActionSelected: Name = "Chat Flag Action Selected"
     static let chatReactionPanelOpened: Name = "Chat Reaction Panel Opened"
     static let chatReactionSelected: Name = "Chat Reaction Selected"
+    static let chatReactionAdded: Name = "Chat Reaction Added"
+    static let chatReactionRemoved: Name = "Chat Reaction Removed"
 }
 
 private extension AnalyticsEvent.Attribute {
@@ -97,6 +121,7 @@ private extension AnalyticsEvent.Attribute {
     static let chatMessageID: Attribute = "Chat Message ID"
     static let chatReactionID: Attribute = "Chat Reaction ID"
     static let chatReactionAction: Attribute = "Reaction Action"
+    static let chatRoomID: Attribute = "Chat Room ID"
 }
 
 private extension ChatActionResult {

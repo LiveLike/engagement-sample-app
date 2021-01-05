@@ -7,10 +7,7 @@
 
 import Foundation
 
-/**
- An enumeration of the different kinds of widgets.
- */
-@objc(LLWidgetKind)
+/// An enumeration of the different kinds of widgets.
 public enum WidgetKind: Int {
     case textPrediction
     case textPredictionFollowUp
@@ -35,6 +32,7 @@ public extension WidgetKind {
     }
 }
 
+/// :nodoc:
 extension WidgetKind {
     // The expected values of 'kind' from widget messages sent from PubNub
     var stringValue: String {

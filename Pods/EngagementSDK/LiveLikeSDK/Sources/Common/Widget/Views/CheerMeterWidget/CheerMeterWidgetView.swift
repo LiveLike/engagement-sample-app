@@ -8,7 +8,7 @@
 import Lottie
 import UIKit
 
-class CheerMeterWidgetView: WidgetView {
+class CheerMeterWidgetView: UIView {
     internal let coreWidgetView: CoreWidgetView
 
     private let titleLabel: UILabel
@@ -47,10 +47,14 @@ class CheerMeterWidgetView: WidgetView {
 
     private var theme: Theme
     weak var delegate: CheerMeterWidgetViewDelegate?
+    private var interactionTimer: Timer?
 
+    var leftChoiceImageURL: URL?
+    var rightChoiceImageURL: URL?
+    
     init(theme: Theme) {
         self.theme = theme
-        let properties = constructViews(timerLottieAnimationFilepath: self.theme.filepathsForWidgetTimerLottieAnimation)
+        let properties = constructViews(timerLottieAnimationFilepath: self.theme.lottieFilepaths.timer)
 
         coreWidgetView = properties.coreWidgetView
         titleLabel = properties.headerViews.titleLabel
@@ -82,6 +86,7 @@ class CheerMeterWidgetView: WidgetView {
         coreWidgetView.constraintsFill(to: self)
 
         configureSelectionGestures()
+        NotificationCenter.default.addObserver(self, selector: #selector(didMoveToForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -106,6 +111,22 @@ class CheerMeterWidgetView: WidgetView {
 
     @objc private func rightSelectionSelected() {
         delegate?.optionSelected(button: .rightChoice)
+    }
+
+    @objc private func didMoveToForeground() {
+        // Restart the timer animation from continuous time since background
+        // We need to do this because when Lottie goes into background it pauses the animation
+        if
+            let interactionTimer = interactionTimer,
+            let lottieAnimation = timerView.animation
+        {
+            let timerTimeInterval = TimeInterval(timerDuration)
+            let timeRemaining = interactionTimer.fireDate.timeIntervalSince(Date())
+            let timeScalar = lottieAnimation.duration / timerTimeInterval
+
+            timerView.currentTime = (timerTimeInterval - timeRemaining) * timeScalar
+            timerView.play()
+        }
     }
 }
 
@@ -161,12 +182,16 @@ internal extension CheerMeterWidgetView {
     }
 
     func playTimerAnimation(completion: LottieCompletionBlock? = nil) {
+        interactionTimer = Timer.scheduledTimer(withTimeInterval: Double(timerDuration), repeats: false, block: { _ in
+            completion?(true)
+        })
+
         timerView.stop()
         timerView.isHidden = false
         timerView.play { [weak self] finished in
             guard let self = self else { return }
+            guard finished else { return }
             self.timerView.isHidden = true
-            completion?(finished)
         }
     }
     

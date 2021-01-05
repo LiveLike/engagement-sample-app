@@ -7,24 +7,26 @@
 
 import Foundation
 
-struct TextQuizCreated: Decodable {
-    var id: String
-    var question: String
-    var choices: [TextQuizChoice]
-    var timeout: Timeout
-    var subscribeChannel: String
-    var programId: String
-    var programDateTime: Date?
-    var kind: WidgetKind
-    var impressionUrl: URL?
-    var rewardsUrl: URL?
+struct TextQuizCreated: Codable {
+    let id: String
+    let question: String
+    let choices: [TextQuizChoice]
+    let timeout: Timeout
+    let subscribeChannel: String
+    let programId: String
+    let programDateTime: Date?
+    let kind: WidgetKind
+    let impressionUrl: URL?
+    let rewardsUrl: URL?
     var customData: String?
+    let createdAt: Date
+    let publishedAt: Date?
 }
 
-struct TextQuizChoice: Decodable {
-    var id: String
-    var description: String
-    var isCorrect: Bool
-    var answerCount: Int
-    var answerUrl: URL
+struct TextQuizChoice: Codable {
+    let id: String
+    let description: String
+    let isCorrect: Bool
+    let answerCount: Int
+    let answerUrl: URL
 }

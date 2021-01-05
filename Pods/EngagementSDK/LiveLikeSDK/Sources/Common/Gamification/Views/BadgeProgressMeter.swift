@@ -87,11 +87,6 @@ extension BadgeProgressMeter {
     func setTheme(_ theme: Theme) {
         self.theme = theme
         progressBackgroundTrack.backgroundColor = theme.widgetBodyColor
-
-        progressBar.setColors(startColor: UIColor(red: 240, green: 200, blue: 0),
-                              endColor: UIColor(red: 220, green: 100, blue: 0))
-
-        progressBar.gradientView.livelike_cornerRadius = theme.widgetCornerRadius
         progressBackgroundTrack.livelike_cornerRadius = theme.widgetCornerRadius
     }
 

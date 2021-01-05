@@ -11,7 +11,7 @@ extension ChatViewController {
     // MARK: Gestures
 
     @objc func didRecognizeTapGesture() {
-        if chatInputViewAccessory.textField.isFirstResponder {
+        if chatInputView.textField.isFirstResponder {
             let keyboardProperties = KeyboardHiddenProperties(keyboardType: keyboardType, keyboardHideMethod: .resignedResponder, messageID: nil)
             eventRecorder?.record(.keyboardHidden(properties: keyboardProperties))
             dismissKeyboard()
@@ -30,8 +30,8 @@ extension ChatViewController {
 
     /// Forces the dismissal of the chat keyboard
     @objc public func dismissKeyboard() {
-        chatInputViewAccessory.textField.resignFirstResponder()
-        updateKeyboardType(.standard, isReset: true)
+        chatInputView.textField.resignFirstResponder()
+        chatInputView.updateKeyboardType(.standard, isReset: true)
     }
 
     // MARK: Keyboard Notifications
@@ -71,8 +71,8 @@ extension ChatViewController {
         }
 
         doAnimations(forKeyboardNotification: notification)
-        chatAdapter?.shouldScrollToNewestMessageOnArrival = true
-        chatAdapter?.scrollToMostRecent(force: true, returnMethod: .keyboard)
+        messageViewController.shouldScrollToNewestMessageOnArrival = true
+        messageViewController.scrollToMostRecent(force: true, returnMethod: .keyboard)
     }
 
     private func keyboardDidShow(notification: Notification) {
@@ -81,8 +81,6 @@ extension ChatViewController {
         if isRotating {
             return
         }
-
-        keyboardIsVisible = true
 
         // integrator completion handler for keyboardDidShow
         keyboardDidShowCompletion?()
@@ -96,7 +94,7 @@ extension ChatViewController {
         }
 
         doAnimations(forKeyboardNotification: notification)
-        chatAdapter?.scrollToMostRecent(force: true, returnMethod: .keyboard)
+        messageViewController.scrollToMostRecent(force: true, returnMethod: .keyboard)
     }
 
     private func keyboardDidHide(notification: Notification) {
@@ -105,8 +103,6 @@ extension ChatViewController {
         if isRotating {
             return
         }
-
-        keyboardIsVisible = false
 
         // integrator completion handler for keyboardDidHide
         keyboardDidHideCompletion?()
@@ -164,8 +160,8 @@ extension ChatViewController: UIGestureRecognizerDelegate {
         }
 
         let blacklist =
-            (chatInputViewAccessory.keyboardToggleButton.gestureRecognizers ?? [])
-            + (chatInputViewAccessory.textField.gestureRecognizers ?? [])
+            (chatInputView.keyboardToggleButton.gestureRecognizers ?? [])
+            + (chatInputView.textField.gestureRecognizers ?? [])
 
         return blacklist.contains(otherGestureRecognizer)
     }

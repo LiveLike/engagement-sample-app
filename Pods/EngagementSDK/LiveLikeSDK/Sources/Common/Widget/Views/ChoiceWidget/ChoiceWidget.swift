@@ -7,16 +7,20 @@
 
 import UIKit
 
-typealias ChoiceWidgetView = WidgetView & ChoiceWidget
-
-enum ChoiceWidgetViewType {
-    case text
-    case image
+protocol ChoiceWidgetDelegate: AnyObject {
+    func choiceWidget(_ choiceWidget: ChoiceWidget, optionSelected: ChoiceWidgetOption)
 }
 
-protocol ChoiceWidget {
+protocol ChoiceWidget: ThemeableView {
     var titleView: WidgetTitleView { get }
     var coreWidgetView: CoreWidgetView { get }
     func playOverlayAnimation(animationFilepath: String, completion: (() -> Void)?)
     func stopOverlayAnimation()
+    func addOption(withID id: String, prepare option: (ChoiceWidgetOption) -> Void)
+    
+    var headerBodySpacing: CGFloat { get set }
+    var optionSpacing: CGFloat { get set }
+    var bodyBackground: Theme.Background? { get set }
+    var options: [ChoiceWidgetOptionButton] { get }
+
 }

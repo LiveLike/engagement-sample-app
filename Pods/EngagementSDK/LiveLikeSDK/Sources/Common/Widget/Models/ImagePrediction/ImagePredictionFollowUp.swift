@@ -19,6 +19,7 @@ struct ImagePredictionFollowUpOption: Decodable {
 struct ImagePredictionFollowUp: Decodable {
     let id: String
     let createdAt: Date
+    let publishedAt: Date?
     let kind: WidgetKind
     let options: [ImagePredictionFollowUpOption]
     let programId: String
@@ -31,10 +32,13 @@ struct ImagePredictionFollowUp: Decodable {
     var impressionUrl: URL?
     var rewardsUrl: URL?
     let customData: String?
+    let claimUrl: URL
+    let imagePredictionId: String
 
     enum CodingKeys: String, CodingKey {
-        case id = "imagePredictionId"
+        case id
         case createdAt
+        case publishedAt
         case kind
         case options
         case programId
@@ -47,12 +51,15 @@ struct ImagePredictionFollowUp: Decodable {
         case url
         case programDateTime
         case customData
+        case claimUrl
+        case imagePredictionId
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
+        publishedAt = try? container.decode(Date.self, forKey: .publishedAt)
         kind = try container.decode(WidgetKind.self, forKey: .kind)
         options = try container.decode([ImagePredictionFollowUpOption].self, forKey: .options)
         programId = try container.decode(String.self, forKey: .programId)
@@ -66,6 +73,8 @@ struct ImagePredictionFollowUp: Decodable {
         programDateTime = try? container.decode(Date.self, forKey: .programDateTime)
         rewardsUrl = try? container.decode(URL.self, forKey: .rewardsUrl)
         customData = try? container.decode(String.self, forKey: .customData)
+        claimUrl = try container.decode(URL.self, forKey: .claimUrl)
+        imagePredictionId = try container.decode(String.self, forKey: .imagePredictionId)
     }
 }
 

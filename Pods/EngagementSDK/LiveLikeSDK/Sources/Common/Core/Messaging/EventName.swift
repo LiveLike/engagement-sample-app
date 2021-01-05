@@ -9,7 +9,7 @@ import Foundation
 
 /// Enum outlining the valid event names we can receive from
 /// the messaging service (e.g. PubNub)
-enum EventName: String, Encodable {
+enum EventName: String, Codable {
     // Widget Events
     case textPredictionCreated = "text-prediction-created"
     case textPredictionResults = "text-prediction-results"

@@ -11,28 +11,6 @@ protocol ViewInjectable {
     func injectView(_ newView: UIView)
 }
 
-extension QuizWidgetViewController: ViewInjectable {
-    func injectView(_ newView: UIView) {
-        guard let injectableView = quizWidget as? ViewInjectable else {
-            assertionFailure("Expected QuizWidgetViewController's view to conform to ViewInjectable.")
-            return
-        }
-
-        injectableView.injectView(newView)
-    }
-}
-
-extension PollWidgetViewController: ViewInjectable {
-    func injectView(_ newView: UIView) {
-        guard let injectableView = widgetView as? ViewInjectable else {
-            assertionFailure("Expected PollWidgetViewController's view to conform to ViewInjectable.")
-            return
-        }
-
-        injectableView.injectView(newView)
-    }
-}
-
 extension PredictionWidgetViewController: ViewInjectable {
     func injectView(_ newView: UIView) {
         guard let injectableView = predictionWidgetView as? ViewInjectable else {

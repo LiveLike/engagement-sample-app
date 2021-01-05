@@ -7,7 +7,86 @@
 
 import UIKit
 
-class TextChoiceWidgetOptionButton: ChoiceWidgetOptionButton {
+class TextChoiceWidgetOptionButton: ThemeableView, ChoiceWidgetOption {
+
+    weak var delegate: ChoiceWidgetOptionDelegate?
+
+    var optionThemeStyle: OptionThemeStyle = .unselected
+
+    var barCornerRadii: Theme.CornerRadii = .zero {
+        didSet {
+            self.percentageView.progressBar.roundCorners(cornerRadii: barCornerRadii)
+        }
+    }
+    
+    var descriptionFont: UIFont? {
+        get {
+            return textLabel.font
+        }
+        set {
+            textLabel.font = newValue
+        }
+    }
+    
+    var text: String? {
+        get {
+            return textLabel.text
+        }
+        set {
+            textLabel.text = newValue
+        }
+    }
+    
+    var descriptionTextColor: UIColor? {
+        get {
+            return textLabel.textColor
+        }
+        set {
+            textLabel.textColor = newValue
+        }
+    }
+    
+    var percentageFont: UIFont? {
+        get {
+            return percentageView.progressLabel.font
+        }
+        set {
+            percentageView.progressLabel.font = newValue
+        }
+    }
+    
+    var percentageTextColor: UIColor? {
+        get {
+            return percentageView.progressLabel.textColor
+        }
+        set {
+            percentageView.progressLabel.textColor = newValue
+        }
+    }
+    
+    var barBackground: Theme.Background? {
+        didSet {
+            switch barBackground {
+            case .fill(let color):
+                percentageView.progressBar.setColors(startColor: color, endColor: color)
+            case .gradient(let gradient):
+                guard
+                    let startColor = gradient.colors[safe: 0],
+                    let endColor = gradient.colors[safe: 1]
+                else {
+                    log.error("Failed to find two colors for the gradient")
+                    return
+                }
+                
+                percentageView.progressBar.setColors(startColor: startColor, endColor: endColor)
+            default:
+                break
+            }
+        }
+    }
+    
+    var image: UIImage?
+    
     // MARK: Internal
 
     var id: String
@@ -34,9 +113,9 @@ class TextChoiceWidgetOptionButton: ChoiceWidgetOptionButton {
 
     // MARK: Initialization
 
-    init(id: String) {
+    required init(id: String) {
         self.id = id
-        super.init(frame: .zero)
+        super.init()
         configure()
         addGestureRecognizer({
             let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(buttonPressed))
@@ -50,39 +129,16 @@ class TextChoiceWidgetOptionButton: ChoiceWidgetOptionButton {
         return nil
     }
 
-    override var isSelected: Bool {
-        didSet {
-            if isSelected {
-                layer.borderWidth = theme.selectedOptionBorderWidth
-                textLabel.textColor = theme.selectedOptionTextColor
-                layer.cornerRadius = theme.widgetCornerRadius
-            } else {
-                layer.borderWidth = theme.unselectedOptionBorderWidth
-                textLabel.textColor = theme.widgetFontPrimaryColor
-                layer.cornerRadius = theme.unselectedOptionCornerRadius
-            }
-        }
-    }
-
     func setImage(_ imageURL: URL) {
         // not implemented
-    }
-
-    func setBorderColor(_ color: UIColor) {
-        layer.borderColor = color.cgColor
     }
 
     func setProgress(_ percent: CGFloat) {
         percentageView.setProgress(percent: percent)
     }
 
-    func setText(_ text: String, theme: Theme) {
-        let optionText = theme.uppercaseOptionText ? text.uppercased() : text
-        textLabel.setWidgetPrimaryText(optionText, theme: theme)
-    }
-
     @objc private func buttonPressed() {
-        onButtonPressed?(self)
+        delegate?.wasSelected(self)
     }
 
     // MARK: Private Functions - View Setup
@@ -90,14 +146,14 @@ class TextChoiceWidgetOptionButton: ChoiceWidgetOptionButton {
     private func configure() {
         configurePercentageView()
         configureTitleLabel()
-        layer.borderWidth = 2.0
+        clipsToBounds = true
     }
 
     private func configureTitleLabel() {
         addSubview(textLabel)
 
         textLabel.textAlignment = .left
-
+        
         let constraints = [
             textLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -14),
             textLabel.topAnchor.constraint(equalTo: topAnchor, constant: 14),
@@ -124,24 +180,5 @@ class TextChoiceWidgetOptionButton: ChoiceWidgetOptionButton {
         ]
 
         NSLayoutConstraint.activate(constraints)
-    }
-
-    func setColors(_ colors: ChoiceWidgetOptionColors) {
-        layer.borderColor = colors.borderColor.cgColor
-        percentageView.setBarColors(startColor: colors.barGradientLeft,
-                                    endColor: colors.barGradientRight)
-    }
-
-    func customize(_ theme: Theme) {
-        self.theme = theme
-
-        layer.cornerRadius = theme.unselectedOptionCornerRadius
-        layer.borderColor = theme.neutralOptionColors.borderColor.cgColor
-        layer.borderWidth = theme.unselectedOptionBorderWidth
-        backgroundColor = .clear
-
-        percentageView.setLabelTextColor(theme.widgetFontTertiaryColor)
-        percentageView.setLabelFont(theme.fontTertiary)
-        percentageView.setBarCornerRadius(theme.widgetCornerRadius)
     }
 }

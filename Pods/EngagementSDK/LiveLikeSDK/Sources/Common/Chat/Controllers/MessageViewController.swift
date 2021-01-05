@@ -7,40 +7,71 @@
 
 import UIKit
 
-class MessageViewController: UIViewController {
-    // Public Properties
-    public weak var chatAdapter: ChatAdapter? {
+final public class MessageViewController: UIViewController {
+
+    private var chatAdapter: ChatAdapter? {
         didSet {
             tableView.dataSource = chatAdapter
             chatAdapter?.tableView = tableView
             chatAdapter?.actionsDelegate = self
+            chatAdapter?.hideSnapToLive = { [weak self] hide in
+                self?.snapToLiveIsHidden(hide)
+            }
+            chatAdapter?.didScrollToTop = { [weak self] in
+                self?.loadMoreHistory()
+            }
+            chatAdapter?.timestampFormatter = self.messageTimestampFormatter
+            chatAdapter?.shouldDisplayDebugVideoTime = self.shouldDisplayDebugVideoTime
             self.dismissChatMessageActionPanel()
+            chatAdapter?.setTheme(theme)
         }
     }
 
     // MARK: - Internal Properties
 
-    lazy var tableView: UITableView = {
-        let tableView = UITableView(frame: .zero)
-        tableView.translatesAutoresizingMaskIntoConstraints = false
-        tableView.backgroundColor = UIColor.clear
-        tableView.separatorStyle = .none
-        tableView.showsVerticalScrollIndicator = false
-        return tableView
+    private let customTableViewController: CustomTableViewController = {
+        let vc = CustomTableViewController()
+        vc.tableView.translatesAutoresizingMaskIntoConstraints = false
+        vc.tableView.backgroundColor = UIColor.clear
+        vc.tableView.separatorStyle = .none
+        vc.tableView.showsVerticalScrollIndicator = false
+        return vc
     }()
+
+    var tableView: UITableView {
+        return customTableViewController.tableView
+    }
 
     var tableTrailingConstraint: NSLayoutConstraint?
     var tableLeadingConstraint: NSLayoutConstraint?
     var chatMessageActionPanelViewTopAnchor: NSLayoutConstraint?
+    var shouldShowIncomingMessages: Bool = true {
+        didSet {
+            chatAdapter?.shouldShowIncomingMessages = shouldShowIncomingMessages
+        }
+    }
 
-    lazy var gradientLayer: CAGradientLayer = {
-        let gradient = CAGradientLayer()
-        gradient.frame = tableView.superview?.bounds ?? .zero
-        gradient.colors = [UIColor.clear.cgColor, UIColor.clear.cgColor, UIColor.black.cgColor, UIColor.black.cgColor, UIColor.clear.cgColor]
-        gradient.locations = [0.0, 0.0, 0.1, 0.95, 1.0]
-        tableView.superview?.layer.mask = gradient
-        return gradient
-    }()
+    public var messageTimestampFormatter: TimestampFormatter? = { date in
+        let dateFormatter = DateFormatter()
+        dateFormatter.amSymbol = "am"
+        dateFormatter.pmSymbol = "pm"
+        dateFormatter.setLocalizedDateFormatFromTemplate("MMM d hh:mm")
+        return dateFormatter.string(from: date)
+    }
+
+    /// Determines whether the user is able to post images into chat
+    public var shouldDisplayDebugVideoTime: Bool = false
+
+    /// A flag that determines whether we should scroll to display the newest message when it is received
+    var shouldScrollToNewestMessageOnArrival: Bool {
+        get {
+            guard let chatAdapter = chatAdapter else { return true }
+            return chatAdapter.shouldScrollToNewestMessageOnArrival
+        }
+        set {
+            chatAdapter?.shouldScrollToNewestMessageOnArrival = newValue
+        }
+    }
 
     lazy var activityIndicator: UIActivityIndicatorView = {
         let indicator = UIActivityIndicatorView(style: .gray)
@@ -55,7 +86,7 @@ class MessageViewController: UIViewController {
         view.translatesAutoresizingMaskIntoConstraints = false
         view.alpha = .zero
         view.isAccessibilityElement = true
-        view.accessibilityLabel = "Reactions Panel Opened"
+        view.accessibilityLabel = "EngagementSDK.chat.reactions.accessibility.reactionPanelOpened".localized()
         view.accessibilityTraits = .allowsDirectInteraction
         return view
     }()
@@ -65,23 +96,101 @@ class MessageViewController: UIViewController {
     
     private var emptyChatCustomView: UIView?
 
+    private var stickerPacks: [StickerPack] = []
+
     weak var chatSession: InternalChatSessionProtocol? {
         didSet {
             guard let chatSession = chatSession else { return }
             firstly {
                 chatSession.reactionsVendor.getReactions()
-            }.then { reactions in
-                chatSession.reactionsViewModelFactory.make(from: reactions)
             }.then { [weak self] reactionsViewModel in
-                self?.chatMessageActionPanelView.setUp(reactions: reactionsViewModel, chatSession: chatSession)
+                self?.chatMessageActionPanelView.setUp(
+                    reactions: .init(reactionAssets: reactionsViewModel),
+                    chatSession: chatSession
+                )
             }.catch {
                 log.error($0.localizedDescription)
             }
         }
     }
 
+    /// Removes the current chat session if there is one set.
+    public func clearChatSession() {
+        self.chatSession?.removeInternalDelegate(self)
+        self.chatSession = nil
+        self.chatAdapter = nil
+        self.stickerPacks = []
+    }
+
+    public func setChatSession(_ chatSession: ChatSession) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.clearChatSession()
+
+            guard let chatSession = chatSession as? InternalChatSessionProtocol else { return }
+            self.chatSession = chatSession
+
+            chatSession.stickerRepository.getStickerPacks { [weak self] result in
+                guard let self = self else { return}
+
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let stickerPacks):
+                        self.stickerPacks = stickerPacks
+                    case .failure(let error):
+                        log.error("Failed to get sticker packs with error: \(error)")
+                    }
+
+                    let factory = MessageViewModelFactory(
+                        stickerPacks: self.stickerPacks,
+                        channel: "",
+                        reactionsFactory: chatSession.reactionsVendor,
+                        mediaRepository: EngagementSDK.mediaRepository
+                    )
+
+                    let adapter = ChatAdapter(
+                        messageViewModelFactory: factory,
+                        eventRecorder: chatSession.eventRecorder,
+                        blockList: chatSession.blockList,
+                        chatSession: chatSession,
+                        shouldShowIncomingMessages: self.shouldShowIncomingMessages
+                    )
+
+                    chatSession.addInternalDelegate(self)
+                    self.chatAdapter = adapter
+                    self.chatSession(chatSession, didRecieveMessageHistory: chatSession.messages)
+                }
+            }
+        }
+    }
+
+    public func setContentSession(_ contentSession: ContentSession) {
+        guard let contentSession = contentSession as? InternalContentSession else { return }
+
+        contentSession.getChatSession { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .success(let chatSession):
+                self.setChatSession(chatSession)
+            case .failure(let error):
+                log.error(error)
+            }
+        }
+
+        /// Normally this would be done in the session `didSet` observer
+        /// however when a property is weak the observer does not get notified
+        /// when it's set to nil.
+        /// See dicussion at https://stackoverflow.com/a/24317758/1615621
+        contentSession.sessionDidEnd = { [weak self] in
+            self?.chatAdapter = nil
+        }
+    }
+
     /// Used to prevent the user from spamming reactions before receiving and update from the server
     private var canReact: Bool = true
+
+    private var snapToLiveButton = SnapToLiveButton()
+    private var snapToLiveBottomConstraint: NSLayoutConstraint?
 
     // MARK: - Initializers
 
@@ -92,24 +201,21 @@ class MessageViewController: UIViewController {
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
-    
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        gradientLayer.frame = tableView.superview?.bounds ?? .null
-    }
 
     // MARK: - Lifecycle
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor.clear
         view.translatesAutoresizingMaskIntoConstraints = false
         setupActivityIndicator()
         setupTableView()
+        setupSnapToLiveButton()
         chatMessageActionPanelView.chatMessageActionPanelDelegate = self
+        setTheme(theme)
+        chatMessageActionPanelView.setTheme(theme: theme)
     }
 
-    override func viewDidAppear(_ animated: Bool) {
+    public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         NotificationCenter.default.addObserver(
             self,
@@ -125,7 +231,7 @@ class MessageViewController: UIViewController {
         )
     }
 
-    override func viewDidDisappear(_ animated: Bool) {
+    public override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         NotificationCenter.default.removeObserver(self)
     }
@@ -146,8 +252,38 @@ class MessageViewController: UIViewController {
         ])
     }
 
+    private func setupSnapToLiveButton() {
+        snapToLiveButton.translatesAutoresizingMaskIntoConstraints = false
+        snapToLiveButton.alpha = 0.0
+        view.addSubview(snapToLiveButton)
+        snapToLiveButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20).isActive = true
+        snapToLiveBottomConstraint = snapToLiveButton.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        snapToLiveBottomConstraint?.isActive = true
+        snapToLiveButton.addGestureRecognizer({
+            let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(snapToLive))
+            tapGestureRecognizer.numberOfTapsRequired = 1
+            return tapGestureRecognizer
+        }())
+        snapToLiveIsHidden(true)
+    }
+
+    @objc func snapToLive() {
+        shouldScrollToNewestMessageOnArrival = true
+        scrollToMostRecent(force: true, returnMethod: .snapToLive)
+    }
+
+    private func snapToLiveIsHidden(_ isHidden: Bool) {
+        view.layoutIfNeeded()
+        UIView.animate(withDuration: 0.3, delay: 0.0, options: .curveEaseInOut, animations: {
+            self.snapToLiveBottomConstraint?.constant = isHidden ? self.snapToLiveButton.bounds.height : -16
+            self.view.layoutIfNeeded()
+            self.snapToLiveButton.alpha = isHidden ? 0 : 1
+        }, completion: nil)
+    }
+
     private func setupTableView() {
-        view.addSubview(tableView)
+        addChild(customTableViewController)
+        view.addSubview(customTableViewController.view)
         view.addSubview(chatMessageActionPanelView)
 
         tableLeadingConstraint = tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: theme.chatLeadingMargin)
@@ -178,6 +314,19 @@ class MessageViewController: UIViewController {
         tableView.dataSource = chatAdapter
     }
 
+    func loadMoreHistory(){
+        guard let chatSession = chatSession else { return }
+        isLoading(true)
+
+        firstly {
+            chatSession.loadPreviousMessagesFromHistory()
+        }.always {
+            self.isLoading(false)
+        }.catch { error in
+            log.error("Failed to load history: \(error.localizedDescription)")
+        }
+    }
+
     func isLoading(_ loading: Bool) {
         if loading {
             view.bringSubviewToFront(activityIndicator)
@@ -193,6 +342,7 @@ class MessageViewController: UIViewController {
         tableTrailingConstraint?.constant = theme.chatTrailingMargin
         chatMessageActionPanelView.setTheme(theme: theme)
         activityIndicator.color = theme.chatLoadingIndicatorColor
+        self.view.backgroundColor = theme.chatBodyColor
 
         self.emptyChatCustomView?.removeFromSuperview()
         if let newEmptyChatCustomView = theme.emptyChatCustomView {
@@ -203,23 +353,25 @@ class MessageViewController: UIViewController {
             newEmptyChatCustomView.isHidden = self.emptyChatCustomView?.isHidden ?? true
         }
         self.emptyChatCustomView = theme.emptyChatCustomView
-    }
-
-    func expandGradientOverlay(height: CGFloat?) {
-        guard let height = height else { return }
-        let heightWithPadding = height + CGFloat(8)
-        let sizeInPercentage = Float(heightWithPadding / view.bounds.height)
-        gradientLayer.locations = [0.0, NSNumber(value: sizeInPercentage), NSNumber(value: sizeInPercentage + 0.1), 0.95, 1.0]
-    }
-
-    func shrinkGradientOverlay() {
-        gradientLayer.locations = [0.0, 0.0, 0.1, 0.95, 1.0]
+        self.snapToLiveButton.setTheme(theme)
     }
     
     private func updateNoMessagesCustomView(messageCount: Int){
         self.emptyChatCustomView?.isHidden = messageCount > 0
     }
-    
+
+    func orientationWillChange() {
+        self.chatAdapter?.orientationWillChange()
+    }
+
+    func orientationDidChange() {
+        self.chatAdapter?.orientationDidChange()
+    }
+
+    func scrollToMostRecent(force: Bool = false, returnMethod: ChatScrollingReturnMethod) {
+        chatAdapter?.scrollToMostRecent(force: force, returnMethod: returnMethod)
+    }
+
 }
 
 // MARK: - ChatActionsDelegate
@@ -292,13 +444,9 @@ extension MessageViewController: ChatMessageActionPanelDelegate {
 
         let reactionIsMine = messageViewModel.chatReactions.isMine(forID: reaction)
         chatAdapter?.deselectSelectedMessage()
-        chatAdapter?.recordChatReactionSelection(
-            for: messageViewModel,
-            reaction: reaction,
-            isMine: reactionIsMine
-        )
 
         if reactionIsMine, let reactionVoteID = messageViewModel.chatReactions.myVoteID() {
+            chatAdapter?.recordChatReactionRemoved(for: messageViewModel, reactionId: reaction)
             chatSession?.removeMessageReactions(
                 reaction: reactionVoteID,
                 fromMessageWithID: messageViewModel.id
@@ -311,6 +459,7 @@ extension MessageViewController: ChatMessageActionPanelDelegate {
                 $0.voteCount -= 1
             })
         } else {
+            chatAdapter?.recordChatReactionAdded(for: messageViewModel, reactionId: reaction)
             let reactionToRemove = messageViewModel.chatReactions.myVoteID()
             chatSession?.sendMessageReaction(
                 messageViewModel.id,
@@ -339,11 +488,16 @@ extension MessageViewController: ChatMessageActionPanelDelegate {
 // MARK: - Private
 private extension MessageViewController {
     func presentFlagActionSheet(for message: MessageViewModel, completion: FlagTapCompletion?) {
-        let blockTitle = NSLocalizedString("Block this user", comment: "")
-        let reportTitle = NSLocalizedString("Report message", comment: "")
-        let cancelTitle = NSLocalizedString("Cancel", comment: "")
+        let blockTitle = "EngagementSDK.chat.flagMsgMenu.blockUser".localized()
+        let reportTitle = "EngagementSDK.chat.flagMsgMenu.reportMessage".localized()
+        let cancelTitle = "EngagementSDK.chat.flagMsgMenu.cancel".localized()
+        
+        var alertStyle = UIAlertController.Style.actionSheet
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            alertStyle = UIAlertController.Style.alert
+        }
 
-        let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        let sheet = UIAlertController(title: nil, message: nil, preferredStyle: alertStyle)
         sheet.addAction(UIAlertAction(title: blockTitle, style: .default) { [weak self] _ in
             self?.presentBlockConfirmationAlert(for: message, completion: completion)
         })
@@ -360,10 +514,10 @@ private extension MessageViewController {
     }
 
     func presentBlockConfirmationAlert(for message: MessageViewModel, completion: FlagTapCompletion?) {
-        let title = NSLocalizedString("Block", comment: "")
+        let title = "EngagementSDK.chat.blockConfirmationAlert.title".localized()
         let username = message.username
-        let alertMessage = "You will no longer see messages from \(username)"
-        let dismissTitle = NSLocalizedString("OK", comment: "")
+        let alertMessage = "EngagementSDK.chat.blockConfirmationAlert.message".localized(withParam: username)
+        let dismissTitle = "EngagementSDK.chat.blockConfirmationAlert.confirm".localized()
 
         let alert = UIAlertController(title: title, message: alertMessage, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: dismissTitle, style: .default) { [weak self] _ in
@@ -377,9 +531,9 @@ private extension MessageViewController {
     }
 
     func presentReportConfirmationAlert(for message: MessageViewModel, completion: FlagTapCompletion?) {
-        let title = NSLocalizedString("Report", comment: "")
-        let alertMessage = NSLocalizedString("This message has been reported to the moderators. Thank You.", comment: "")
-        let dismissTitle = NSLocalizedString("OK", comment: "")
+        let title = "EngagementSDK.chat.reportMsgConfirmationAlert.title".localized()
+        let alertMessage = "EngagementSDK.chat.reportMsgConfirmationAlert.message".localized()
+        let dismissTitle = "EngagementSDK.chat.reportMsgConfirmationAlert.confirm".localized()
 
         let alert = UIAlertController(title: title, message: alertMessage, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: dismissTitle, style: .default) { [weak self] _ in
@@ -387,4 +541,61 @@ private extension MessageViewController {
         })
         present(alert, animated: true, completion: nil)
     }
+}
+
+extension MessageViewController: InternalChatSessionDelegate {
+    func chatSession(_ chatSession: ChatSession, didRecieveError error: Error) { }
+
+    public func chatSession(_ chatSession: ChatSession, didRecieveNewMessage message: ChatMessage) {
+        DispatchQueue.main.async {
+            self.chatAdapter?.publish(newMessage: message)
+        }
+    }
+
+    func chatSession(_ chatSession: ChatSession, didRecieveMessageHistory messages: [ChatMessage]) {
+        DispatchQueue.main.async {
+            self.chatAdapter?.publish(messagesFromHistory: messages)
+        }
+    }
+
+    func chatSession(_ chatSession: ChatSession, didRecieveMessageUpdate message: ChatMessage) {
+        DispatchQueue.main.async {
+            self.chatAdapter?.publish(messageUpdated: message)
+        }
+    }
+
+    func chatSession(_ chatSession: ChatSession, didRecieveMessageDeleted messageID: ChatMessageID) {
+        DispatchQueue.main.async {
+            self.chatAdapter?.deleteMessage(messageId: messageID)
+        }
+    }
+}
+
+private class CustomTableViewController: UIViewController {
+
+    let tableView: UITableView = {
+        let tableView = UITableView()
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        return tableView
+    }()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        view.addSubview(tableView)
+        NSLayoutConstraint.activate(tableView.fillConstraints(to: view))
+
+        tableView.backgroundColor = UIColor.clear
+        tableView.separatorStyle = .none
+        tableView.showsVerticalScrollIndicator = false
+
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let lastVisibleIndexPath = tableView.indexPathsForVisibleRows?.last {
+            tableView.scrollToRow(at: lastVisibleIndexPath, at: .bottom, animated: false)
+        }
+    }
+
 }

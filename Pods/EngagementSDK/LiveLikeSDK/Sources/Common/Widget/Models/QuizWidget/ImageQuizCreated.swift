@@ -8,24 +8,26 @@
 import Foundation
 
 struct ImageQuizCreated: Decodable {
-    var id: String
-    var question: String
-    var choices: [ImageQuizChoice]
-    var timeout: Timeout
-    var subscribeChannel: String
-    var impressionUrl: URL?
-    var programId: String
-    var programDateTime: Date?
-    var kind: WidgetKind
-    var rewardsUrl: URL?
+    let id: String
+    let question: String
+    let choices: [ImageQuizChoice]
+    let timeout: Timeout
+    let subscribeChannel: String
+    let impressionUrl: URL?
+    let programId: String
+    let programDateTime: Date?
+    let kind: WidgetKind
+    let rewardsUrl: URL?
     var customData: String?
+    let createdAt: Date
+    let publishedAt: Date?
 }
 
 struct ImageQuizChoice: Decodable {
-    var id: String
-    var description: String
-    var imageUrl: URL
-    var isCorrect: Bool
-    var answerCount: Int
-    var answerUrl: URL
+    let id: String
+    let description: String
+    let imageUrl: URL
+    let isCorrect: Bool
+    let answerCount: Int
+    let answerUrl: URL
 }

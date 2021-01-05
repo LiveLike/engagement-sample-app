@@ -7,41 +7,39 @@
 
 import UIKit
 
-class AlertWidgetViewController: WidgetController {
+class AlertWidgetViewController: Widget {
+
     // MARK: Internal Properties
 
-    var id: String
-    var kind: WidgetKind
-    var interactionTimeInterval: TimeInterval?
-    weak var delegate: WidgetEvents?
-    var dismissSwipeableView: UIView {
-        return self.view
-    }
-
-    var widgetTitle: String?
     var correctOptions: Set<WidgetOption>?
-    var options: Set<WidgetOption>?
-    var customData: String?
-    var userDidInteract: Bool = false
-    var previousState: WidgetState?
-    var currentState: WidgetState = .ready {
+    override var theme: Theme {
+        didSet {
+            self.applyTheme(theme)
+        }
+    }
+    override var currentState: WidgetState {
         willSet {
             previousState = self.currentState
         }
         didSet {
-            self.delegate?.widgetDidEnterState(widget: self, state: currentState)
-            switch currentState {
-            case .ready:
-                break
-            case .interacting:
-                enterInteractingState()
-            case .results:
-                break
-            case .finished:
-                enterFinishedState()
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.delegate?.widgetDidEnterState(widget: self, state: self.currentState)
+                switch self.currentState {
+                case .ready:
+                    break
+                case .interacting:
+                    self.enterInteractingState()
+                case .results:
+                    break
+                case .finished:
+                    self.enterFinishedState()
+                }
             }
         }
     }
+
+    private var firstTapTime: Date?
 
     // MARK: Private Properties
 
@@ -52,34 +50,26 @@ class AlertWidgetViewController: WidgetController {
     }()
 
     private lazy var type: AlertWidgetViewType = {
-        if self.widgetData.text?.isEmpty == false, self.widgetData.imageUrl != nil {
+        if self.model.text?.isEmpty == false, self.model.imageURL != nil {
             return .both
-        } else if self.widgetData.text?.isEmpty == false {
+        } else if self.model.text?.isEmpty == false {
             return .text
         } else {
             return .image
         }
     }()
 
-    private let widgetData: AlertCreated
-    private let theme: Theme
-
     // MARK: Analytics
 
-    private let eventRecorder: EventRecorder
-    private var timeDisplayed = Date()
+    private let model: AlertWidgetModel
 
     // MARK: Init
 
-    init(widgetData: AlertCreated, theme: Theme, kind: WidgetKind, eventRecorder: EventRecorder) {
-        id = widgetData.id
-        self.widgetData = widgetData
-        self.theme = theme
-        self.kind = kind
-        self.eventRecorder = eventRecorder
-        self.widgetTitle = widgetData.title
-        self.customData = widgetData.customData
-        super.init(nibName: nil, bundle: nil)
+    override init(
+        model: AlertWidgetModel
+    ) {
+        self.model = model
+        super.init(model: model)
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -92,56 +82,54 @@ class AlertWidgetViewController: WidgetController {
 
         setupCommonView()
         setupView(for: type)
+        applyTheme(theme)
         view.addSubview(alertWidget)
         alertWidget.constraintsFill(to: view)
         addGestures(to: alertWidget.coreWidgetView)
         alertWidget.isUserInteractionEnabled = false
+
+        model.registerImpression()
     }
 
-    func moveToNextState() {
-        DispatchQueue.main.async { [weak self] in
-        guard let self = self else { return }
-            switch self.currentState {
-            case .ready:
-                self.currentState = .interacting
-            case .interacting:
-                self.currentState = .finished
-            case .results:
-                break
-            case .finished:
-                break
-            }
+    override func moveToNextState() {
+        switch self.currentState {
+        case .ready:
+            self.currentState = .interacting
+        case .interacting:
+            self.currentState = .finished
+        case .results:
+            break
+        case .finished:
+            break
         }
     }
     
-    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) { }
+    override func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) { }
     
-    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
-        delay(widgetData.timeout.timeInterval) { [weak self] in
+    override func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
+        delay(model.interactionTimeInterval) { [weak self] in
             guard let self = self else { return }
             completion(self)
         }
     }
-    
-    func willDismiss(dismissAction: DismissAction) {
-        if dismissAction.userDismissed {
-            let properties = WidgetDismissedProperties(widgetId: widgetData.id,
-                                                       widgetKind: kind.stringValue,
-                                                       dismissAction: dismissAction,
-                                                       numberOfTaps: 0,
-                                                       dismissSecondsSinceStart: Date().timeIntervalSince(timeDisplayed))
-            eventRecorder.record(.widgetUserDismissed(properties: properties))
-            currentState = .finished
-        }
-    }
 
     // MARK: View Helpers
+    
+    private func applyTheme(_ theme: Theme) {
+        alertWidget.applyContainerProperties(theme.widgets.alert.main)
+        alertWidget.contentView.applyContainerProperties(theme.widgets.alert.body)
+        alertWidget.contentView.textLabel.textColor = theme.widgets.alert.description.color
+        alertWidget.contentView.textLabel.font = theme.widgets.alert.description.font
+        alertWidget.titleView.applyContainerProperties(theme.widgets.alert.header)
+        alertWidget.titleView.titleLabel.textColor = theme.widgets.alert.title.color
+        alertWidget.titleView.titleLabel.font = theme.widgets.alert.title.font
+        alertWidget.linkView.applyContainerProperties(theme.widgets.alert.footer)
+        alertWidget.linkView.titleLabel.textColor = theme.widgets.alert.link.color
+        alertWidget.linkView.titleLabel.font = theme.widgets.alert.link.font
+    }
 
     private func setupCommonView() {
-        alertWidget.linkView.backgroundColor = theme.alertWidget.linkBackgroundColor
-        alertWidget.coreWidgetView.layer.cornerRadius = theme.widgetCornerRadius
         alertWidget.coreWidgetView.clipsToBounds = true
-        alertWidget.coreWidgetView.backgroundColor = theme.widgetBodyColor
     }
 
     private func setupView(for style: AlertWidgetViewType) {
@@ -160,33 +148,25 @@ class AlertWidgetViewController: WidgetController {
     }
 
     private func setupImageView() {
-        guard let url = widgetData.imageUrl else { return }
+        guard let url = model.imageURL else { return }
         alertWidget.contentView.imageView.setImage(url: url)
     }
 
     private func setupTextView() {
-        alertWidget.contentView.textLabel.text = widgetData.text
-        alertWidget.contentView.textLabel.textColor = theme.widgetFontPrimaryColor
-        alertWidget.contentView.textLabel.font = theme.fontPrimary
+        alertWidget.contentView.textLabel.text = model.text
     }
 
     private func setupTitleView() {
-        if let title = widgetData.title {
+        if let title = model.title {
             alertWidget.titleView.titleLabel.text = theme.uppercaseTitleText ? title.uppercased() : title
-            alertWidget.titleView.titleLabel.textColor = theme.widgetFontSecondaryColor
-            alertWidget.titleView.titleLabel.font = theme.fontSecondary
-            alertWidget.titleView.gradientView.livelike_startColor = theme.alertWidget.titleGradientLeft
-            alertWidget.titleView.gradientView.livelike_endColor = theme.alertWidget.titleGradientRight
         } else {
             alertWidget.titleView.isHidden = true
         }
     }
 
     private func setupLinkView() {
-        if widgetData.linkLabel?.isEmpty == false {
-            alertWidget.linkView.titleLabel.text = widgetData.linkLabel
-            alertWidget.linkView.titleLabel.textColor = theme.widgetFontSecondaryColor
-            alertWidget.linkView.titleLabel.font = theme.fontSecondary
+        if model.linkLabel?.isEmpty == false {
+            alertWidget.linkView.titleLabel.text = model.linkLabel
         } else {
             alertWidget.coreWidgetView.footerView = nil
         }
@@ -195,11 +175,24 @@ class AlertWidgetViewController: WidgetController {
     // MARK: Handle States
     private func enterInteractingState() {
         alertWidget.isUserInteractionEnabled = true
+        self.interactableState = .openToInteraction
         self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
-        eventRecorder.record(.widgetDisplayed(kind: kind.stringValue, widgetId: widgetData.id))
     }
     
     private func enterFinishedState() {
+        if let firstTapTime = self.firstTapTime, let lastTapTime = self.timeOfLastInteraction {
+            self.model.eventRecorder.record(
+                .widgetInteracted(
+                    properties: WidgetInteractedProperties(
+                        widgetId: self.model.id,
+                        widgetKind: self.model.kind.analyticsName,
+                        firstTapTime: firstTapTime,
+                        lastTapTime: lastTapTime,
+                        numberOfTaps: self.interactionCount
+                    )
+                )
+            )
+        }
         alertWidget.isUserInteractionEnabled = false
         self.delegate?.widgetStateCanComplete(widget: self, state: .finished)
     }
@@ -215,13 +208,20 @@ extension AlertWidgetViewController {
     }
 
     @objc func handleTap(sender: UISwipeGestureRecognizer) {
-        guard let url = widgetData.linkUrl else { return }
-        UIApplication.shared.open(url)
+        let now = Date()
+        if firstTapTime == nil {
+            firstTapTime = now
+        }
+        timeOfLastInteraction = now
+        interactionCount += 1
+
+        model.openLinkUrl()
+        self.delegate?.userDidInteract(self)
     }
 }
 
 extension AlertWidgetViewController: UIGestureRecognizerDelegate {
-    public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }
 }

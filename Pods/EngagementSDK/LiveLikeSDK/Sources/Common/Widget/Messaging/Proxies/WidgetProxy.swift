@@ -11,7 +11,6 @@ typealias WidgetProxy = WidgetProxyInput & WidgetProxyOutput
 
 struct WidgetProxyPublishData {
     var clientEvent: ClientEvent
-    var jsonObject: Any
 }
 
 protocol WidgetProxyInput: AnyObject {
@@ -42,12 +41,6 @@ extension WidgetProxyInput where Self: WidgetProxyOutput {
 
 extension WidgetProxyOutput {
     func addProxy(_ proxy: () -> WidgetProxy) -> WidgetProxy {
-        let input = proxy()
-        downStreamProxyInput = input
-        return input
-    }
-
-    func addProxy(_ proxy: () -> WidgetQueue) -> WidgetQueue {
         let input = proxy()
         downStreamProxyInput = input
         return input

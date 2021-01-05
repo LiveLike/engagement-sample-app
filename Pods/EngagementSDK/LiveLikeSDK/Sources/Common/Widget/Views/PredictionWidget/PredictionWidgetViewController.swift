@@ -9,154 +9,82 @@ import Lottie
 import UIKit
 
 /// Game logic for prediction widgets
-class PredictionWidgetViewController: WidgetController {
+class PredictionWidgetViewController: Widget {
 
     // MARK: Properties
 
-    var id: String
-    var kind: WidgetKind
+    override var theme: Theme {
+        didSet {
+            self.applyTheme(theme)
+            self.predictionWidgetView.options.forEach { optionView in
+                switch optionView.optionThemeStyle {
+                case .selected:
+                    self.applyOptionTheme(
+                        optionView: optionView,
+                        optionTheme: theme.widgets.prediction.selectedOption
+                    )
+                case .unselected:
+                    self.applyOptionTheme(
+                        optionView: optionView,
+                        optionTheme: theme.widgets.prediction.unselectedOption
+                    )
+                default:
+                    break
+                }
+            }
+        }
+    }
 
-    weak var delegate: WidgetEvents?
-//    weak var eventsDelegate: EngagementEventsDelegate?
-    var coreWidgetView: CoreWidgetView {
-        return predictionWidgetView.coreWidgetView
-    }
-    
-    var height: CGFloat {
-        return coreWidgetView.bounds.height + 32
-    }
-    
-    var dismissSwipeableView: UIView {
-        return self.view
-    }
-
-    var widgetTitle: String?
-    var correctOptions: Set<WidgetOption>?
-    var options: Set<WidgetOption>?
-    var customData: String?
-    var interactionTimeInterval: TimeInterval?
-    var userDidInteract: Bool = false
-    var previousState: WidgetState?
-    var currentState: WidgetState = .ready {
+    override var currentState: WidgetState {
         willSet {
             previousState = self.currentState
         }
         didSet {
-            self.delegate?.widgetDidEnterState(widget: self, state: currentState)
-            switch currentState {
-            case .ready:
-                break
-            case .interacting:
-                enterInteractingState()
-            case .results:
-                enterResultsState()
-            case .finished:
-                enterFinishedState()
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.delegate?.widgetDidEnterState(widget: self, state: self.currentState)
+                switch self.currentState {
+                case .ready:
+                    break
+                case .interacting:
+                    self.enterInteractingState()
+                case .results:
+                    self.enterResultsState()
+                case .finished:
+                    self.enterFinishedState()
+                }
             }
         }
     }
-
+    
     // MARK: Private Properties
 
     private var currentSelection: ChoiceWidgetOption?
-    private let widgetData: ChoiceWidgetViewModel
-    private let voteRepo: WidgetVotes?
-    private let predictionTheme: PredictionWidgetTheme
-    private let theme: Theme
-    private let style: ChoiceWidgetViewType
-    private let predictionWidgetClient: PredictionVoteClient
-    private var choiceWidgetOptions = [ChoiceWidgetOptionButton]()
-    private var latestResults: PredictionResults?
     private var canShowResults: Bool = false
     private var closeButtonAction: (() -> Void)?
-    
-    // MARK: Analytics
-
-    private let eventRecorder: EventRecorder
+    private let mediaRepository: MediaRepository = EngagementSDK.mediaRepository
+    private let model: PredictionWidgetModel
     private var firstTapTime: Date?
-    private var lastTapTime: Date?
-    private var tapCount = 0
-    private var timeDisplayed = Date()
-    private var interactableState: InteractableState = .openToInteraction
 
     // MARK: View Properties
-
-    private(set) lazy var predictionWidgetView: ChoiceWidgetView = {
-        let textChoiceWidget = VerticalChoiceWidget()
-        textChoiceWidget.coreWidgetView.baseView.layer.cornerRadius = theme.widgetCornerRadius
-        textChoiceWidget.customize(predictionTheme, theme: theme)
-        textChoiceWidget.titleView.titleLabel.text = theme.uppercaseTitleText ? widgetData.question.uppercased() : widgetData.question
-        textChoiceWidget.titleView.titleMargins = theme.choiceWidgetTitleMargins
-        textChoiceWidget.titleView.closeButton.addTarget(
-            self,
-            action: #selector(onCloseButtonPressed),
-            for: .touchUpInside
-        )
-
-        switch style {
-        case .text:
-            choiceWidgetOptions = widgetData.options.map { option in
-                var predictionView = ChoiceWidgetOptionFactory().create(style: .wideText, id: option.id)
-                predictionView.customize(theme)
-                predictionView.setText(option.text, theme: theme)
-                predictionView.onButtonPressed = { [weak self] in self?.onOptionSelected($0) }
-                return predictionView
-            }
-        case .image:
-            choiceWidgetOptions = widgetData.options.map { option in
-                var predictionView: ChoiceWidgetOptionButton = ChoiceWidgetOptionFactory().create(style: .wideTextImage, id: option.id)
-                predictionView.customize(theme)
-                predictionView.setText(option.text, theme: theme)
-                if let imageURL = option.imageUrl {
-                    predictionView.setImage(imageURL)
-                }
-                predictionView.onButtonPressed = { [weak self] in self?.onOptionSelected($0) }
-                return predictionView
-            }
-        }
-
-        textChoiceWidget.populateStackView(options: choiceWidgetOptions)
+    
+    private let optionType: ChoiceWidgetOptionButton.Type
+    private(set) lazy var predictionWidgetView: ChoiceWidget = {
+        let textChoiceWidget = VerticalChoiceWidget(optionType: self.optionType)
+        textChoiceWidget.translatesAutoresizingMaskIntoConstraints = false
         return textChoiceWidget
     }()
 
-    init(style: ChoiceWidgetViewType,
-         kind: WidgetKind,
-         widgetData: ChoiceWidgetViewModel,
-         voteRepo: WidgetVotes?,
-         theme: Theme,
-         predictionWidgetClient: PredictionVoteClient,
-         eventRecorder: EventRecorder,
-         title: String = "",
-         options: Set<WidgetOption> = Set()
-    ) {
-        self.widgetData = widgetData
-        id = widgetData.id
-        self.voteRepo = voteRepo
-        self.predictionWidgetClient = predictionWidgetClient
-        predictionTheme = theme.predictionWidget
-        self.theme = theme
-        self.kind = kind
-        self.style = style
-        self.eventRecorder = eventRecorder
-        self.widgetTitle = title
-        self.options = options
-        self.interactionTimeInterval = widgetData.timeout
-        self.customData = widgetData.customData
-        super.init(nibName: nil, bundle: nil)
-        
-        self.predictionWidgetView.isUserInteractionEnabled = false
-        
-        self.predictionWidgetClient.didRecieveResults = { [weak self] results in
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.latestResults = results
-
-                if self.canShowResults {
-                    self.updateResults(results: results)
-                }
-            }
-            
+    override init(model: PredictionWidgetModel) {
+        self.model = model
+        if model.containsImages {
+            self.optionType = WideTextImageChoice.self
+        } else {
+            self.optionType = TextChoiceWidgetOptionButton.self
         }
+        super.init(model: model)
+
+        self.predictionWidgetView.isUserInteractionEnabled = false
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -167,26 +95,49 @@ class PredictionWidgetViewController: WidgetController {
         super.loadView()
         view.addSubview(predictionWidgetView)
         predictionWidgetView.constraintsFill(to: view)
-        
+
+        predictionWidgetView.titleView.closeButton.addTarget(self, action: #selector(onCloseButtonPressed), for: .touchUpInside)
+        predictionWidgetView.titleView.titleLabel.text = widgetTitle
+ 
+        self.optionsArray?.forEach { optionData in
+            predictionWidgetView.addOption(withID: optionData.id) { optionView in
+                optionView.text = optionData.text
+                if let imageURL = optionData.imageUrl {
+                    mediaRepository.getImage(url: imageURL) { result in
+                        switch result {
+                        case .success(let imageResult):
+                            optionView.image = imageResult.image
+                        case .failure(let error):
+                            log.error(error)
+                        }
+                    }
+                }
+                optionView.delegate = self
+                self.applyOptionTheme(
+                    optionView: optionView,
+                    optionTheme: theme.widgets.prediction.unselectedOption
+                )
+            }
+        }
+        self.applyTheme(theme)
+        self.model.delegate = self
+        self.model.registerImpression()
     }
     
-    func moveToNextState() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            switch self.currentState {
-            case .ready:
-                self.currentState = .interacting
-            case .interacting:
-                self.currentState = .results
-            case .results:
-                self.currentState = .finished
-            case .finished:
-                break
-            }
+    override func moveToNextState() {
+        switch self.currentState {
+        case .ready:
+            self.currentState = .interacting
+        case .interacting:
+            self.currentState = .results
+        case .results:
+            self.currentState = .finished
+        case .finished:
+            break
         }
     }
     
-    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) {
+    override func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) {
         self.closeButtonAction = { [weak self] in
             guard let self = self else { return }
             completion(self)
@@ -194,10 +145,10 @@ class PredictionWidgetViewController: WidgetController {
         predictionWidgetView.titleView.showCloseButton()
     }
     
-    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
+    override func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
         predictionWidgetView.titleView.beginTimer(
-            duration: widgetData.timeout,
-            animationFilepath: theme.filepathsForWidgetTimerLottieAnimation
+            duration: model.interactionTimeInterval,
+            animationFilepath: theme.lottieFilepaths.timer
         ) { [weak self] in
             guard let self = self else { return }
             completion(self)
@@ -206,13 +157,23 @@ class PredictionWidgetViewController: WidgetController {
 
     private func enterInteractingState(){
         self.predictionWidgetView.isUserInteractionEnabled = true
-        timeDisplayed = Date()
-        eventRecorder.record(.widgetDisplayed(kind: kind.analyticsName,
-                                              widgetId: widgetData.id))
         self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
     }
     
     private func enterResultsState() {
+        if let firstTapTime = self.firstTapTime, let lastTapTime = self.timeOfLastInteraction {
+            self.model.eventRecorder.record(
+                .widgetInteracted(
+                    properties: WidgetInteractedProperties(
+                        widgetId: self.model.id,
+                        widgetKind: self.model.kind.analyticsName,
+                        firstTapTime: firstTapTime,
+                        lastTapTime: lastTapTime,
+                        numberOfTaps: self.interactionCount
+                    )
+                )
+            )
+        }
         self.predictionWidgetView.coreWidgetView.contentView?.isUserInteractionEnabled = false
         self.interactableState = .closedToInteraction
          
@@ -221,48 +182,36 @@ class PredictionWidgetViewController: WidgetController {
             return
         }
                         
-        guard let selectionWidgetData = self.widgetData.options.first(where: { $0.id == selectedOption.id}) else {
+        guard let selectionWidgetData = self.model.options.first(where: { $0.id == selectedOption.id}) else {
             log.error("Couldn't find widget data for option with id \(selectedOption.id)")
             return
         }
-        
-        // Send vote
-        firstly {
-            self.predictionWidgetClient.vote(url: selectionWidgetData.voteUrl)
-        }.then { [weak self] vote in
+
+        self.model.lockInVote(optionID: selectionWidgetData.id) { [weak self] result in
             guard let self = self else { return }
-            guard let voteRepo = self.voteRepo else { return }
-            self.canShowResults = true
-            log.debug("Successfully submitted prediction.")
-            voteRepo.addVote(vote, forId: self.widgetData.id)
-            
-            // show progress on all options with latest results
-            if let latestResults = self.latestResults {
-                self.updateResults(results: latestResults)
-            }
-            
-            if let firstTapTime = self.firstTapTime, let lastTapTime = self.lastTapTime {
-                let properties = WidgetInteractedProperties(
-                    widgetId: self.widgetData.id,
-                    widgetKind: self.kind.analyticsName,
-                    firstTapTime: firstTapTime,
-                    lastTapTime: lastTapTime,
-                    numberOfTaps: self.tapCount,
-                    interactionTimeInterval: self.interactionTimeInterval,
-                    widgetViewModel: self,
-                    previousState: .interacting,
-                    currentState: .finished
-                )
-            }
-            
-            if let animationFilepath = self.theme.predictionWidget.lottieAnimationOnTimerCompleteFilepaths.randomElement() {
-                self.predictionWidgetView.playOverlayAnimation(animationFilepath: animationFilepath) {
-                    self.delegate?.widgetStateCanComplete(widget: self, state: .results)
+            switch result {
+            case .success:
+                self.canShowResults = true
+                log.debug("Successfully submitted prediction.")
+
+                let totalVotes = self.model.options.map{ $0.voteCount }.reduce(0, +)
+                if totalVotes > 0 {
+                    self.predictionWidgetView.options.forEach { option in
+                        guard let optionResult = self.model.options.first(where: { $0.id == option.id }) else { return }
+                        let progress: CGFloat = CGFloat(optionResult.voteCount) / CGFloat(totalVotes)
+                        option.setProgress(progress)
+                    }
                 }
+
+                if let animationFilepath = self.theme.lottieFilepaths.predictionTimerComplete.randomElement() {
+                    self.predictionWidgetView.playOverlayAnimation(animationFilepath: animationFilepath) {
+                        self.delegate?.widgetStateCanComplete(widget: self, state: .results)
+                    }
+                }
+            case .failure(let error):
+                log.error("Error: \(error.localizedDescription)")
+                self.delegate?.widgetStateCanComplete(widget: self, state: .results)
             }
-        }.catch { error in
-            log.error("Error: \(error.localizedDescription)")
-            self.delegate?.widgetStateCanComplete(widget: self, state: .results)
         }
     }
     
@@ -274,62 +223,79 @@ class PredictionWidgetViewController: WidgetController {
     @objc private func onCloseButtonPressed() {
         self.closeButtonAction?()
     }
+    
+    private func applyTheme(_ theme: Theme) {
+        predictionWidgetView.titleView.titleMargins = theme.choiceWidgetTitleMargins
+        predictionWidgetView.applyContainerProperties(theme.widgets.prediction.main)
+        predictionWidgetView.titleView.applyContainerProperties(theme.widgets.prediction.header)
+        predictionWidgetView.bodyBackground = theme.widgets.prediction.body.background
+        predictionWidgetView.titleView.titleLabel.textColor = theme.widgets.prediction.title.color
+        predictionWidgetView.titleView.titleLabel.font = theme.widgets.prediction.title.font
+    }
+    
+    private func applyOptionTheme(
+        optionView: ChoiceWidgetOption,
+        optionTheme: Theme.ChoiceWidget.Option?
+    ) {
+        guard let optionTheme = optionTheme else { return }
+        optionView.applyContainerProperties(optionTheme.container)
+        optionView.descriptionTextColor = optionTheme.description.color
+        optionView.descriptionFont = optionTheme.description.font
+        optionView.barBackground = optionTheme.progressBar.background
+        optionView.barCornerRadii = optionTheme.progressBar.cornerRadii
+        optionView.percentageFont = optionTheme.percentage.font
+        optionView.percentageTextColor = optionTheme.percentage.color
+    }
+}
 
-    private func onOptionSelected(_ option: ChoiceWidgetOption) {
+extension PredictionWidgetViewController: PredictionWidgetModelDelegate {
+    func predictionWidgetModel(_ model: PredictionWidgetModel, voteCountDidChange voteCount: Int, forOption optionID: String) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            guard let option = self.predictionWidgetView.options.first(where: { $0.id == optionID }) else { return }
+
+            if self.canShowResults {
+                let totalVotes = self.model.options.map{ $0.voteCount }.reduce(0, +)
+                guard totalVotes > 0 else { return }
+                let progress: CGFloat = CGFloat(voteCount) / CGFloat(totalVotes)
+                option.setProgress(progress)
+            }
+        }
+    }
+}
+
+extension PredictionWidgetViewController: ChoiceWidgetOptionDelegate {
+    func wasSelected(_ option: ChoiceWidgetOption) {
+
+        // Ignore repeated selections
+        guard currentSelection?.id != option.id else { return }
+
         self.userDidInteract = true
+        currentSelection = option
+
+        for optionButton in predictionWidgetView.options {
+            optionButton.optionThemeStyle = .unselected
+            self.applyOptionTheme(
+                optionView: optionButton,
+                optionTheme: theme.widgets.prediction.unselectedOption
+            )
+        }
+        option.optionThemeStyle = .selected
+        self.applyOptionTheme(
+            optionView: option,
+            optionTheme: theme.widgets.prediction.selectedOption
+        )
+
         let now = Date()
         if firstTapTime == nil {
             firstTapTime = now
         }
-        lastTapTime = now
-        tapCount += 1
-        currentSelection = option
-
-        deselectAllOptions()
-        option.setBorderColor(predictionTheme.optionSelectBorderColor)
-        option.isSelected = true
+        timeOfLastInteraction = now
+        interactionCount += 1
+        self.delegate?.userDidInteract(self)
     }
     
-    private func updateResults(results: PredictionResults) {
-        let totalVotes = results.options.map{ $0.voteCount }.reduce(0, +)
+    func wasDeselected(_ option: ChoiceWidgetOption) {
         
-        guard totalVotes > 0 else { return }
-        
-        self.choiceWidgetOptions.forEach { option in
-            guard let optionResult = results.options.first(where: { $0.id == option.id }) else { return }
-            let progress: CGFloat = CGFloat(optionResult.voteCount) / CGFloat(totalVotes)
-            option.setProgress(progress)
-            
-            if let currentSelection = self.currentSelection, currentSelection.id == option.id {
-                option.setColors(self.theme.predictionWidget.optionGradientColors)
-            } else {
-                option.setColors(self.theme.neutralOptionColors)
-            }
-        }
-    }
-
-    private func deselectAllOptions() {
-        for optionButton in choiceWidgetOptions {
-            optionButton.layer.borderColor = theme.neutralOptionColors.borderColor.cgColor
-            optionButton.isSelected = false
-        }
-    }
-
-    func willDismiss(dismissAction: DismissAction) {
-        // Log widget dismissed event
-        if dismissAction.userDismissed {
-            var properties = WidgetDismissedProperties(
-                widgetId: widgetData.id,
-                widgetKind: kind.analyticsName,
-                dismissAction: dismissAction,
-                numberOfTaps: tapCount,
-                dismissSecondsSinceStart: Date().timeIntervalSince(timeDisplayed)
-            )
-            if let lastTapTime = self.lastTapTime {
-                properties.dismissSecondsSinceLastTap = Date().timeIntervalSince(lastTapTime)
-            }
-            properties.interactableState = interactableState
-            eventRecorder.record(.widgetUserDismissed(properties: properties))
-        }
     }
 }
