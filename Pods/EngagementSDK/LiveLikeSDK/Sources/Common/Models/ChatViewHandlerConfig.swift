@@ -19,22 +19,26 @@ struct ChatViewHandlerConfig {
     var indexPath: IndexPath
 
     /// An instance of `Theme`.
-    var theme: Theme?
+    var theme: Theme
     
     var timestampFormatter: TimestampFormatter?
     
     var shouldDisplayDebugVideoTime: Bool = false
+    
+    var shouldDisplayAvatar: Bool = false
 
     init(messageViewModel: MessageViewModel,
          indexPath: IndexPath,
-         theme: Theme? = nil,
+         theme: Theme,
          timestampFormatter: TimestampFormatter?,
-         shouldDisplayDebugVideoTime: Bool) {
+         shouldDisplayDebugVideoTime: Bool,
+         shouldDisplayAvatar: Bool) {
         
         self.messageViewModel = messageViewModel
         self.indexPath = indexPath
         self.theme = theme
         self.shouldDisplayDebugVideoTime = shouldDisplayDebugVideoTime
+        self.shouldDisplayAvatar = shouldDisplayAvatar
         
         if shouldDisplayDebugVideoTime {
             self.timestampFormatter = { date in

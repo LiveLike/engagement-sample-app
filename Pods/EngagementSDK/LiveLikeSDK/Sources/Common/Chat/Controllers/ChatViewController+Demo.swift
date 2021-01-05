@@ -10,6 +10,8 @@ import Foundation
 /// Public methods for the EngagementSDKDemo framework for demo and testing purposes
 public extension ChatViewController {
     func appendMessageToMessagesList(_ message: String){
+        guard let chatSession = self.messageViewController.chatSession else { return }
+
         let user = ChatUser(
             userId: ChatUser.ID(idString: UUID().uuidString),
             isActive: false,
@@ -22,6 +24,7 @@ public extension ChatViewController {
         let chatMessageType = ChatMessage(
             id: ChatMessageID(UUID().uuidString),
             roomID: "room-id",
+            channelName: "channel-name",
             message: message,
             sender: user,
             videoTimestamp: nil,
@@ -34,6 +37,28 @@ public extension ChatViewController {
             filteredMessage: nil,
             filteredReasons: Set()
         )
-        self.chatAdapter?.publish(newMessage: chatMessageType)
+        self.messageViewController.chatSession(chatSession, didRecieveNewMessage: chatMessageType)
+    }
+
+    func sendReaction(index: Int) {
+        guard let chatSession = self.messageViewController.chatSession else { return }
+        guard let message = chatSession.messages.last else { return }
+
+        let currentReactionView = message.reactions.allVotes.first(where: { $0.isMine })?.voteID
+
+        firstly {
+            chatSession.reactionsVendor.getReactions()
+        }.then { reactions -> Promise<Void> in
+            guard let reactionID = reactions[safe: index]?.id else { return Promise(error: NilError() )}
+            return chatSession.sendMessageReaction(
+                message.id,
+                reaction: reactionID,
+                reactionsToRemove: currentReactionView
+            )
+        }.then {
+            print("done")
+        }.catch {
+            print($0)
+        }
     }
 }

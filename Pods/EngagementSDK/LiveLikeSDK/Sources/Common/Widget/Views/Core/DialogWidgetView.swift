@@ -20,7 +20,7 @@ class DialogWidgetView: UIView {
 
     var title: UILabel = {
         let label = UILabel()
-        label.text = "EngagementSDK.widget.DismissWidget.title".localized(withComment: "Title copy of DismissWidget").uppercased()
+        label.text = "EngagementSDK.widget.DismissWidget.title".localized(comment: "Title copy of DismissWidget").uppercased()
         label.textColor = .white
         label.numberOfLines = 2
         label.translatesAutoresizingMaskIntoConstraints = false

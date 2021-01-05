@@ -12,7 +12,11 @@ import Foundation
 /// removed automatically. Order is not respected
 class Listener<T> {
     private let listeners: NSHashTable<AnyObject> = NSHashTable.weakObjects()
-    private let synchronizingQueue = DispatchQueue(label: "com.livelike.listenerSynchronizer", attributes: .concurrent)
+    private let synchronizingQueue: DispatchQueue
+
+    init(dispatchQueueLabel: String = "com.livelike.listenerSynchronizer") {
+        synchronizingQueue = DispatchQueue(label: dispatchQueueLabel, attributes: .concurrent)
+    }
 
     /// Adds element to the set, if the element already exists in the set,
     /// this has no effect.
@@ -40,6 +44,15 @@ class Listener<T> {
         }
     }
 
+    func isEmpty() -> Bool {
+        var isEmpty = true
+        synchronizingQueue.sync { [weak self] in
+            guard let self = self else { return }
+            isEmpty = self.listeners.allObjects.isEmpty
+        }
+        return isEmpty
+    }
+
     /// Invokes a closure on each element contained in the set
     ///
     /// e.g.
@@ -55,4 +68,5 @@ class Listener<T> {
             }
         }
     }
+    
 }

@@ -15,7 +15,9 @@ extension GIFImageView {
             case .success(let success):
                 switch success.imageType {
                 case .gif:
-                    self.animate(withGIFData: success.imageData)
+                    self.prepareForAnimation(withGIFData: success.imageData) {
+                        self.animate(withGIFData: success.imageData)
+                    }
                 default:
                     self.image = success.image
                 }

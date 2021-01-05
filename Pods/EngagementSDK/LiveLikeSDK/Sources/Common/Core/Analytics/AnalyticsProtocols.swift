@@ -32,6 +32,8 @@ protocol SuperPropertyCache {
     func getProperty(name: SuperProperty.Name) -> Any?
 }
 
+protocol AnalyticsProtocol: EventRecorder, SuperPropertyRecorder, PeoplePropertyRecorder {}
+
 protocol IdentityRecorder {
     // Sets the distinct id of a user
     func identify(id: String)

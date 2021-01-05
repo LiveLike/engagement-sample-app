@@ -10,6 +10,7 @@ import Foundation
 struct AlertCreated: Decodable {
     let id: String
     let createdAt: Date
+    let publishedAt: Date?
     let timeout: Timeout
     let subscribeChannel: String
     let programId: String
@@ -26,4 +27,5 @@ struct AlertCreated: Decodable {
     var rewardsUrl: URL?
     let customData: String?
     let animationTimerAsset: String = "timer"
+    
 }

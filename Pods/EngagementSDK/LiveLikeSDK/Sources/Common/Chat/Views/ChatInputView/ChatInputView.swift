@@ -8,7 +8,7 @@
 import UIKit
 import MobileCoreServices
 
-class ChatInputView: UIView {
+public class ChatInputView: UIView {
     // MARK: Outlets
 
     @IBOutlet var textField: LLChatInputTextField! {
@@ -38,11 +38,63 @@ class ChatInputView: UIView {
     // MARK: Internal Properties
 
     weak var delegate: ChatInputViewDelegate?
-    var supportExternalImages = false
+
+    /// Determines whether the user is able to post images into chat
+    public var supportExternalImages = true
+    private var keyboardType: KeyboardType = .standard
+    private var keyboardIsVisible = false
+
+    lazy var stickerInputView: StickerInputView = {
+        let stickerInputView = StickerInputView.instanceFromNib()
+        stickerInputView.delegate = self
+        return stickerInputView
+    }()
+
+    private var chatSession: InternalChatSessionProtocol?
+
+    private var stickerPacks: [StickerPack] = []
+
+    private var theme: Theme = Theme()
+
+    private var recentlyUsedStickerPacks: [StickerPack] {
+        guard let chatSession = chatSession else { return [] }
+        return StickerPack.recentStickerPacks(from: Array(chatSession.recentlyUsedStickers))
+    }
+
+    private var keyboardDidShowNotificationToken: NSObjectProtocol?
+    private var keyboardDidHideNotificationToken: NSObjectProtocol?
+
+    public override func awakeFromNib() {
+        super.awakeFromNib()
+
+        keyboardDidShowNotificationToken = NotificationCenter.default.addObserver(
+            forName: UIResponder.keyboardDidShowNotification,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            self?.keyboardIsVisible = true
+        }
+
+        keyboardDidHideNotificationToken = NotificationCenter.default.addObserver(
+            forName: UIResponder.keyboardDidHideNotification,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            self?.keyboardIsVisible = false
+        }
+
+        setTheme(self.theme)
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(keyboardDidShowNotificationToken!)
+        NotificationCenter.default.removeObserver(keyboardDidHideNotificationToken!)
+    }
 
     // MARK: - View Setup Functions
 
     func setTheme(_ theme: Theme) {
+        self.theme = theme
         textField.font = theme.fontPrimary.maxAccessibilityFontSize(size: 30.0)
         textField.textColor = theme.messageTextColor
         textField.theme = theme
@@ -69,6 +121,8 @@ class ChatInputView: UIView {
         } else {
             sendButton.setImage(customInputSendButtonImage.withRenderingMode(.alwaysOriginal), for: .normal)
         }
+
+        stickerInputView.setTheme(theme)
     }
 
     func updateSendButtonVisibility() {
@@ -91,7 +145,7 @@ class ChatInputView: UIView {
     }
     
     /// Overriding default behavior of paste in order to catch custom images from external custom keyboards
-    override func paste(_ sender: Any?) {
+    public override func paste(_ sender: Any?) {
         
         if UIPasteboard.general.hasStrings {
             if let string = UIPasteboard.general.string {
@@ -123,10 +177,97 @@ class ChatInputView: UIView {
         updateSendButtonVisibility()
     }
 
+    public func setChatSession(_ chatSession: ChatSession) {
+        self.clearChatSession()
+
+        guard let chatSession = chatSession as? InternalChatSessionProtocol else { return }
+        self.chatSession = chatSession
+
+        chatSession.stickerRepository.getStickerPacks { [weak self] result in
+            guard let self = self else { return}
+
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let stickerPacks):
+                    self.stickerPacks = stickerPacks
+                case .failure(let error):
+                    log.error("Failed to get sticker packs with error: \(error)")
+                }
+
+                self.stickerInputView.stickerPacks = self.recentlyUsedStickerPacks + self.stickerPacks
+                self.keyboardToggleButton.isHidden = !self.doStickersExist(stickerPacks: self.stickerPacks)
+            }
+        }
+    }
+
+    public func clearChatSession() {
+        self.chatSession = nil
+    }
+
+    public func setContentSession(_ contentSession: ContentSession) {
+        guard let contentSession = contentSession as? InternalContentSession else { return }
+
+        contentSession.getChatSession { [weak self] result in
+            switch result {
+            case .success(let chatSession):
+                self?.setChatSession(chatSession)
+            case .failure(let error):
+                log.error(error)
+            }
+        }
+    }
+
+    public func clearContentSession() {
+        self.chatSession = nil
+    }
+
+    // handles a scenario where many sticker packs exist with zero stickers
+    func doStickersExist(stickerPacks: [StickerPack]) -> Bool {
+        return stickerPacks.first(where: { $0.stickers.count > 0 }) != nil
+    }
+
     // MARK: - Actions
 
     @IBAction func toggleKeyboardButton() {
-        delegate?.chatInputKeyboardToggled()
+        chatInputKeyboardToggled()
+    }
+
+    func chatInputKeyboardToggled() {
+        if !textField.isFirstResponder {
+            textField.becomeFirstResponder()
+        }
+
+        switch keyboardType {
+        case .standard:
+            updateKeyboardType(.sticker, isReset: false)
+        case .sticker:
+            updateKeyboardType(.standard, isReset: false)
+        }
+    }
+
+    func updateKeyboardType(_ type: KeyboardType, isReset: Bool) {
+        keyboardType = type
+        switch type {
+        case .standard:
+            updateInputView(nil, keyboardType: keyboardType)
+        case .sticker:
+            self.updateInputView(self.stickerInputView, keyboardType: self.keyboardType)
+        }
+        if !isReset {
+            chatSession?.eventRecorder.record(.keyboardSelected(properties: keyboardType))
+        }
+    }
+
+    private func updateInputView(_ inputView: UIView?, keyboardType: KeyboardType) {
+        setKeyboardIcon(keyboardType)
+
+        if textField.isFirstResponder {
+            textField.resignFirstResponder()
+            textField.inputView = inputView
+            textField.becomeFirstResponder()
+        } else {
+            textField.inputView = inputView
+        }
     }
 
     func setKeyboardIcon(_ type: KeyboardType) {
@@ -145,7 +286,67 @@ class ChatInputView: UIView {
         delegate?.chatInputSendPressed(message: ChatInputMessage(
             message: textField.text,
             image: textField.imageAttachmentData))
+
+        let message = ChatInputMessage(
+            message: textField.text,
+            image: textField.imageAttachmentData
+        )
+        if !message.isEmpty {
+            sendMessage(message)
+        } else {
+            if keyboardIsVisible {
+                let keyboardProperties = KeyboardHiddenProperties(keyboardType: keyboardType, keyboardHideMethod: .emptySend, messageID: nil)
+                chatSession?.eventRecorder.record(.keyboardHidden(properties: keyboardProperties))
+            }
+        }
+        reset()
     }
+
+    func sendMessage(_ message: ChatInputMessage) {
+        guard let chatSession = chatSession else {
+            return
+        }
+
+        let clientMessage = ClientMessage(
+            message: message.message,
+            imageURL: message.imageURL,
+            imageSize: message.imageSize
+        )
+        chatSession.sendMessage(clientMessage).then { [weak self] chatMessageID in
+
+            guard let self = self else { return }
+            guard let messageText = message.message else { return }
+
+            let stickerIDs = messageText.stickerShortcodes
+            let indices = ChatSentMessageProperties.calculateStickerIndices(stickerIDs: stickerIDs, stickers: self.stickerPacks)
+            let sentProperties = ChatSentMessageProperties(
+                characterCount: messageText.count,
+                messageId: chatMessageID.asString,
+                chatRoomId: chatSession.roomID,
+                stickerShortcodes: stickerIDs.map({ ":\($0):"}),
+                stickerCount: stickerIDs.count,
+                stickerIndices: indices,
+                hasExternalImage: message.imageURL != nil
+            )
+            chatSession.eventRecorder.record(.chatMessageSent(properties: sentProperties))
+
+            var superProps = [SuperProperty]()
+            let now = Date()
+            superProps.append(.timeOfLastChatMessage(time: now))
+            if messageText.containsEmoji {
+                superProps.append(.timeOfLastEmoji(time: now))
+            }
+            chatSession.superPropertyRecorder.register(superProps)
+
+            chatSession.peoplePropertyRecorder.record([.timeOfLastChatMessage(time: now)])
+
+            let keyboardProperties = KeyboardHiddenProperties(keyboardType: self.keyboardType, keyboardHideMethod: .messageSent, messageID: chatMessageID.asString)
+            chatSession.eventRecorder.record(.keyboardHidden(properties: keyboardProperties))
+        }.catch {
+            log.error($0.localizedDescription)
+        }
+    }
+
 }
 
 extension ChatInputView: UITextFieldDelegate {
@@ -162,19 +363,22 @@ extension ChatInputView: UITextFieldDelegate {
         }
     }
 
-    func textFieldDidBeginEditing(_ textField: UITextField) {
+    public func textFieldDidBeginEditing(_ textField: UITextField) {
         delegate?.chatInputBeginEditing(with: textField)
+        if !keyboardIsVisible, keyboardType == .standard {
+            chatSession?.eventRecorder.record(.keyboardSelected(properties: keyboardType))
+        }
     }
 
-    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+    public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         return shouldUpdateTextField(text: textField.text, in: range, with: string)
     }
 
-    func textFieldDidEndEditing(_ textField: UITextField) {
+    public func textFieldDidEndEditing(_ textField: UITextField) {
         delegate?.chatInputEndEditing(with: textField)
     }
 
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+    public func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         sendButtonPressed()
         return false
     }
@@ -203,7 +407,7 @@ extension ChatInputView: UITextFieldDelegate {
 }
 
 extension ChatInputView {
-    class func instanceFromNib() -> ChatInputView {
+    public class func instanceFromNib() -> ChatInputView {
         // swiftlint:disable force_cast
         return UINib(nibName: "ChatInputView", bundle: Bundle(for: self)).instantiate(withOwner: nil, options: nil).first as! ChatInputView
     }
@@ -264,4 +468,18 @@ protocol ChatInputViewDelegate: AnyObject {
     func chatInputBeginEditing(with textField: UITextField)
     func chatInputEndEditing(with textField: UITextField)
     func chatInputError(title: String, message: String)
+}
+
+extension ChatInputView: StickerInputViewDelegate {
+    func stickerSelected(_ sticker: Sticker) {
+        insertText(":\(sticker.shortcode):")
+
+        guard let chatSession = chatSession else { return }
+        chatSession.recentlyUsedStickers.insert(sticker, at: 0)
+        self.stickerInputView.stickerPacks = self.recentlyUsedStickerPacks + stickerPacks
+    }
+
+    func backspacePressed() {
+        textField.deleteBackward()
+    }
 }

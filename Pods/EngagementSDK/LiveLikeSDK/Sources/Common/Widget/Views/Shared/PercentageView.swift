@@ -1,9 +1,9 @@
 import UIKit
 
 class ProgressBarAndLabelView: UIView {
-    private var progressLabel = ProgressLabel()
-    private var progressBar = ProgressBar()
-
+    var progressLabel = ProgressLabel()
+    var progressBar = ProgressBar()
+    
     func setLabelTextColor(_ color: UIColor) {
         progressLabel.textColor = color
     }
@@ -61,12 +61,32 @@ class ProgressBarAndLabelView: UIView {
 }
 
 class ProgressBar: UIView {
+
+    var background: Theme.Background = .fill(color: .clear) {
+        didSet {
+            switch background {
+            case .fill(let color):
+                setColors(startColor: color, endColor: color)
+            case .gradient(let gradient):
+                guard
+                    let startColor = gradient.colors[safe: 0],
+                    let endColor = gradient.colors[safe: 1]
+                else {
+                    return
+                }
+
+                setColors(startColor: startColor, endColor: endColor)
+            }
+        }
+    }
+
     private var progress: CGFloat = 0.0
 
     init() {
         super.init(frame: .zero)
         addSubview(gradientView)
         gradientView.constraintsFill(to: self)
+        clipsToBounds = true
     }
 
     required init?(coder aDecoder: NSCoder) {

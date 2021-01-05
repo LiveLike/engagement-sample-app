@@ -1,11 +1,9 @@
 PODS:
-  - Bugsnag (5.22.10)
-  - EngagementSDK (2.4):
-    - Bugsnag (~> 5.22.0)
-    - lottie-ios (~> 3.0.0)
+  - EngagementSDK (2.13):
+    - lottie-ios (~> 3.0)
     - Mixpanel-swift (~> 2.5.8)
     - PubNub (~> 4.12.0)
-  - lottie-ios (3.0.7)
+  - lottie-ios (3.1.9)
   - Mixpanel-swift (2.5.9):
     - Mixpanel-swift/Complete (= 2.5.9)
   - Mixpanel-swift/Complete (2.5.9)
@@ -17,20 +15,18 @@ DEPENDENCIES:
   - EngagementSDK
 
 SPEC REPOS:
-  trunk:
-    - Bugsnag
+  https://github.com/cocoapods/specs.git:
     - EngagementSDK
     - lottie-ios
     - Mixpanel-swift
     - PubNub
 
 SPEC CHECKSUMS:
-  Bugsnag: 3e33e950f0b410d3c6eb9e15159e6677c8b50ab2
-  EngagementSDK: d41e9f8ba2e429d664c69ca72cb66792bf313928
-  lottie-ios: c38c3178ae8c4a8f200661aa5f80b9f1ca7f56b3
+  EngagementSDK: 4471a14dbd78cb1ba32d12ac5f90470496b0db3e
+  lottie-ios: 3a3758ef5a008e762faec9c9d50a39842f26d124
   Mixpanel-swift: 4a2e061c8b7a5000ed7f72d2a6196884b5de8b49
   PubNub: 44e2eb39746e7231b98b978a8e3b9726b11dca9c
 
 PODFILE CHECKSUM: ebd3afff3ce63b7f9d0766cef8ea1e586de6e96a
 
-COCOAPODS: 1.8.4
+COCOAPODS: 1.6.1

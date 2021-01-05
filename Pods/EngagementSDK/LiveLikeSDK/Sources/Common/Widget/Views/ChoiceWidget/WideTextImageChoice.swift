@@ -7,11 +7,81 @@
 
 import UIKit
 
-class WideTextImageChoice: ChoiceWidgetOptionButton {
+class WideTextImageChoice: ThemeableView, ChoiceWidgetOption {
+    
+    weak var delegate: ChoiceWidgetOptionDelegate?
+    
+    var optionThemeStyle: OptionThemeStyle = .unselected
+
+    var barCornerRadii: Theme.CornerRadii = .zero {
+        didSet {
+            self.progressBar.roundCorners(cornerRadii: barCornerRadii)
+        }
+    }
+    
+    var descriptionFont: UIFont? {
+        get {
+            return textLabel.font
+        }
+        set {
+            textLabel.font = newValue
+        }
+    }
+    
+    var text: String? {
+        get {
+            return textLabel.text
+        }
+        set {
+            textLabel.text = newValue
+        }
+    }
+    
+    var descriptionTextColor: UIColor? {
+        get {
+            return textLabel.textColor
+        }
+        set {
+            textLabel.textColor = newValue
+        }
+    }
+    
+    var percentageFont: UIFont? {
+        get {
+            return progressLabel.font
+        }
+        set {
+            progressLabel.font = newValue
+        }
+    }
+    
+    var percentageTextColor: UIColor? {
+        get {
+            return progressLabel.textColor
+        }
+        set {
+            progressLabel.textColor = newValue
+        }
+    }
+    
+    var barBackground: Theme.Background? {
+        didSet {
+            guard let barBackground = barBackground else { return }
+            progressBar.background = barBackground
+        }
+    }
+    
+    var image: UIImage? {
+        get {
+            return optionImageView.image
+        } set {
+            optionImageView.image = newValue
+        }
+    }
+    
     // MARK: Internal
 
     var id: String
-    var onButtonPressed: ((ChoiceWidgetOptionButton) -> Void)?
 
     // MARK: Private Properties
 
@@ -47,13 +117,11 @@ class WideTextImageChoice: ChoiceWidgetOptionButton {
         return progressLabel
     }()
 
-    private var theme: Theme = Theme()
-
     // MARK: Initialization
 
-    init(id: String) {
+    required init(id: String) {
         self.id = id
-        super.init(frame: .zero)
+        super.init()
         configure()
         addGestureRecognizer({
             let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(buttonPressed))
@@ -65,20 +133,6 @@ class WideTextImageChoice: ChoiceWidgetOptionButton {
     required init?(coder aDecoder: NSCoder) {
         assertionFailure("init(coder:) has not been implemented")
         return nil
-    }
-
-    override var isSelected: Bool {
-        didSet {
-            if isSelected {
-                layer.cornerRadius = theme.widgetCornerRadius
-                layer.borderWidth = theme.selectedOptionBorderWidth
-                textLabel.textColor = theme.selectedOptionTextColor
-            } else {
-                layer.cornerRadius = theme.unselectedOptionCornerRadius
-                layer.borderWidth = theme.unselectedOptionBorderWidth
-                textLabel.textColor = theme.widgetFontPrimaryColor
-            }
-        }
     }
 
     func setImage(_ imageURL: URL) {
@@ -95,13 +149,8 @@ class WideTextImageChoice: ChoiceWidgetOptionButton {
         progressLabel.isHidden = false
     }
 
-    func setText(_ text: String, theme: Theme) {
-        let optionText = theme.uppercaseOptionText ? text.uppercased() : text
-        textLabel.setWidgetPrimaryText(optionText, theme: theme)
-    }
-
     @objc private func buttonPressed() {
-        onButtonPressed?(self)
+        delegate?.wasSelected(self)
     }
 
     // MARK: Private Functions - View Setup
@@ -140,28 +189,5 @@ class WideTextImageChoice: ChoiceWidgetOptionButton {
             progressBar.trailingAnchor.constraint(equalTo: optionImageView.leadingAnchor, constant: -8),
             progressBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8)
         ])
-    }
-
-    func setColors(_ colors: ChoiceWidgetOptionColors) {
-        layer.borderColor = colors.borderColor.cgColor
-        progressBar.setColors(startColor: colors.barGradientLeft,
-                              endColor: colors.barGradientRight)
-    }
-
-    func customize(_ theme: Theme) {
-        self.theme = theme
-        
-        if isSelected {
-            layer.cornerRadius = theme.widgetCornerRadius
-        } else {
-            layer.cornerRadius = theme.unselectedOptionCornerRadius
-        }
-        layer.borderWidth = theme.unselectedOptionBorderWidth
-        layer.borderColor = theme.neutralOptionColors.borderColor.cgColor
-        backgroundColor = .clear
-
-        progressLabel.textColor = theme.widgetFontTertiaryColor
-        progressLabel.font = theme.fontTertiary
-        progressBar.gradientView.livelike_cornerRadius = theme.widgetCornerRadius / 2
     }
 }

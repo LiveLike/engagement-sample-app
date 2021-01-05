@@ -36,6 +36,7 @@ class ReactionView: UIView {
     let reactionID: ReactionID
     
     private let name: String
+    private let mediaRepository: MediaRepository = EngagementSDK.mediaRepository
     
     var isMine: Bool = false {
         didSet {
@@ -47,16 +48,24 @@ class ReactionView: UIView {
         }
     }
 
-    init(reactionID: ReactionID, emoji: UIImage, reactionCount: Int, name: String) {
+    init(reactionID: ReactionID, imageURL: URL, reactionCount: Int, name: String) {
         self.reactionID = reactionID
         self.name = name
         super.init(frame: .zero)
-        reactionIcon.image = emoji
         reactionCountLabel.text = String(reactionCount)
         self.isAccessibilityElement = true
-        self.accessibilityLabel = "\(self.name) Reaction Selected"
+        self.accessibilityLabel = "EngagementSDK.chat.reactions.accessibility.reactionSelected".localized(withParam: self.name)
         self.accessibilityTraits = .button
         setUpViews()
+
+        mediaRepository.getImage(url: imageURL) { [weak self] in
+            switch $0 {
+            case .success(let result):
+                self?.reactionIcon.image = result.image
+            case .failure(let error):
+                log.error(error)
+            }
+        }
     }
     
     required init?(coder aDecoder: NSCoder) {

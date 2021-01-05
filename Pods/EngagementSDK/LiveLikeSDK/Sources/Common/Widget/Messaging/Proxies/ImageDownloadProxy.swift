@@ -15,37 +15,42 @@ class ImageDownloadProxy: WidgetProxy {
 
     func publish(event: WidgetProxyPublishData) {
         switch event.clientEvent {
-        case let .imagePredictionCreated(payload):
-            mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
-                self?.handlePrefetchResult(result: result, event: event)
-            }
-        case let .imagePredictionFollowUp(payload):
-            mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
-                self?.handlePrefetchResult(result: result, event: event)
-            }
-        case let .imagePollCreated(payload):
-            mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
-                self?.handlePrefetchResult(result: result, event: event)
-            }
-        case let .imageQuizCreated(payload):
-            mediaRepository.prefetchMedia(urls: payload.choices.map{ $0.imageUrl }) { [weak self] result in
-                self?.handlePrefetchResult(result: result, event: event)
-            }
-        case let .alertCreated(payload):
-            if let url = payload.imageUrl {
-                mediaRepository.prefetchMedia(url: url) { [weak self] result in
+        case .widget(let widgetResource):
+            switch widgetResource {
+            case let .imagePredictionCreated(payload):
+                mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
                     self?.handlePrefetchResult(result: result, event: event)
                 }
-            } else {
+            case let .imagePredictionFollowUp(payload):
+                mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
+                    self?.handlePrefetchResult(result: result, event: event)
+                }
+            case let .imagePollCreated(payload):
+                mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
+                    self?.handlePrefetchResult(result: result, event: event)
+                }
+            case let .imageQuizCreated(payload):
+                mediaRepository.prefetchMedia(urls: payload.choices.map{ $0.imageUrl }) { [weak self] result in
+                    self?.handlePrefetchResult(result: result, event: event)
+                }
+            case let .alertCreated(payload):
+                if let url = payload.imageUrl {
+                    mediaRepository.prefetchMedia(url: url) { [weak self] result in
+                        self?.handlePrefetchResult(result: result, event: event)
+                    }
+                } else {
+                    downStreamProxyInput?.publish(event: event)
+                }
+            case let .imageSliderCreated(payload):
+                mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
+                    self?.handlePrefetchResult(result: result, event: event)
+                }
+            case let .cheerMeterCreated(payload):
+                mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
+                    self?.handlePrefetchResult(result: result, event: event)
+                }
+            default:
                 downStreamProxyInput?.publish(event: event)
-            }
-        case let .imageSliderCreated(payload):
-            mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
-                self?.handlePrefetchResult(result: result, event: event)
-            }
-        case let .cheerMeterCreated(payload):
-            mediaRepository.prefetchMedia(urls: payload.options.map{ $0.imageUrl }) { [weak self] result in
-                self?.handlePrefetchResult(result: result, event: event)
             }
         default:
             downStreamProxyInput?.publish(event: event)

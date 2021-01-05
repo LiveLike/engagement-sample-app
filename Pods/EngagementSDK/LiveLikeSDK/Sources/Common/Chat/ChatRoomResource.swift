@@ -16,6 +16,7 @@ struct ChatRoomResource: Decodable {
     var stickerPacksUrl: URL
     var reactionPacksUrl: URL
     var membershipsUrl: URL
+    var visibility: ChatRoomVisibilty
 
     struct Channels: Decodable {
         var chat: Channel
@@ -28,8 +29,15 @@ struct ChatRoomResource: Decodable {
     }
 }
 
+/// Used to signify the visibility of a chat room
+public enum ChatRoomVisibilty: String, Codable, CaseIterable {
+    case members
+    case everyone
+}
+
 /// Used as a return object when calling `getChatRoomInfo()`
 public struct ChatRoomInfo {
     public let id: String
     public let title: String?
+    public let visibility: ChatRoomVisibilty
 }

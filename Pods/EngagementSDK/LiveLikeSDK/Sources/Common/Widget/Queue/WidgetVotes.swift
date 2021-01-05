@@ -7,6 +7,98 @@
 
 import Foundation
 
+/// Represents a vote on a prediction widget
+public struct PredictionVote: Codable {
+    public init(
+        id: String,
+        widgetID: String,
+        optionID: String,
+        claimToken: String?
+    ) {
+        self.id = id
+        self.widgetID = widgetID
+        self.optionID = optionID
+        self.claimToken = claimToken
+    }
+
+    @available(*, deprecated, message: "Use init(id:widgetID:optionID:claimToken:) instead.")
+    public init(widgetID: String, optionID: String, claimToken: String?) {
+        self.id = "n/a"
+        self.widgetID = widgetID
+        self.optionID = optionID
+        self.claimToken = claimToken
+    }
+
+    enum CodingKeys: CodingKey {
+        case id
+        case widgetID
+        case optionID
+        case claimToken
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let id = try? container.decode(String.self, forKey: .id) {
+            self.id = id
+        } else {
+            self.id = "n/a"
+        }
+        self.widgetID = try container.decode(String.self, forKey: .widgetID)
+        self.optionID = try container.decode(String.self, forKey: .optionID)
+        self.claimToken = try? container.decode(String.self, forKey: .claimToken)
+
+    }
+
+    /// The id of the Vote
+    public let id: String
+
+    /// The id of the prediction widget
+    public let widgetID: String
+
+    /// The id of the option that was voted on
+    public let optionID: String
+
+    /// A token used to claim rewards on the prediction widget's follow up
+    public let claimToken: String?
+}
+
+/// Methods to manage how a prediction vote is stored and retrieved
+public protocol PredictionVoteRepository: AnyObject {
+    /// This is called when the EngagementSDK attempts to claim a prediction follow-up reward
+    /// Load the PredictionVote from your database (or other persistent storage)
+    /// Then call the completion block
+    /// Upon failure to load the PredictionVote you can call `completion(nil)`
+    func get(by widgetID: String, completion: @escaping (PredictionVote?) -> Void)
+    
+    /// This is called when the EngagementSDK attempts to store the user's prediction vote details
+    /// Store the PredictionVote in your database (or other persisten storage)
+    /// When successfully stored, call `completion(true)`
+    /// Upon failure to store the Prediction vote you can call `completion(false)`
+    func add(vote: PredictionVote, completion: @escaping (Bool) -> Void)
+}
+
+extension WidgetVotes: PredictionVoteRepository {
+    func get(by widgetID: String, completion: @escaping (PredictionVote?) -> Void) {
+        completion(self.findVote(for: widgetID))
+    }
+
+    func add(vote: PredictionVote, completion: @escaping (Bool) -> Void) {
+        synchronizingQueue.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+
+            do {
+                let url = self.voteJSONFileURL(forWidgetID: vote.widgetID)
+                let data = try JSONEncoder().encode(vote)
+                try data.write(to: url, options: [.atomic])
+                completion(true)
+            } catch {
+                log.error("Failed to write vote to disk due to error: \(error)")
+                completion(false)
+            }
+        }
+    }
+}
+
 /// A thread safe class for managing widget votes.
 class WidgetVotes {
     private let synchronizingQueue = DispatchQueue(label: "com.livelike.widgetVotesSynchronizer", attributes: .concurrent)
@@ -35,7 +127,7 @@ extension WidgetVotes {
     /// - Parameters:
     ///   - vote: users `WidgetVote`
     ///   - id: widget id
-    func addVote(_ vote: WidgetVote, forId widgetID: String) {
+    func addVote(_ vote: PredictionVote, forId widgetID: String) {
         synchronizingQueue.async(flags: .barrier) { [weak self] in
             guard let self = self else { return }
             
@@ -53,8 +145,8 @@ extension WidgetVotes {
     ///
     /// - Parameter widgetId: widget id
     /// - Returns: `WidgetVote` if one exists
-    func findVote(for widgetID: String) -> WidgetVote? {
-        var result: WidgetVote?
+    func findVote(for widgetID: String) -> PredictionVote? {
+        var result: PredictionVote?
         synchronizingQueue.sync { [weak self] in
             guard let self = self else { return }
             result = self.getVote(for: widgetID)
@@ -63,8 +155,8 @@ extension WidgetVotes {
     }
     
     @discardableResult
-    func clearVote(for widgetID: String) -> WidgetVote? {
-        var result: WidgetVote?
+    func clearVote(for widgetID: String) -> PredictionVote? {
+        var result: PredictionVote?
         synchronizingQueue.async(flags: .barrier) { [weak self] in
             guard let self = self else { return }
             result = self.getVote(for: widgetID)
@@ -130,9 +222,9 @@ private extension WidgetVotes {
             .appendingPathExtension("json")
     }
     
-    func getVote(for widgetID: String) -> WidgetVote? {
+    func getVote(for widgetID: String) -> PredictionVote? {
         let url = self.voteJSONFileURL(forWidgetID: widgetID)
         let data = try? Data(contentsOf: url)
-        return data.flatMap { try? JSONDecoder().decode(WidgetVote.self, from: $0) }
+        return data.flatMap { try? JSONDecoder().decode(PredictionVote.self, from: $0) }
     }
 }

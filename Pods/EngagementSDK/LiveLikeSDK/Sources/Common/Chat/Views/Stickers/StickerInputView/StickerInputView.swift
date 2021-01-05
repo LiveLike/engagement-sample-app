@@ -80,6 +80,7 @@ class StickerInputView: UIView {
     override func layoutSubviews() {
         stickerPacksCollectionView.collectionViewLayout.invalidateLayout()
         super.layoutSubviews()
+        showStickerPack(at: lastIndexPath)
     }
 
     func setTheme(_ theme: Theme) {

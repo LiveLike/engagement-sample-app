@@ -8,5 +8,5 @@
 import UIKit
 
 protocol WidgetMessagingClientFactory {
-    func widgetMessagingClient(subcribeKey: String, origin: String?) -> WidgetClient
+    func widgetMessagingClient(subcribeKey: String, origin: String?, userID: String) -> WidgetClient
 }

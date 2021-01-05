@@ -7,9 +7,9 @@
 
 import UIKit
 
-class AlertWidgetTitleView: UIView {
+class AlertWidgetTitleView: ThemeableView {
     // MARK: UI Properties
-
+    
     lazy var titleLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -20,17 +20,10 @@ class AlertWidgetTitleView: UIView {
         return label
     }()
 
-    lazy var gradientView: GradientView = {
-        let gradientView = GradientView(orientation: .horizontal)
-        gradientView.livelike_startColor = #colorLiteral(red: 0.6235294118, green: 0.01568627451, blue: 0.1058823529, alpha: 1)
-        gradientView.livelike_endColor = #colorLiteral(red: 0.9607843137, green: 0.3176470588, blue: 0.3725490196, alpha: 1)
-        return gradientView
-    }()
-
     // MARK: Initialization
 
-    init() {
-        super.init(frame: .zero)
+    override init() {
+        super.init()
         configure()
     }
 
@@ -48,15 +41,10 @@ class AlertWidgetTitleView: UIView {
 
     private func configureView() {
         clipsToBounds = true
-
-        addSubview(gradientView)
         addSubview(titleLabel)
     }
 
     private func configureLayout() {
-        // Gradient View
-        gradientView.constraintsFill(to: self)
-
         // Title Label
         let constraints = [
             titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),

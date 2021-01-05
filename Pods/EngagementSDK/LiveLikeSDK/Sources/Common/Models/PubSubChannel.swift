@@ -43,6 +43,11 @@ protocol PubSubChannel {
         limit: UInt,
         completion: @escaping (Result<PubSubHistoryResult, Error>) -> Void
     )
+    func fetchMessages(
+        since timestamp: TimeToken,
+        limit: UInt,
+        completion: @escaping (Result<PubSubHistoryResult, Error>) -> Void
+    )
     func messageCount(
         since timestamp: TimeToken,
         completion: @escaping (Result<Int, Error>) -> Void

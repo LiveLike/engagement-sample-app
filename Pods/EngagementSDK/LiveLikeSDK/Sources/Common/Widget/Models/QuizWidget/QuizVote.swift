@@ -12,4 +12,5 @@ struct QuizVote: Decodable {
     var url: URL
     var choiceId: String
     var isCorrect: Bool
+    var rewards: [RewardResource]
 }

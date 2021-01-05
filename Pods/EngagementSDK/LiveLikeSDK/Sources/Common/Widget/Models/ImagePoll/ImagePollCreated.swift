@@ -27,6 +27,8 @@ struct ImagePollCreated: Decodable {
     var impressionUrl: URL?
     var rewardsUrl: URL?
     var customData: String?
+    let createdAt: Date
+    let publishedAt: Date?
 }
 
 struct ImagePollOption: Decodable {

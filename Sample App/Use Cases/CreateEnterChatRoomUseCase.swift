@@ -356,6 +356,8 @@ extension CreateEnterChatRoomUseCase: EngagementSDKDelegate {
 
 // MARK: - ContentSessionDelegate
 extension CreateEnterChatRoomUseCase: ContentSessionDelegate {
+    func contentSession(_ session: ContentSession, didReceiveWidget widget: WidgetModel) { }
+    
     func playheadTimeSource(_ session: ContentSession) -> Date? {
         return nil
     }

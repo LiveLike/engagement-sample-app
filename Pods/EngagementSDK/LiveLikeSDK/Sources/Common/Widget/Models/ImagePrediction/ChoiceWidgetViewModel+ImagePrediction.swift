@@ -22,7 +22,9 @@ extension ChoiceWidgetViewModel {
                                                              question: imagePredictionCreated.question,
                                                              timeout: imagePredictionCreated.timeout,
                                                              options: options,
-                                                             customData: imagePredictionCreated.customData)
+                                                             customData: imagePredictionCreated.customData,
+                                                             createdAt: imagePredictionCreated.createdAt,
+                                                             publishedAt: imagePredictionCreated.publishedAt)
         imagePredictionViewModel.confirmationMessage = imagePredictionCreated.confirmationMessage
         imagePredictionViewModel.animationConfirmationAsset = imagePredictionCreated.animationConfirmationAsset
 
@@ -50,7 +52,9 @@ extension ChoiceWidgetViewModel {
                                                              question: imagePredictionFollowUp.question,
                                                              timeout: imagePredictionFollowUp.timeout,
                                                              options: options,
-                                                             customData: imagePredictionFollowUp.customData)
+                                                             customData: imagePredictionFollowUp.customData,
+                                                             createdAt: imagePredictionFollowUp.createdAt,
+                                                             publishedAt: imagePredictionFollowUp.publishedAt)
 
         return imagePredictionViewModel
     }

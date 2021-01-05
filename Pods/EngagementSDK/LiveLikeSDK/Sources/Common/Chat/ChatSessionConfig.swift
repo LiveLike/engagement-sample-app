@@ -22,6 +22,9 @@ public struct ChatSessionConfig {
     /// Default is 50.
     public var messageHistoryLimit: UInt = 50
     
+    /// Show or hide user avatar next to a chat message
+    public var shouldDisplayAvatar: Bool = false
+    
     /// Initialize a ChatSessionConfig
     /// - Parameter roomID: The unique id of the Chat Room to connect
     public init(roomID: String) {

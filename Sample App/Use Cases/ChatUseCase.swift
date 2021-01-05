@@ -116,6 +116,8 @@ extension ChatUseCase: EngagementSDKDelegate {
 }
 
 extension ChatUseCase: ContentSessionDelegate {
+    func contentSession(_ session: ContentSession, didReceiveWidget widget: WidgetModel) { }
+    
     func playheadTimeSource(_ session: ContentSession) -> Date? {
         return nil
     }

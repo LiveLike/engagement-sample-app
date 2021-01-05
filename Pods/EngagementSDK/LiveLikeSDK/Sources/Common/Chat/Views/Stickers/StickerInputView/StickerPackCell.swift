@@ -40,7 +40,7 @@ class StickerPackCell: UICollectionViewCell, UICollectionViewDelegate, UICollect
         label.numberOfLines = 2
         label.textAlignment = .center
         label.textColor = UIColor(white: 1.0, alpha: 0.4)
-        label.text = NSLocalizedString("You haven’t posted any stickers yet.\nGo post it!", comment: "No recent stickers are available yet.")
+        label.text = "EngagementSDK.chat.stickerKeyboard.placeholder".localized(comment: "No recent stickers are available yet.")
         return label
     }()
 
@@ -79,7 +79,8 @@ class StickerPackCell: UICollectionViewCell, UICollectionViewDelegate, UICollect
             if stickers.count == 0 {
                 contentView.addSubview(noRecentsLabel)
                 let constraints = [
-                    contentView.centerXAnchor.constraint(equalTo: noRecentsLabel.centerXAnchor),
+                    noRecentsLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10.0),
+                    noRecentsLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10.0),
                     contentView.centerYAnchor.constraint(equalTo: noRecentsLabel.centerYAnchor)
                 ]
                 NSLayoutConstraint.activate(constraints)

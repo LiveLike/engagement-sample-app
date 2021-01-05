@@ -8,41 +8,40 @@
 import UIKit
 
 class PubSubChatRoom: NSObject, InternalChatSessionProtocol {
+   
+    public var messages: [ChatMessage] = []
+
+    let isAvatarDisplayed: Bool
+    var stickerRepository: StickerRepository
+    var recentlyUsedStickers: LimitedArray<Sticker> = LimitedArray<Sticker>(maxSize: 30)
+    var isReportingEnabled: Bool {
+        return messageReporter != nil
+    }
+    var avatarURL: URL?
+    
+    let blockList: BlockList
+    let eventRecorder: EventRecorder
+    let superPropertyRecorder: SuperPropertyRecorder
+    let peoplePropertyRecorder: PeoplePropertyRecorder
+    let reactionsVendor: ReactionVendor
     
     private let messageHistoryLimit: UInt
     private var chatChannel: PubSubChannel
-    private var _availableReactions: [ReactionID] = []
     private let userID: ChatUser.ID
     private let nickname: UserNicknameVendor
     private let _roomID: String
     private let _title: String?
-    private var userChatRoomImageUrl: URL?
     private var oldestChatMessageTimetoken: TimeToken?
-    var stickerRepository: StickerRepository
-    var recentlyUsedStickers: LimitedArray<Sticker> = LimitedArray<Sticker>(maxSize: 30)
     // where deleted message id's are stored
     private var deletedMessageIDs: Set<ChatMessageID> = Set()
     private var imageUploader: ImageUploader
     private var chatMessages: [PubSubID: ChatMessage] = [:]
-
     // maps ChatMessageIDs to PubSubIDs
     private var chatMessageIDsToPubSubIDs: [ChatMessageID: PubSubID] = [:]
-
     private var mockedMessageIDs: Set<ChatMessageID> = Set()
-
-    public var messages: [ChatMessage] = []
-
     private let messageReporter: MessageReporter?
-    let blockList: BlockList
-    let eventRecorder: EventRecorder
-    let reactionsViewModelFactory: ReactionsViewModelFactory
-    let reactionsVendor: ReactionVendor
     private let chatFilters: Set<ChatFilter>
-    var isReportingEnabled: Bool {
-        return messageReporter != nil
-    }
     private let mediaRepository: MediaRepository = EngagementSDK.mediaRepository
-    
     private var publicDelegates: Listener<ChatSessionDelegate> = Listener()
     private var delegates: Listener<InternalChatSessionDelegate> = Listener()
 
@@ -66,14 +65,14 @@ class PubSubChatRoom: NSObject, InternalChatSessionProtocol {
         userID: ChatUser.ID,
         nickname: UserNicknameVendor,
         imageUploader: ImageUploader,
-        eventRecorder: EventRecorder,
-        reactionsViewModelFactory: ReactionsViewModelFactory,
+        analytics: AnalyticsProtocol,
         reactionsVendor: ReactionVendor,
         messageHistoryLimit: UInt,
         messageReporter: MessageReporter?,
         title: String?,
         chatFilters: Set<ChatFilter>,
-        stickerRepository: StickerRepository
+        stickerRepository: StickerRepository,
+        shouldDisplayAvatar: Bool
     ) {
         self._roomID = roomID
         self.chatChannel = chatChannel
@@ -81,14 +80,16 @@ class PubSubChatRoom: NSObject, InternalChatSessionProtocol {
         self.nickname = nickname
         self.imageUploader = imageUploader
         self.blockList = BlockList(for: userID)
-        self.eventRecorder = eventRecorder
-        self.reactionsViewModelFactory = reactionsViewModelFactory
+        self.eventRecorder = analytics
+        self.superPropertyRecorder = analytics
+        self.peoplePropertyRecorder = analytics
         self.reactionsVendor = reactionsVendor
         self.messageHistoryLimit = messageHistoryLimit
         self.messageReporter = messageReporter
         self._title = title
         self.chatFilters = chatFilters
         self.stickerRepository = stickerRepository
+        self.isAvatarDisplayed = shouldDisplayAvatar
         super.init()
 
         self.chatChannel.delegate = self
@@ -142,12 +143,13 @@ private extension PubSubChatRoom {
                 let mockMessage = ChatMessage(
                     id: chatMessageID,
                     roomID: self.roomID,
+                    channelName: self.chatChannel.name,
                     message: "",
                     sender: chatUser,
                     videoTimestamp: clientMessage.timeStamp,
                     reactions: ReactionVotes(allVotes: []),
                     timestamp: Date(),
-                    profileImageUrl: self.userChatRoomImageUrl,
+                    profileImageUrl: self.avatarURL,
                     createdAt: TimeToken(pubnubTimetoken: 0),
                     bodyImageUrl: imageURL,
                     bodyImageSize: CGSize(
@@ -179,7 +181,7 @@ private extension PubSubChatRoom {
                                     imageWidth: Int(imageSize.width),
                                     senderId: self.userID.asString,
                                     senderNickname: nickname,
-                                    senderImageUrl: self.userChatRoomImageUrl,
+                                    senderImageUrl: self.avatarURL,
                                     badgeImageUrl: clientMessage.badge?.imageURL,
                                     programDateTime: pdt
                                 )
@@ -221,7 +223,7 @@ private extension PubSubChatRoom {
                 message: message,
                 senderId: userID.asString,
                 senderNickname: nickname,
-                senderImageUrl: userChatRoomImageUrl,
+                senderImageUrl: avatarURL,
                 badgeImageUrl: clientMessage.badge?.imageURL,
                 programDateTime: pdt,
                 filteredMessage: nil,
@@ -263,6 +265,7 @@ private extension PubSubChatRoom {
                     }
                     let chatMessageType = ChatMessage(
                         from: payload,
+                        chatRoomID: self.roomID,
                         channel: self.chatChannel.name,
                         timetoken: TimeToken(pubnubTimetoken: message.createdAt),
                         actions: message.messageActions,
@@ -277,6 +280,7 @@ private extension PubSubChatRoom {
                 case .imageCreated(let payload):
                     let chatMessageType = ChatMessage(
                         from: payload,
+                        chatRoomID: self.roomID,
                         channel: self.chatChannel.name,
                         timetoken: TimeToken(pubnubTimetoken: message.createdAt),
                         actions: message.messageActions,
@@ -315,6 +319,7 @@ extension PubSubChatRoom: PubSubChannelDelegate {
         case .messageCreated(let payload):
             let chatMessage = ChatMessage(
                 from: payload,
+                chatRoomID: self.roomID,
                 channel: roomID,
                 timetoken: TimeToken(pubnubTimetoken: message.createdAt),
                 actions: message.messageActions,
@@ -334,6 +339,7 @@ extension PubSubChatRoom: PubSubChannelDelegate {
         case .imageCreated(let payload):
             let chatMessage = ChatMessage(
                 from: payload,
+                chatRoomID: self.roomID,
                 channel: roomID,
                 timetoken: TimeToken(pubnubTimetoken: message.createdAt),
                 actions: message.messageActions,
@@ -415,20 +421,10 @@ extension PubSubChatRoom {
     var title: String? {
         return _title
     }
-
-    var availableReactions: [ReactionID] {
-        get {
-            return _availableReactions
-        }
-        set {
-            _availableReactions = newValue
-        }
-    }
     
     func getMessages(since timestamp: TimeToken, completion: @escaping (Result<[ChatMessage], Error>) -> Void) {
-        self.chatChannel.fetchHistory(
-            oldestMessageDate: timestamp,
-            newestMessageDate: nil,
+        self.chatChannel.fetchMessages(
+            since: timestamp,
             limit: 100
         ) { result in
             switch result {
@@ -448,6 +444,7 @@ extension PubSubChatRoom {
                         }
                         return ChatMessage(
                             from: payload,
+                            chatRoomID: self.roomID,
                             channel: self.chatChannel.name,
                             timetoken: TimeToken(pubnubTimetoken: message.createdAt),
                             actions: message.messageActions,
@@ -459,6 +456,7 @@ extension PubSubChatRoom {
                     case .imageCreated(let payload):
                         return ChatMessage(
                             from: payload,
+                            chatRoomID: self.roomID,
                             channel: self.chatChannel.name,
                             timetoken: TimeToken(pubnubTimetoken: message.createdAt),
                             actions: message.messageActions,
@@ -479,14 +477,64 @@ extension PubSubChatRoom {
     }
 
     func getMessageCount(since timestamp: TimeToken, completion: @escaping (Result<Int, Error>) -> Void) {
-        self.getMessages(since: timestamp) { result in
+        self.chatChannel.fetchMessages(
+            since: timestamp,
+            limit: 100
+        ) { [weak self] result in
+            guard let self = self else { return }
             switch result {
-            case .success(let messages):
-                completion(.success(messages.count))
+            case .success(let historyResult):
+                // Filter out deleted messages because message count should only count existing messages
+                let filteredMessages = self.filterDeletedMessages(historyResult: historyResult)
+                completion(.success(filteredMessages.count))
             case .failure(let error):
                 completion(.failure(error))
             }
         }
+    }
+
+    private func filterDeletedMessages(historyResult: PubSubHistoryResult) -> [ChatMessage] {
+        var deletedMessageIDs = Set<ChatMessageID>()
+        let processedHistory: [ChatMessage] = historyResult.messages.compactMap { message in
+            guard let payload = try? PubSubChatMessageDecoder.shared.decode(dict: message.message) else {
+                assertionFailure()
+                return nil
+            }
+
+            switch payload {
+            case .messageCreated(let payload):
+                // Exclude filtered messages
+                guard payload.filteredSet.isDisjoint(with: self.chatFilters) else {
+                    return nil
+                }
+                return ChatMessage(
+                    from: payload,
+                    chatRoomID: self.roomID,
+                    channel: self.chatChannel.name,
+                    timetoken: TimeToken(pubnubTimetoken: message.createdAt),
+                    actions: message.messageActions,
+                    userID: self.userID
+                )
+            case .messageDeleted(let payload):
+                deletedMessageIDs.insert(ChatMessageID(payload.id))
+                return nil
+            case .imageCreated(let payload):
+                return ChatMessage(
+                    from: payload,
+                    chatRoomID: self.roomID,
+                    channel: self.chatChannel.name,
+                    timetoken: TimeToken(pubnubTimetoken: message.createdAt),
+                    actions: message.messageActions,
+                    userID: self.userID
+                )
+            case .imageDeleted(let payload):
+                deletedMessageIDs.insert(ChatMessageID(payload.id))
+                return nil
+            }
+        }
+
+        let messagesToBeShown = processedHistory.filter { !deletedMessageIDs.contains($0.id) }
+        return messagesToBeShown
     }
     
     func disconnect() {
@@ -666,7 +714,7 @@ extension PubSubChatRoom {
                 self.messages = messagesToBeShown
                 completion(.success(()))
             case let .failure(error):
-                if case PubNubChannel.Errors.foundNoResultsForChannel = error {
+                if case PubNubChannelError.foundNoResultsForChannel = error {
                     self.delegates.publish { $0.chatSession(self, didRecieveMessageHistory: [])}
                     completion(.success(()))
                 } else {
@@ -699,7 +747,7 @@ extension PubSubChatRoom {
                     self.messages.insert(contentsOf: messagesToBeShown, at: 0)
                     fulfill(())
                 case let .failure(error):
-                    if case PubNubChannel.Errors.foundNoResultsForChannel = error {
+                    if case PubNubChannelError.foundNoResultsForChannel = error {
                         log.info("Reached the end of the chat room history.")
                         self.delegates.publish { $0.chatSession(self, didRecieveMessageHistory: [])}
                         fulfill(())
@@ -713,18 +761,12 @@ extension PubSubChatRoom {
 
     func unsubscribeFromAllChannels() {
     }
-
-    func updateUserChatImage(url: URL) -> Promise<Void> {
-        return Promise<Void> { fulfill, reject in
-             DispatchQueue.main.async {
-                 if UIApplication.shared.canOpenURL(url) {
-                     self.userChatRoomImageUrl = url
-                     fulfill(())
-                 } else {
-                    log.error("Unable to set user chat image url for url: \(url.absoluteString)")
-                    reject(PubSubChatRoomError.invalidUserChatRoomImageUrl)
-                 }
-             }
+    
+    func updateUserChatRoomImage(url: URL, completion: @escaping (Result<Void, Error>) -> Void) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.avatarURL = url
+            completion(.success(()))
         }
     }
 }
@@ -758,17 +800,17 @@ class PubSubChatMessageDecoder {
 
     func decode(dict: [String: Any]) throws -> PubSubChatEventWithPayload {
         guard let eventString = dict["event"] as? String else {
-            throw Errors.failedToDecodePayload(decodingError: "'event' is missing from PubSubChatEventWithPayload")
+            throw PubSubChatRoomDecodeError.failedToDecodePayload(decodingError: "'event' is missing from PubSubChatEventWithPayload")
         }
 
         guard let event: PubSubChatEvent = PubSubChatEvent(rawValue: eventString) else {
-            throw Errors.failedToDecodePayload(decodingError: "Failed to create PubSubChatEvent")
+            throw PubSubChatRoomDecodeError.failedToDecodePayload(decodingError: "Failed to create PubSubChatEvent")
         }
 
         switch event {
         case .messageCreated:
             guard let messagePayload = dict["payload"] else {
-                throw Errors.missingPayload
+                throw PubSubChatRoomDecodeError.missingPayload
             }
             
             do {
@@ -778,11 +820,11 @@ class PubSubChatMessageDecoder {
                                                                  from: payloadData)
                 return .messageCreated(chatMessagePayload)
             } catch {
-                throw Errors.failedToDecodePayload(decodingError: "\(error)")
+                throw PubSubChatRoomDecodeError.failedToDecodePayload(decodingError: "\(error)")
             }
         case .messageDeleted:
             guard let messagePayload = dict["payload"] else {
-                throw Errors.missingPayload
+                throw PubSubChatRoomDecodeError.missingPayload
             }
             
             do {
@@ -792,11 +834,11 @@ class PubSubChatMessageDecoder {
                                                                  from: payloadData)
                 return .messageDeleted(chatMessagePayload)
             } catch {
-                throw Errors.failedToDecodePayload(decodingError: "\(error)")
+                throw PubSubChatRoomDecodeError.failedToDecodePayload(decodingError: "\(error)")
             }
         case .imageCreated:
             guard let messagePayload = dict["payload"] else {
-                throw Errors.missingPayload
+                throw PubSubChatRoomDecodeError.missingPayload
             }
 
             do {
@@ -806,11 +848,11 @@ class PubSubChatMessageDecoder {
                                                                  from: payloadData)
                 return .imageCreated(chatMessagePayload)
             } catch {
-                throw Errors.failedToDecodePayload(decodingError: "\(error)")
+                throw PubSubChatRoomDecodeError.failedToDecodePayload(decodingError: "\(error)")
             }
         case .imageDeleted:
             guard let messagePayload = dict["payload"] else {
-                throw Errors.missingPayload
+                throw PubSubChatRoomDecodeError.missingPayload
             }
             
             do {
@@ -820,24 +862,9 @@ class PubSubChatMessageDecoder {
                                                                  from: payloadData)
                 return .imageDeleted(chatMessagePayload)
             } catch {
-                throw Errors.failedToDecodePayload(decodingError: "\(error)")
+                throw PubSubChatRoomDecodeError.failedToDecodePayload(decodingError: "\(error)")
             }
         }
-    }
-
-    enum Errors: LocalizedError {
-        case failedToDecodePayload(decodingError: String)
-        case missingPayload
-        
-        var errorDescription: String? {
-            switch self {
-            case .failedToDecodePayload(let decodingError):
-                return "\(decodingError)"
-            case .missingPayload:
-                return "'payload' is missing from PubSubChatEventWithPayload"
-            }
-        }
-        
     }
 }
 
@@ -982,42 +1009,4 @@ struct PubSubChatImage: Codable {
 
 enum MessageActionType: String, Decodable {
     case reactionCreated = "rc"
-}
-
-private enum PubSubChatRoomError: LocalizedError {
-    case invalidUserChatRoomImageUrl
-    case failedToEncodeChatMessage
-    case sendMessageFailedNoNickname
-    case failedToFindPubSubID(messageID: ChatMessageID)
-    case reactionIdInternalNotPubSubID
-    case failedToFindChatMessageForPubSubID(pubsubID: PubSubID)
-    case failedToFindReportedChatMessage(messageId: String)
-    case promiseRejectedDueToNilSelf
-    case failedToSendImageDueToMissingData
-    case failedDueToMissingMessageReporter
-
-    var errorDescription: String? {
-        switch self {
-        case .invalidUserChatRoomImageUrl:
-            return "The user chat image url provided is not valid"
-        case .failedToEncodeChatMessage:
-            return "The SDK failed to decode the chat message to json."
-        case .sendMessageFailedNoNickname:
-            return "The SDK failed to send the message because there is no user nickname set."
-        case .failedToFindPubSubID(let messageID):
-            return "Failed to find PubSubID for message with id: \(messageID)"
-        case .reactionIdInternalNotPubSubID:
-            return "Failed because internal id of reaction is not of type PubSubID"
-        case .failedToFindChatMessageForPubSubID(let pubsubID):
-            return "Failed to find the ChatMessageType for pubsub message with id: \(pubsubID)"
-        case .failedToFindReportedChatMessage(let messageId):
-        return "Failed to find message that is being reported with id: \(messageId)"
-        case .promiseRejectedDueToNilSelf:
-            return "Promise rejected due to self being nil"
-        case .failedToSendImageDueToMissingData:
-            return "Failed to send image message because expected imageData cannot be retrieved from cache."
-        case .failedDueToMissingMessageReporter:
-        return "Failed to report a message because the message reporter has not been found"
-        }
-    }
 }

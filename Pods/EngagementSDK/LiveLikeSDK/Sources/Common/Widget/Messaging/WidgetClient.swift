@@ -7,19 +7,6 @@
 
 import Foundation
 
-enum MessagingClientError: Error {
-    case invalidEvent(event: String)
-}
-
-extension MessagingClientError: LocalizedError {
-    var errorDescription: String? {
-        switch self {
-        case let .invalidEvent(event):
-            return event
-        }
-    }
-}
-
 protocol WidgetClient: AnyObject {
     /// An instance `ChannelListeners` to manage channel listeners
     var widgetListeners: ChannelListeners { get }
@@ -36,6 +23,8 @@ protocol WidgetClient: AnyObject {
     ///   - listener: the `WidgetProxyInput` that will receive `channel` events
     ///   - channel: channel name on which client should try to subscribe
     func removeListener(_ listener: WidgetProxyInput, fromChannel channel: String)
+
+    func unsubscribe(fromChannel channel: String)
 
     /// Unsubscribe from all channels
     func removeAllListeners()

@@ -32,7 +32,19 @@ public extension EngagementSDK {
     @objc
     @available(*, deprecated, message: "This method of token generation has been replaced by the `EngagementSDK.init(clientID:accessTokenStorage:)`")
     static func generateAccessToken(clientID: String, completion: @escaping (String) -> Void) {
-        generateAccessToken(apiEndpoint: prodAPIEndpoint, clientID: clientID, completion: completion)
+        let livelikeAPI = LiveLikeRestAPIServices(
+            apiBaseURL: prodAPIEndpoint,
+            clientID: clientID
+        )
+        firstly {
+            livelikeAPI.whenApplicationConfig
+        }.then {
+            livelikeAPI.createProfile(profileURL: $0.profileUrl)
+        }.then {
+            completion($0.asString)
+        }.catch {
+            log.error($0)
+        }
     }
     
     /**

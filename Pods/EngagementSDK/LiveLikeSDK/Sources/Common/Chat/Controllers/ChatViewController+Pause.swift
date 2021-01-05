@@ -8,29 +8,23 @@
 import Foundation
 
 public extension ChatViewController {
-    /**
-     Pauses the ChatViewController.
-     The user can no longer recieve or send messages until resume() is called.
-     */
-    @objc func pause() {
-        guard let session = self.session as? InternalContentSession else {
-            log.debug("Pause not necessary when session is nil.")
-            return
-        }
-
-        session.pauseChat()
+    
+    @available(*, deprecated, message: "Please use `shouldShowIncomingMessages` and `isChatInputVisible` to achieve this")
+    func pause() {
+        eventRecorder?.record(.chatPauseStatusChanged(previousStatus: .unpaused,
+                                                     newStatus: .paused,
+                                                     secondsInPreviousStatus: Date().timeIntervalSince(timeChatPauseStatusChanged)))
+        messageViewController.shouldShowIncomingMessages = false
+        timeChatPauseStatusChanged = Date()
+        log.info("Chat was paused.")
     }
 
-    /**
-     Resumes the ChatViewController.
-     The user will load older messages from history and can send and receieve new messages.
-     */
-    @objc func resume() {
-        guard let session = session as? InternalContentSession else {
-            log.debug("Resume not necessary when session is nil.")
-            return
-        }
-        session.resumeChat()
-        
+    @available(*, deprecated, message: "Please use `shouldShowIncomingMessages` and `isChatInputVisible` to achieve this")
+    func resume() {
+        eventRecorder?.record(.chatPauseStatusChanged(previousStatus: .paused,
+                                                     newStatus: .unpaused,
+                                                     secondsInPreviousStatus: Date().timeIntervalSince(timeChatPauseStatusChanged)))
+        messageViewController.shouldShowIncomingMessages = true
+        log.info("Chat has resumed from pause.")
     }
 }

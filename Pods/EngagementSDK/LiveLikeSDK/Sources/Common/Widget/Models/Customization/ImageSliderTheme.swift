@@ -27,13 +27,13 @@ import UIKit
 
     /// Defaults
     public override init() {
-        titleBackgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.8)
-        trackGradientLeft = UIColor(red: 255, green: 240, blue: 0)
-        trackGradientRight = UIColor(red: 160, green: 255, blue: 40)
+        titleBackgroundColor = UIColor(rInt: 0, gInt: 0, bInt: 0, alpha: 0.8)
+        trackGradientLeft = UIColor(rInt: 255, gInt: 240, bInt: 0)
+        trackGradientRight = UIColor(rInt: 160, gInt: 255, bInt: 40)
         trackMinimumTint = .clear
         trackMaximumTint = .white
-        resultsHotColor = UIColor(red: 255, green: 5, blue: 45)
-        resultsColdColor = UIColor(red: 60, green: 30, blue: 255)
+        resultsHotColor = UIColor(rInt: 255, gInt: 5, bInt: 45)
+        resultsColdColor = UIColor(rInt: 60, gInt: 30, bInt: 255)
         titleMargins = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: -2)
     }
 }

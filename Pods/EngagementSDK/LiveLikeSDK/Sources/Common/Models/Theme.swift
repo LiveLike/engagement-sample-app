@@ -16,6 +16,9 @@ import UIKit
 public class Theme: NSObject {
     // swiftlint:disable function_body_length
 
+    /// Changes the properties of widgets
+    public var widgets: Widgets
+
     /// Changes the body color of Widgets
     @objc public var widgetBodyColor: UIColor
     /// Changes the corner radius of Widgets
@@ -160,13 +163,28 @@ public class Theme: NSObject {
     // MARK: - Widget
 
     /// Changes the colors to highlight a neutral option
-    @objc public var neutralOptionColors: ChoiceWidgetOptionColors
+    @available(*, deprecated, message: "Use theme.widgets.<poll/quiz/prediction>.unselectedOption instead.")
+    @objc public var neutralOptionColors: ChoiceWidgetOptionColors = ChoiceWidgetOptionColors(
+        borderColor: .clear,
+        barGradientLeft: UIColor(white: 1, alpha: 0.2),
+        barGradientRight: UIColor(white: 1, alpha: 0.2)
+    )
 
     /// Changes the colors to highlight a correct option
-    @objc public var correctOptionColors: ChoiceWidgetOptionColors
+    @available(*, deprecated, message: "Use theme.widgets.<poll/quiz/prediction>.correctOption instead.")
+    @objc public var correctOptionColors: ChoiceWidgetOptionColors = ChoiceWidgetOptionColors(
+        borderColor: #colorLiteral(red: 0, green: 0.7843137255, blue: 0.2352941176, alpha: 1),
+        barGradientLeft: #colorLiteral(red: 0.2588235294, green: 0.5764705882, blue: 0.1294117647, alpha: 1),
+        barGradientRight: #colorLiteral(red: 0.5058823529, green: 0.7921568627, blue: 0, alpha: 1)
+    )
 
     /// Changes the colors to highlight an incorrect option
-    @objc public var incorrectOptionColors: ChoiceWidgetOptionColors
+    @available(*, deprecated, message: "Use theme.widgets.<poll/quiz/prediction>.incorrect instead.")
+    @objc public var incorrectOptionColors: ChoiceWidgetOptionColors = ChoiceWidgetOptionColors(
+        borderColor: #colorLiteral(red: 0.8156862745, green: 0.007843137255, blue: 0.1058823529, alpha: 1),
+        barGradientLeft: #colorLiteral(red: 0.8156862745, green: 0.007843137255, blue: 0.1058823529, alpha: 1),
+        barGradientRight: #colorLiteral(red: 0.862745098, green: 0, blue: 0.1568627451, alpha: 1)
+    )
 
     /// Changes whether widget titles should be uppercased
     @objc public var uppercaseTitleText: Bool
@@ -175,16 +193,49 @@ public class Theme: NSObject {
     @objc public var uppercaseOptionText: Bool
 
     /// Changes the properties of the poll widget
-    @objc public var pollWidget: PollWidgetTheme
+    @available(*, deprecated, message: "Use theme.widgets.poll instead.")
+    public var pollWidget: PollWidgetTheme = PollWidgetTheme(
+        titleGradientLeft: #colorLiteral(red: 0.1882352941, green: 0.137254902, blue: 0.6823529412, alpha: 1),
+        titleGradientRight: #colorLiteral(red: 0.7843137255, green: 0.3921568627, blue: 0.7843137255, alpha: 1),
+        selectedColors: ChoiceWidgetOptionColors(
+            borderColor: #colorLiteral(red: 0.7843137255, green: 0.4274509804, blue: 0.8431372549, alpha: 1),
+            barGradientLeft: #colorLiteral(red: 0.5882352941, green: 0.3137254902, blue: 0.7450980392, alpha: 1),
+            barGradientRight: #colorLiteral(red: 0.7843137255, green: 0.3921568627, blue: 0.7843137255, alpha: 1)
+        )
+    )
 
     /// Changes the properties of the quiz widget
-    @objc public var quizWidget: QuizWidgetTheme
+    @available(*, deprecated, message: "User theme.widgets.quiz isntead.")
+    public var quizWidget: QuizWidgetTheme = QuizWidgetTheme(
+        titleGradientLeft: #colorLiteral(red: 0.968627451, green: 0.4196078431, blue: 0.1098039216, alpha: 1),
+        titleGradientRight: #colorLiteral(red: 1, green: 0.7058823529, blue: 0, alpha: 1),
+        optionSelectBorderColor: #colorLiteral(red: 1, green: 0.7843137255, blue: 0, alpha: 1)
+    )
 
     /// Changes the properties of the prediction widget
-    public var predictionWidget: PredictionWidgetTheme
+    @available(*, deprecated, message: "Use theme.widgets.prediction instead.")
+    public var predictionWidget: PredictionWidgetTheme = PredictionWidgetTheme(
+        titleGradientLeft: #colorLiteral(red: 0, green: 0.1960784314, blue: 0.3921568627, alpha: 1),
+        titleGradientRight: #colorLiteral(red: 0, green: 0.5882352941, blue: 0.7843137255, alpha: 1),
+        optionSelectBorderColor: #colorLiteral(red: 0, green: 0.7058823529, blue: 0.7843137255, alpha: 1),
+        optionGradientColors: ChoiceWidgetOptionColors(
+            borderColor: #colorLiteral(red: 0, green: 0.7058823529, blue: 0.7843137255, alpha: 1),
+            barGradientLeft: #colorLiteral(red: 0.1568627451, green: 0.3921568627, blue: 0.5490196078, alpha: 1),
+            barGradientRight: #colorLiteral(red: 0, green: 0.7058823529, blue: 0.7843137255, alpha: 1)
+        ),
+        lottieAnimationOnTimerCompleteFilepath: [
+            Bundle(for: EngagementSDK.self).path(forResource: "stay_tuned_1", ofType: "json"),
+            Bundle(for: EngagementSDK.self).path(forResource: "stay_tuned_2", ofType: "json")
+        ].compactMap({ $0 })
+    )
 
     /// Changes the properties of the alert widget
-    @objc public var alertWidget: AlertWidgetTheme
+    @available(*, deprecated, message: "Use theme.widgets.alert instead.")
+    public var alertWidget: AlertWidgetTheme = AlertWidgetTheme(
+        titleGradientLeft: #colorLiteral(red: 0.6235294118, green: 0.01568627451, blue: 0.1058823529, alpha: 1),
+        titleGradientRight: #colorLiteral(red: 0.9607843137, green: 0.3176470588, blue: 0.3725490196, alpha: 1),
+        linkBackgroundColor: #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0.05)
+    )
 
     /// Changes the properties of the image slider widget
     @objc public var imageSlider: ImageSliderTheme
@@ -246,45 +297,36 @@ public class Theme: NSObject {
     /// Collection of theme properties for chat reactions
     @objc public var chatReactions: ChatReactionsTheme
 
-    /*
-     Override the default winning animations by providing the full path of your custom lottie json.
-     If more than 1 animation is provided they will be played in random order.
+    @available(*, deprecated, message: "Use theme.lottieFilepaths.win instead.")
+    @objc public var filepathsForLottieWinningAnimations: [String] = Theme.LottieFilepaths.defaultWin
 
-     Example:
-     theme.filepathsForLottieWinningAnimations = [
-        Bundle.main.path(forResource: "<your-custom-lottie-animation>", ofType: "json")
-     ]
-    */
-    @objc public var filepathsForLottieWinningAnimations: [String]
+    @available(*, deprecated, message: "Use theme.lottieFilepaths.lose instead.")
+    @objc public var filepathsForLottieLosingAnimations: [String] = Theme.LottieFilepaths.defaultLose
 
-    /*
-     Override the default losing animations by providing the full path of your custom lottie json.
-     If more than 1 animation is provided they will be played in random order.
+    @available(*, deprecated, message: "Use theme.lottieFilepaths.tie instead.")
+    public var filepathsForLottieTieAnimations: [String] = Theme.LottieFilepaths.defaultTie
 
-     Example:
-     theme.filepathsForLottieLosingAnimations = [
-        Bundle.main.path(forResource: "<your-custom-lottie-animation>", ofType: "json")
-     ]
-     */
-    @objc public var filepathsForLottieLosingAnimations: [String]
-    
-    public var filepathsForLottieTieAnimations: [String]
-    
-    /// Overrides the timer animation for widgets
-    public var filepathsForWidgetTimerLottieAnimation: String
-    
+    @available(*, deprecated, message: "Use theme.lottieFilepaths.timer instead.")
+    public var filepathsForWidgetTimerLottieAnimation: String = Bundle(for: EngagementSDK.self).path(forResource: "timer", ofType: "json")!
+
     /// Set a custom view to be shown when a chat room has 0 messages.
     /// The constraints on this view will fill the container width and height.
     /// The view will be hidden when the first message is received in the chat room.
     @objc public var emptyChatCustomView: UIView?
 
+    /// Changes the filepath pointing to the lottie animation for different scenarios
+    public var lottieFilepaths: LottieFilepaths
+
     /// Defaults
     @objc public override init() {
+
+        self.widgets = Widgets()
+
         fontPrimary = UIFont.preferredFont(forTextStyle: .subheadline)
         fontSecondary = UIFont.preferredFont(forTextStyle: .caption1).livelike_bold()
         fontTertiary = UIFont.preferredFont(forTextStyle: .headline).livelike_bold()
-
-        widgetBodyColor = UIColor(red: 0, green: 0, blue: 0, alpha: 1)
+        
+        widgetBodyColor = UIColor(rInt: 0, gInt: 0, bInt: 0, alpha: 1)
         widgetFontPrimaryColor = .white
         widgetFontSecondaryColor = .white
         widgetFontTertiaryColor = .white
@@ -296,21 +338,21 @@ public class Theme: NSObject {
         widgetFontSecondaryLineSpacing = 0
         widgetFontTertiaryLineSpacing = 0
 
-        chatBodyColor = UIColor(red: 35, green: 40, blue: 45)
+        chatBodyColor = UIColor(rInt: 35, gInt: 40, bInt: 45)
         chatDetailPrimaryColor = UIColor(white: 1, alpha: 0.9)
-        chatDetailSecondaryColor = UIColor(red: 35, green: 40, blue: 45)
-        chatStickerKeyboardPrimaryColor = UIColor(red: 20, green: 20, blue: 20)
-        chatStickerKeyboardSecondaryColor = UIColor(red: 40, green: 40, blue: 40)
+        chatDetailSecondaryColor = UIColor(rInt: 35, gInt: 40, bInt: 45)
+        chatStickerKeyboardPrimaryColor = UIColor(rInt: 20, gInt: 20, bInt: 20)
+        chatStickerKeyboardSecondaryColor = UIColor(rInt: 40, gInt: 40, bInt: 40)
         chatCornerRadius = 12
         chatLeadingMargin = 16
         chatTrailingMargin = 16
 
         usernameTextColor = UIColor(white: 1, alpha: 0.4)
-        myUsernameTextColor = UIColor(red: 50, green: 200, blue: 250)
+        myUsernameTextColor = UIColor(rInt: 50, gInt: 200, bInt: 250)
 
         messageTextColor = UIColor(white: 1, alpha: 0.9)
         messageBackgroundColor = UIColor(white: 0, alpha: 0.4)
-        messageSelectedColor = UIColor(red: 100, green: 100, blue: 100, alpha: 0.4)
+        messageSelectedColor = UIColor(rInt: 100, gInt: 100, bInt: 100, alpha: 0.4)
         messagePadding = 16
         messageMargin = 0
         messageMargins = UIEdgeInsets(top: 0, left: 0, bottom: 8, right: 16)
@@ -326,7 +368,7 @@ public class Theme: NSObject {
         reactionsPopupVerticalOffset = 0.0
         reactionsPopupCornerRadius = 12.0
         reactionsPopupBackground = UIColor(white: 1, alpha: 0.9)
-        reactionsPopupSelectedBackground = UIColor(red: 0/255, green: 0/255, blue: 0/255, alpha: 0.2)
+        reactionsPopupSelectedBackground = UIColor(rInt: 0/255, gInt: 0/255, bInt: 0/255, alpha: 0.2)
         reactionsImageHint = UIImage(named: "chatReactionDefault", in: Bundle(for: Theme.self), compatibleWith: nil)
 
         chatInputPlaceholderTextColor = UIColor.white
@@ -337,47 +379,6 @@ public class Theme: NSObject {
 
         uppercaseTitleText = true
         uppercaseOptionText = false
-
-        neutralOptionColors = ChoiceWidgetOptionColors(borderColor: .clear,
-                                                       barGradientLeft: UIColor(white: 1, alpha: 0.2),
-                                                       barGradientRight: UIColor(white: 1, alpha: 0.2))
-
-        correctOptionColors = ChoiceWidgetOptionColors(borderColor: #colorLiteral(red: 0, green: 0.7843137255, blue: 0.2352941176, alpha: 1),
-                                                       barGradientLeft: #colorLiteral(red: 0.2588235294, green: 0.5764705882, blue: 0.1294117647, alpha: 1),
-                                                       barGradientRight: #colorLiteral(red: 0.5058823529, green: 0.7921568627, blue: 0, alpha: 1))
-
-        incorrectOptionColors = ChoiceWidgetOptionColors(borderColor: #colorLiteral(red: 0.8156862745, green: 0.007843137255, blue: 0.1058823529, alpha: 1),
-                                                         barGradientLeft: #colorLiteral(red: 0.8156862745, green: 0.007843137255, blue: 0.1058823529, alpha: 1),
-                                                         barGradientRight: #colorLiteral(red: 0.862745098, green: 0, blue: 0.1568627451, alpha: 1))
-
-        pollWidget = PollWidgetTheme(titleGradientLeft: #colorLiteral(red: 0.1882352941, green: 0.137254902, blue: 0.6823529412, alpha: 1),
-                                     titleGradientRight: #colorLiteral(red: 0.7843137255, green: 0.3921568627, blue: 0.7843137255, alpha: 1),
-                                     selectedColors: ChoiceWidgetOptionColors(borderColor: #colorLiteral(red: 0.7843137255, green: 0.4274509804, blue: 0.8431372549, alpha: 1),
-                                                                              barGradientLeft: #colorLiteral(red: 0.5882352941, green: 0.3137254902, blue: 0.7450980392, alpha: 1),
-                                                                              barGradientRight: #colorLiteral(red: 0.7843137255, green: 0.3921568627, blue: 0.7843137255, alpha: 1)))
-
-        quizWidget = QuizWidgetTheme(titleGradientLeft: #colorLiteral(red: 0.968627451, green: 0.4196078431, blue: 0.1098039216, alpha: 1),
-                                     titleGradientRight: #colorLiteral(red: 1, green: 0.7058823529, blue: 0, alpha: 1),
-                                     optionSelectBorderColor: #colorLiteral(red: 1, green: 0.7843137255, blue: 0, alpha: 1))
-
-        predictionWidget = PredictionWidgetTheme(
-            titleGradientLeft: #colorLiteral(red: 0, green: 0.1960784314, blue: 0.3921568627, alpha: 1),
-            titleGradientRight: #colorLiteral(red: 0, green: 0.5882352941, blue: 0.7843137255, alpha: 1),
-            optionSelectBorderColor: #colorLiteral(red: 0, green: 0.7058823529, blue: 0.7843137255, alpha: 1),
-            optionGradientColors: ChoiceWidgetOptionColors(
-                borderColor: #colorLiteral(red: 0, green: 0.7058823529, blue: 0.7843137255, alpha: 1),
-                barGradientLeft: #colorLiteral(red: 0.1568627451, green: 0.3921568627, blue: 0.5490196078, alpha: 1),
-                barGradientRight: #colorLiteral(red: 0, green: 0.7058823529, blue: 0.7843137255, alpha: 1)
-            ),
-            lottieAnimationOnTimerCompleteFilepath: [
-                Bundle(for: EngagementSDK.self).path(forResource: "stay_tuned_1", ofType: "json"),
-                Bundle(for: EngagementSDK.self).path(forResource: "stay_tuned_2", ofType: "json")
-            ].compactMap({ $0 })
-        )
-
-        alertWidget = AlertWidgetTheme(titleGradientLeft: #colorLiteral(red: 0.6235294118, green: 0.01568627451, blue: 0.1058823529, alpha: 1),
-                                       titleGradientRight: #colorLiteral(red: 0.9607843137, green: 0.3176470588, blue: 0.3725490196, alpha: 1),
-                                       linkBackgroundColor: #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0.05))
 
         imageSlider = ImageSliderTheme()
 
@@ -402,76 +403,392 @@ public class Theme: NSObject {
 
         chatReactions = ChatReactionsTheme(panelCountsColor: .black,
                                            displayCountsColor: .white)
-
-        filepathsForLottieWinningAnimations = Theme.defaultFilepathsForCorrectLottieAnimations
-        filepathsForLottieLosingAnimations = Theme.defaultFilepathsForIncorrectLottieAnimations
-        filepathsForWidgetTimerLottieAnimation = Bundle(for: EngagementSDK.self).path(forResource: "timer", ofType: "json")!
-        filepathsForLottieTieAnimations = Theme.defaultFilepathsForLottieTieAnimations
         
         // MARK: Chat Cell Image Init
-        chatImageWidth = 0.0
-        chatImageHeight = 0.0
+        chatImageWidth = 32.0
+        chatImageHeight = 32.0
         chatImageVerticalAlignment = .center
-        chatImageCornerRadius = 0.0
-        chatImageTrailingMargin = 0.0
+        chatImageCornerRadius = chatImageHeight / 2
+        chatImageTrailingMargin = 10.0
 
         chatMessageTimestampFont = UIFont.systemFont(ofSize: 8)
         chatMessageTimestampTextColor = UIColor(white: 1, alpha: 0.4)
         chatMessageTimestampTopPadding = 6.0
 
         chatLoadingIndicatorColor = .white
+
+        lottieFilepaths = LottieFilepaths(
+            predictionTimerComplete: [
+                Bundle(for: EngagementSDK.self).path(forResource: "stay_tuned_1", ofType: "json")!,
+                Bundle(for: EngagementSDK.self).path(forResource: "stay_tuned_2", ofType: "json")!
+            ],
+            win: LottieFilepaths.defaultWin,
+            lose: LottieFilepaths.defaultLose,
+            tie: LottieFilepaths.defaultTie,
+            timer: Bundle(for: EngagementSDK.self).path(forResource: "timer", ofType: "json")!
+        )
     }
-}
 
-internal extension Theme {
-    private static var defaultFilepathsForCorrectLottieAnimations: [String] = {
-        let bundle = Bundle(for: EngagementSDK.self)
-        return [
-            bundle.path(forResource: "confetti-1", ofType: "json")!,
-            bundle.path(forResource: "confetti-2", ofType: "json")!,
-            bundle.path(forResource: "confetti-3", ofType: "json")!,
-            bundle.path(forResource: "confetti-4", ofType: "json")!,
-        ]
-    }()
+    public enum Background {
+        //swiftlint:disable nesting
+        public struct Gradient {
+            public var colors: [UIColor]
+            public var start: CGPoint
+            public var end: CGPoint
 
-    func randomCorrectAnimationAsset() -> String {
-        if let randomFilepath = filepathsForLottieWinningAnimations.randomElement() {
-            return randomFilepath
-        } else {
-            return Theme.defaultFilepathsForCorrectLottieAnimations.randomElement()!
+            public init(colors: [UIColor]) {
+                self.colors = colors
+                start = CGPoint(x: 0, y: 0.5)
+                end = CGPoint(x: 1, y: 0.5)
+            }
+
+            public init(colors: [UIColor], start: CGPoint, end: CGPoint) {
+                self.colors = colors
+                self.start = start
+                self.end = end
+            }
+        }
+
+        case gradient(gradient: Gradient)
+        case fill(color: UIColor)
+    }
+
+    public struct LottieFilepaths {
+        public var predictionTimerComplete: [String]
+        /*
+         Override the default winning animations by providing the full path of your custom lottie json.
+         If more than 1 animation is provided they will be played in random order.
+        */
+        public var win: [String]
+
+        /*
+         Override the default losing animations by providing the full path of your custom lottie json.
+         If more than 1 animation is provided they will be played in random order.
+         */
+        public var lose: [String]
+
+        /*
+         Override the default losing animations by providing the full path of your custom lottie json.
+         If more than 1 animation is provided they will be played in random order.
+        */
+        public var tie: [String]
+
+        /// Overrides the timer animation for widgets
+        public var timer: String
+
+        static var defaultWin: [String] = {
+            let bundle = Bundle(for: EngagementSDK.self)
+            return [
+                bundle.path(forResource: "confetti-1", ofType: "json")!,
+                bundle.path(forResource: "confetti-2", ofType: "json")!,
+                bundle.path(forResource: "confetti-3", ofType: "json")!,
+                bundle.path(forResource: "confetti-4", ofType: "json")!,
+            ]
+        }()
+
+        func randomWin() -> String {
+            if let randomFilepath = win.randomElement() {
+                return randomFilepath
+            } else {
+                return LottieFilepaths.defaultWin.randomElement()!
+            }
+        }
+
+        static var defaultLose: [String] = {
+            let bundle = Bundle(for: EngagementSDK.self)
+            return [
+                bundle.path(forResource: "wrong-1", ofType: "json")!,
+                bundle.path(forResource: "wrong-2", ofType: "json")!,
+                bundle.path(forResource: "wrong-3", ofType: "json")!,
+                bundle.path(forResource: "wrong-4", ofType: "json")!,
+            ]
+        }()
+
+        func randomLose() -> String {
+            if let randomFilepath = lose.randomElement() {
+                return randomFilepath
+            } else {
+                return LottieFilepaths.defaultLose.randomElement()!
+            }
+        }
+
+        static var defaultTie: [String] = {
+            let bundle = Bundle(for: EngagementSDK.self)
+            return [
+                bundle.path(forResource: "draw-1", ofType: "json")!,
+            ]
+        }()
+
+        func randomTie() -> String {
+            if let randomFilepath = tie.randomElement() {
+                return randomFilepath
+            } else {
+                return LottieFilepaths.defaultTie.randomElement()!
+            }
         }
     }
 
-    private static var defaultFilepathsForIncorrectLottieAnimations: [String] = {
-        let bundle = Bundle(for: EngagementSDK.self)
-        return [
-            bundle.path(forResource: "wrong-1", ofType: "json")!,
-            bundle.path(forResource: "wrong-2", ofType: "json")!,
-            bundle.path(forResource: "wrong-3", ofType: "json")!,
-            bundle.path(forResource: "wrong-4", ofType: "json")!,
-        ]
-    }()
+    public struct Widgets {
+        /// Changes the properties of the poll widget
+        public var poll: ChoiceWidget
+        /// Changes the properties of the quiz widget
+        public var quiz: ChoiceWidget
+        /// Changes the properties of the prediction widget
+        public var prediction: ChoiceWidget
+        /// Changes the properties of the alert widget
+        public var alert: AlertWidget
 
-    func randomIncorrectAnimationAsset() -> String {
-        if let randomFilepath = filepathsForLottieLosingAnimations.randomElement() {
-            return randomFilepath
-        } else {
-            return Theme.defaultFilepathsForIncorrectLottieAnimations.randomElement()!
+        public init(
+            poll: Theme.ChoiceWidget,
+            quiz: Theme.ChoiceWidget,
+            prediction: Theme.ChoiceWidget,
+            alert: Theme.AlertWidget
+        ) {
+            self.poll = poll
+            self.quiz = quiz
+            self.prediction = prediction
+            self.alert = alert
         }
-    }
-    
-    private static var defaultFilepathsForLottieTieAnimations: [String] = {
-        let bundle = Bundle(for: EngagementSDK.self)
-        return [
-            bundle.path(forResource: "draw-1", ofType: "json")!,
-        ]
-    }()
-    
-    func randomTieAnimationFilepath() -> String {
-        if let randomFilepath = filepathsForLottieTieAnimations.randomElement() {
-            return randomFilepath
-        } else {
-            return Theme.defaultFilepathsForLottieTieAnimations.randomElement()!
+
+        /// Defaults
+        internal init() {
+            let widgetOptionTextFont = UIFont.preferredFont(forTextStyle: .subheadline)
+            let widgetTitleFont = UIFont.preferredFont(forTextStyle: .caption1).livelike_bold()
+            let widgetCornerRadius: CGFloat = 6
+            let widgetOptionCornerRadius: CGFloat = 6
+            let widgetTextColor: UIColor = .white
+
+            let optionContainer = Theme.ChoiceWidget.Option(
+                container: Container(
+                    background: .fill(color: .black),
+                    borderColor: .clear,
+                    borderWidth: 2,
+                    cornerRadii: CornerRadii(all: widgetOptionCornerRadius)
+                ),
+                description: Text(
+                    color: widgetTextColor,
+                    font: widgetOptionTextFont
+                ),
+                percentage: Text(
+                    color: widgetTextColor,
+                    font: UIFont.preferredFont(forTextStyle: .headline).livelike_bold()
+                ),
+                progressBar: ProgressBar(
+                    background: .fill(color: .clear),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: CornerRadii(all: 3)
+                )
+            )
+
+            let correctOptionContainer: Theme.ChoiceWidget.Option = {
+                var option = optionContainer
+                option.container.borderColor = #colorLiteral(red: 0, green: 0.7843137255, blue: 0.2352941176, alpha: 1)
+                option.progressBar.background = .gradient(
+                    gradient: Background.Gradient(
+                        colors: [#colorLiteral(red: 0.2588235294, green: 0.5764705882, blue: 0.1294117647, alpha: 1), #colorLiteral(red: 0.5058823529, green: 0.7921568627, blue: 0, alpha: 1)],
+                        start: CGPoint(x: 0, y: 0.5),
+                        end: CGPoint(x: 1, y: 0.5)
+                    )
+                )
+                return option
+            }()
+
+            let incorrectOptionContainer: Theme.ChoiceWidget.Option = {
+                var option = optionContainer
+                option.container.borderColor = #colorLiteral(red: 0.8156862745, green: 0.007843137255, blue: 0.1058823529, alpha: 1)
+                option.progressBar.background = .gradient(
+                    gradient: Background.Gradient(
+                        colors: [#colorLiteral(red: 0.8156862745, green: 0.007843137255, blue: 0.1058823529, alpha: 1), #colorLiteral(red: 0.862745098, green: 0, blue: 0.1568627451, alpha: 1)],
+                        start: CGPoint(x: 0, y: 0.5),
+                        end: CGPoint(x: 1, y: 0.5)
+                    )
+                )
+                return option
+            }()
+
+            let unselectedOptionContainer: Theme.ChoiceWidget.Option = {
+                var option = optionContainer
+                option.container.borderColor = .clear
+                option.progressBar.background = .fill(color: UIColor(white: 1, alpha: 0.2))
+                return option
+            }()
+
+            poll = ChoiceWidget(
+                main: Container(
+                    background: .fill(color: .clear),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: CornerRadii(all: widgetCornerRadius)
+                ),
+                header: Container(
+                    background: .gradient(
+                        gradient: Background.Gradient(
+                            colors: [#colorLiteral(red: 0.1882352941, green: 0.137254902, blue: 0.6823529412, alpha: 1), #colorLiteral(red: 0.7843137255, green: 0.3921568627, blue: 0.7843137255, alpha: 1)],
+                            start: CGPoint(x: 0, y: 0.5),
+                            end: CGPoint(x: 1, y: 0.5)
+                        )
+                    ),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: CornerRadii(all: 0)
+                ),
+                body: Container(
+                    background: .fill(color: .black),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: CornerRadii(all: 0)
+                ),
+                title: Text(
+                    color: .white,
+                    font: widgetTitleFont
+                ),
+                correctOption: correctOptionContainer,
+                incorrectOption: incorrectOptionContainer,
+                selectedOption: {
+                    var option = optionContainer
+                    option.container.borderColor = #colorLiteral(red: 0.7843137255, green: 0.4274509804, blue: 0.8431372549, alpha: 1)
+                    option.progressBar.background = .gradient(
+                        gradient: Background.Gradient(
+                            colors: [#colorLiteral(red: 0.5882352941, green: 0.3137254902, blue: 0.7450980392, alpha: 1), #colorLiteral(red: 0.7843137255, green: 0.3921568627, blue: 0.7843137255, alpha: 1)],
+                            start: CGPoint(x: 0, y: 0.5),
+                            end: CGPoint(x: 1, y: 0.5)
+                        )
+                    )
+                    return option
+                }(),
+                unselectedOption: unselectedOptionContainer
+            )
+
+            quiz = ChoiceWidget(
+                main: Container(
+                    background: .fill(color: .black),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: CornerRadii(all: widgetCornerRadius)
+                ),
+                header: Container(
+                    background: .gradient(
+                        gradient: Background.Gradient(
+                            colors: [#colorLiteral(red: 0.968627451, green: 0.4196078431, blue: 0.1098039216, alpha: 1), #colorLiteral(red: 1, green: 0.7058823529, blue: 0, alpha: 1)],
+                            start: CGPoint(x: 0, y: 0.5),
+                            end: CGPoint(x: 1, y: 0.5)
+                        )
+                    ),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: CornerRadii(all: 0)
+                ),
+                body: Container(
+                    background: .fill(color: .black),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: CornerRadii(all: 0)
+                ),
+                title: Text(
+                    color: .white,
+                    font: widgetTitleFont
+                ),
+                correctOption: correctOptionContainer,
+                incorrectOption: incorrectOptionContainer,
+                selectedOption: {
+                    var option = optionContainer
+                    option.container.borderColor = #colorLiteral(red: 1, green: 0.7843137255, blue: 0, alpha: 1)
+                    return option
+                }(),
+                unselectedOption: unselectedOptionContainer
+            )
+
+            prediction = ChoiceWidget(
+                main: Container(
+                    background: .fill(color: .black),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: CornerRadii(all: widgetCornerRadius)
+                ),
+                header: Container(
+                    background: .gradient(
+                        gradient: Background.Gradient(
+                            colors: [#colorLiteral(red: 0, green: 0.1960784314, blue: 0.3921568627, alpha: 1), #colorLiteral(red: 0, green: 0.5882352941, blue: 0.7843137255, alpha: 1)],
+                            start: CGPoint(x: 0, y: 0.5),
+                            end: CGPoint(x: 1, y: 0.5)
+                        )
+                    ),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: CornerRadii(all: 0)
+                ),
+                body: Container(
+                    background: .fill(color: .black),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: CornerRadii(all: 0)
+                ),
+                title: Text(
+                    color: .white,
+                    font: widgetTitleFont
+                ),
+                correctOption: correctOptionContainer,
+                incorrectOption: incorrectOptionContainer,
+                selectedOption: {
+                    var option = optionContainer
+                    option.container.borderColor = #colorLiteral(red: 0, green: 0.7058823529, blue: 0.7843137255, alpha: 1)
+                    option.progressBar.background = .gradient(
+                        gradient: Background.Gradient(
+                            colors: [#colorLiteral(red: 0.1568627451, green: 0.3921568627, blue: 0.5490196078, alpha: 1), #colorLiteral(red: 0, green: 0.7058823529, blue: 0.7843137255, alpha: 1)],
+                            start: CGPoint(x: 0, y: 0.5),
+                            end: CGPoint(x: 1, y: 0.5)
+                        )
+                    )
+                    return option
+                }(),
+                unselectedOption: unselectedOptionContainer
+            )
+
+            alert = AlertWidget(
+                main: Container(
+                    background: .fill(color: .black),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: CornerRadii(all: widgetCornerRadius)
+                ),
+                header: Container(
+                    background: .gradient(
+                        gradient: Background.Gradient(
+                            colors: [#colorLiteral(red: 0.6235294118, green: 0.01568627451, blue: 0.1058823529, alpha: 1), #colorLiteral(red: 0.9607843137, green: 0.3176470588, blue: 0.3725490196, alpha: 1)],
+                            start: CGPoint(x: 0, y: 0.5),
+                            end: CGPoint(x: 1, y: 0.5)
+                        )
+                    ),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: .zero
+                ),
+                title: Text(
+                    color: widgetTextColor,
+                    font: widgetTitleFont
+                ),
+                body: Container(
+                    background: .fill(color: .black),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: .zero
+                ),
+                description: Text(
+                    color: widgetTextColor,
+                    font: widgetOptionTextFont
+                ),
+                footer: Container(
+                    background: .fill(color: #colorLiteral(red: 0.08857408911, green: 0.08857408911, blue: 0.08857408911, alpha: 1)),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: .zero
+                ),
+                link: Text(
+                    color: widgetTextColor,
+                    font: widgetTitleFont
+                )
+            )
         }
     }
 }

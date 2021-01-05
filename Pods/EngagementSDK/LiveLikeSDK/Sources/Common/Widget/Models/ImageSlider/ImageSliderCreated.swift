@@ -18,6 +18,7 @@ extension StringDouble {
 struct ImageSliderCreated: Decodable {
     var subscribeChannel: String
     var id: String
+    let programId: String
     var initialMagnitude: StringDouble
     var voteUrl: URL
     var impressionUrl: URL?
@@ -29,6 +30,9 @@ struct ImageSliderCreated: Decodable {
     var options: [ImageSliderOption]
     var rewardsUrl: URL?
     var customData: String?
+    var averageMagnitude: String?
+    let createdAt: Date
+    let publishedAt: Date?
 }
 
 struct ImageSliderOption: Decodable {

@@ -48,13 +48,13 @@ import UIKit
         tutorialBackgroundColor = UIColor(white: 0, alpha: 0.8)
         titleMargins = UIEdgeInsets(top: 10, left: 10, bottom: -10, right: -10)
 
-        teamOneLeftColor = UIColor(red: 80, green: 160, blue: 250)
-        teamOneRightColor = UIColor(red: 40, green: 40, blue: 180)
+        teamOneLeftColor = UIColor(rInt: 80, gInt: 160, bInt: 250)
+        teamOneRightColor = UIColor(rInt: 40, gInt: 40, bInt: 180)
         teamOneTextColor = .white
         teamOneFont = UIFont.systemFont(ofSize: 14)
 
-        teamTwoLeftColor = UIColor(red: 160, green: 0, blue: 40)
-        teamTwoRightColor = UIColor(red: 250, green: 80, blue: 100)
+        teamTwoLeftColor = UIColor(rInt: 160, gInt: 0, bInt: 40)
+        teamTwoRightColor = UIColor(rInt: 250, gInt: 80, bInt: 100)
         teamTwoTextColor = .white
         teamTwoFont = UIFont.systemFont(ofSize: 14)
         

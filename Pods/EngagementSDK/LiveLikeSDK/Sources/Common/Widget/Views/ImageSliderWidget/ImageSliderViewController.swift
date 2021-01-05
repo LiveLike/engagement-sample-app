@@ -7,68 +7,51 @@
 
 import UIKit
 
-class ImageSliderViewController: WidgetController {
-    var id: String
-    var kind: WidgetKind
-    weak var delegate: WidgetEvents?
-    var widgetTitle: String?
-    let interactionTimeInterval: TimeInterval?
-    var correctOptions: Set<WidgetOption>?
-    var options: Set<WidgetOption>?
-    var customData: String?
-    var userDidInteract: Bool = false
-    var previousState: WidgetState?
-    var currentState: WidgetState = .ready {
+class ImageSliderViewController: Widget {
+    override var currentState: WidgetState {
         willSet {
             previousState = self.currentState
         }
         didSet {
-            self.delegate?.widgetDidEnterState(widget: self, state: currentState)
-            switch currentState {
-            case .ready:
-                break
-            case .interacting:
-                enterInteractingState()
-            case .results:
-                enterResultsState()
-            case .finished:
-                enterFinishedState()
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.delegate?.widgetDidEnterState(widget: self, state: self.currentState)
+                switch self.currentState {
+                case .ready:
+                    break
+                case .interacting:
+                    self.enterInteractingState()
+                case .results:
+                    self.enterResultsState()
+                case .finished:
+                    self.enterFinishedState()
+                }
             }
         }
     }
     
-    var dismissSwipeableView: UIView {
+    override var dismissSwipeableView: UIView {
         return self.imageSliderView.titleView
     }
-
+    
     private let averageAnimationSeconds: CGFloat = 2
     private let additionalResultsSeconds: Double = 5
 
-    private let imageSliderCreated: ImageSliderCreated
-    private let voteClient: ImageSliderVoteClient
-    private let theme: Theme
-    private let widgetConfig: WidgetConfig
-    private var resultsClient: ImageSliderResultsClient
     private var whenVotingLocked = Promise<Float>()
     private var latestAverageMagnitude: Float?
     private var closeButtonAction: (() -> Void)?
-
-    // MARK: Analytics Properties
-
-    private let eventRecorder: EventRecorder
-    private var firstTimeSliderChanged: Date?
-    private var lastTimeSliderChanged: Date?
+    private let model: ImageSliderWidgetModel
     private var sliderChangedCount: Int = 0
-    private var timeDisplayed = Date()
+    private var firstTimeSliderChanged: Date?
 
     private lazy var imageSliderView: ImageSliderView = {
-        var imageUrls = self.imageSliderCreated.options.map({ $0.imageUrl })
+        var imageUrls = self.model.options.map({ $0.imageURL })
 
-        let initialSliderValue = self.imageSliderCreated.initialMagnitude.number ?? 0
+        let initialSliderValue = self.model.initialMagnitude
         let imageSliderView = ImageSliderView(
             thumbImageUrls: imageUrls,
             initialSliderValue: Float(initialSliderValue),
-            timerAnimationFilepath: self.theme.filepathsForWidgetTimerLottieAnimation
+            timerAnimationFilepath: self.theme.lottieFilepaths.timer
         )
         imageSliderView.translatesAutoresizingMaskIntoConstraints = false
         imageSliderView.sliderView.addTarget(self, action: #selector(imageSliderViewValueChanged), for: .touchUpInside)
@@ -76,55 +59,22 @@ class ImageSliderViewController: WidgetController {
         return imageSliderView
     }()
 
+    private var timerDuration: TimeInterval?
+    private var interactionTimer: Timer?
+
     // MARK: - Init
 
-    init(imageSliderCreated: ImageSliderCreated,
-         resultsClient: ImageSliderResultsClient,
-         imageSliderVoteClient: ImageSliderVoteClient,
-         theme: Theme,
-         eventRecorder: EventRecorder,
-         widgetConfig: WidgetConfig,
-         title: String = "",
-         options: Set<WidgetOption> = Set()
-    ) {
-        id = imageSliderCreated.id
-        self.imageSliderCreated = imageSliderCreated
-        self.resultsClient = resultsClient
-        self.theme = theme
-        self.eventRecorder = eventRecorder
-        self.widgetConfig = widgetConfig
-        voteClient = imageSliderVoteClient
-        kind = imageSliderCreated.kind
-        self.widgetTitle = title
-        self.options = options
-        self.interactionTimeInterval = imageSliderCreated.timeout.timeInterval
-        self.customData = imageSliderCreated.customData
-        super.init(nibName: nil, bundle: nil)
+    override init(model: ImageSliderWidgetModel) {
+        self.model = model
+        super.init(model: model)
 
         /*
          Waits for voting to be locked and results to be received
          Then reveals the results and auto dismisses the widget
          **/
-        
-        self.resultsClient.delegate = self
-        
+
         whenVotingLocked.then { [weak self] myMagnitude in
             guard let self = self else { return }
-            
-            // widget interacted analytics
-            if let firstTimeSliderChanged = self.firstTimeSliderChanged, let lastTimeSliderChanged = self.lastTimeSliderChanged {
-                _ = WidgetInteractedProperties(
-                    widgetId: self.imageSliderCreated.id,
-                    widgetKind: self.kind.analyticsName,
-                    firstTapTime: firstTimeSliderChanged,
-                    lastTapTime: lastTimeSliderChanged,
-                    numberOfTaps: self.sliderChangedCount,
-                    interactionTimeInterval: self.interactionTimeInterval,
-                    widgetViewModel: self,
-                    previousState: .interacting,
-                    currentState: .finished
-                )
-            }
 
             // if user didn't recieve latest average magnitude from server then use their magnitude as average
             // this will likely be the case for the first user to receive this widget
@@ -141,6 +91,24 @@ class ImageSliderViewController: WidgetController {
         }.catch {
             log.error($0.localizedDescription)
         }
+
+        NotificationCenter.default.addObserver(self, selector: #selector(didMoveToForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
+    }
+
+    @objc private func didMoveToForeground() {
+        // Restart the timer animation from continuous time since background
+        // We need to do this because when Lottie goes into background it pauses the animation
+        if
+            let interactionTimer = interactionTimer,
+            let lottieAnimation = imageSliderView.timerView.animation,
+            let duration = timerDuration
+        {
+            let timeRemaining = interactionTimer.fireDate.timeIntervalSince(Date())
+            let timeScalar = lottieAnimation.duration / duration
+
+            imageSliderView.timerView.currentTime = (duration - timeRemaining) * timeScalar
+            imageSliderView.timerView.play()
+        }
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -151,38 +119,46 @@ class ImageSliderViewController: WidgetController {
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
+        super.viewDidLoad()
         enterReadyState()
         configureView()
+        self.model.delegate = self
+        self.model.registerImpression()
     }
     
-    func moveToNextState() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            switch self.currentState {
-            case .ready:
-                self.currentState = .interacting
-            case .interacting:
-                self.currentState = .results
-            case .results:
-                self.currentState = .finished
-            case .finished:
-                break
-            }
+    override func moveToNextState() {
+        switch self.currentState {
+        case .ready:
+            self.currentState = .interacting
+        case .interacting:
+            self.currentState = .results
+        case .results:
+            self.currentState = .finished
+        case .finished:
+            break
         }
     }
     
-    func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) {
+    override func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) {
         self.closeButtonAction = {
             completion(self)
         }
         self.imageSliderView.closeButton.isHidden = false
     }
     
-    func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
-        imageSliderView.timerView.animationSpeed = CGFloat(imageSliderView.timerView.animation?.duration ?? 0) / CGFloat(seconds)
-        imageSliderView.timerView.play { [weak self] _ in
+    override func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) {
+        timerDuration = seconds
+        interactionTimer = Timer.scheduledTimer(withTimeInterval: seconds, repeats: false, block: { [weak self] _ in
             guard let self = self else { return }
             completion(self)
+        })
+
+        imageSliderView.timerView.animationSpeed = CGFloat(imageSliderView.timerView.animation?.duration ?? 0) / CGFloat(seconds)
+        imageSliderView.timerView.isHidden = false
+        imageSliderView.timerView.play { [weak self] finished in
+            if finished {
+                self?.imageSliderView.timerView.isHidden = true
+            }
         }
     }
     
@@ -194,7 +170,7 @@ class ImageSliderViewController: WidgetController {
         imageSliderView.coreWidgetView.baseView.layer.cornerRadius = theme.widgetCornerRadius
         imageSliderView.bodyView.backgroundColor = theme.widgetBodyColor
         let title: String = {
-            var title = imageSliderCreated.question
+            var title = model.question
             if theme.uppercaseTitleText {
                 title = title.uppercased()
             }
@@ -221,32 +197,20 @@ class ImageSliderViewController: WidgetController {
         imageSliderView.constraintsFill(to: view)
     }
 
-    func willDismiss(dismissAction: DismissAction) {
-        if dismissAction.userDismissed {
-            let props = WidgetDismissedProperties(
-                widgetId: imageSliderCreated.id,
-                widgetKind: kind.analyticsName,
-                dismissAction: dismissAction,
-                numberOfTaps: sliderChangedCount,
-                dismissSecondsSinceStart: Date().timeIntervalSince(timeDisplayed)
-            )
-            eventRecorder.record(.widgetUserDismissed(properties: props))
-        }
-    }
-
     @objc private func closeButtonSelected() {
         closeButtonAction?()
     }
 
     @objc private func imageSliderViewValueChanged() {
         self.userDidInteract = true
-        // update analytics properties
+
         let now = Date()
         if firstTimeSliderChanged == nil {
             firstTimeSliderChanged = now
         }
-        lastTimeSliderChanged = now
+        timeOfLastInteraction = now
         sliderChangedCount += 1
+        self.delegate?.userDidInteract(self)
     }
 
     private func lockSlider() {
@@ -270,35 +234,47 @@ class ImageSliderViewController: WidgetController {
     
     private func enterInteractingState() {
         imageSliderView.isUserInteractionEnabled = true
-        imageSliderView.timerView.isHidden = false
-        
-        // widget displayed analytics
-        eventRecorder.record(.widgetDisplayed(kind: kind.analyticsName,
-                                              widgetId: imageSliderCreated.id))
+        self.interactableState = .openToInteraction
         self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
     }
     
     private func enterResultsState() {
+        if
+            let firstTimeSliderChanged = self.firstTimeSliderChanged,
+            let lastTimeSliderChanged = self.timeOfLastInteraction
+        {
+            let props = WidgetInteractedProperties(
+                widgetId: self.model.id,
+                widgetKind: self.model.kind.analyticsName,
+                firstTapTime: firstTimeSliderChanged,
+                lastTapTime: lastTimeSliderChanged,
+                numberOfTaps: self.sliderChangedCount
+            )
+            self.model.eventRecorder.record(.widgetInteracted(properties: props))
+        }
+
         let magnitude = self.imageSliderView.sliderView.value
         log.info("Submitting vote with magnitude: \(magnitude)")
         self.imageSliderView.timerView.isHidden = true
         self.lockSlider()
+        self.interactableState = .closedToInteraction
 
         // can complete results if user did not interact
         guard self.sliderChangedCount > 0 else {
+            showPreviouslyVotedResults()
             self.delegate?.widgetStateCanComplete(widget: self, state: .results)
             return
         }
-        
-        firstly {
-            self.voteClient.vote(url: self.imageSliderCreated.voteUrl, magnitude: magnitude)
-        }.then { _ in
-            log.info("Successfully submitted image slider vote.")
-        }.catch { _ in
-            log.error("Failed to submit image slider vote.")
-        }.always { [weak self] in
+
+        self.model.lockInVote(magnitude: Double(magnitude)) { [weak self] result in
             guard let self = self else { return }
-            
+            switch result {
+            case.success:
+                log.info("Successfully submitted image slider vote.")
+            case .failure:
+                log.error("Failed to submit image slider vote.")
+            }
+
             // Delay needed to wait for a more accurate result from server
             delay(2.0) { [weak self] in
                 guard let self = self else { return }
@@ -309,13 +285,38 @@ class ImageSliderViewController: WidgetController {
     }
     
     private func enterFinishedState() {
+        if sliderChangedCount == 0 {
+            showPreviouslyVotedResults()
+        }
+        
         self.delegate?.widgetStateCanComplete(widget: self, state: .finished)
     }
+    
+    override func willTransition(to newCollection: UITraitCollection,
+                                 with coordinator: UIViewControllerTransitionCoordinator) {
+        coordinator.animate(alongsideTransition: { _ in }, completion: { [weak self] _ in
+            guard let self = self else { return }
+            self.imageSliderView.refreshAverageAnimationLeadingConstraint()
+        })
+        super.willTransition(to: newCollection, with: coordinator)
+    }
+    
+    /// Shows average magnitude from already existing votes
+    private func showPreviouslyVotedResults() {
+        let avgMagnitudeFloat = Float(model.averageMagnitude)
+        self.imageSliderView.averageVote = avgMagnitudeFloat
+
+        self.playAverageAnimation {
+            self.imageSliderView.moveSliderThumb(to: avgMagnitudeFloat)
+        }
+   }
 }
 
-extension ImageSliderViewController: ImageSliderResultsDelegate {
-    func resultsClient(didReceiveResults results: ImageSliderResults) {
-        guard let averageMagnitude = results.averageMagnitude?.number else { return }
-        latestAverageMagnitude = Float(averageMagnitude)
+extension ImageSliderViewController: ImageSliderWidgetModelDelegate {
+    func imageSliderWidgetModel(
+        _ model: ImageSliderWidgetModel,
+        averageMagnitudeDidChange averageMagnitude: Double
+    ) {
+        self.latestAverageMagnitude = Float(averageMagnitude)
     }
 }

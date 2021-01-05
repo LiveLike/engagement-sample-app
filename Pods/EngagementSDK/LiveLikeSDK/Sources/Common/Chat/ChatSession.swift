@@ -22,14 +22,6 @@ protocol InternalChatSessionDelegate: ChatSessionDelegate {
 public protocol ChatSession: AnyObject {
     var title: String? { get }
     var roomID: String { get }
-    /// Disconnects from client but does not remove list of connected channels.
-    func pause()
-
-    /// Reconnects user and joins all previous channels.
-    func resume()
-
-    func addDelegate(_ delegate: ChatSessionDelegate)
-    func removeDelegate(_ delegate: ChatSessionDelegate)
     
     /// The array of all chat room messages that have been loaded
     ///
@@ -42,18 +34,36 @@ public protocol ChatSession: AnyObject {
     /// When more messages are loaded from history, they are inserted into the array at index 0. Array access by index is not advised.
     var messages: [ChatMessage] { get }
     
+    /// Are chat avatars displayed next to chat messages
+    var isAvatarDisplayed: Bool { get }
+    
+    /// Set an avatar image to display next to a chat message
+    var avatarURL: URL? { get set }
+    
+    @available(*, deprecated, message: "Please use `shouldShowIncomingMessages` and `isChatInputVisible` to achieve this")
+    func pause()
+
+    @available(*, deprecated, message: "Please use `shouldShowIncomingMessages` and `isChatInputVisible` to achieve this")
+    func resume()
+
+    func addDelegate(_ delegate: ChatSessionDelegate)
+    func removeDelegate(_ delegate: ChatSessionDelegate)
+    
     func getMessages(since timestamp: TimeToken, completion: @escaping (Result<[ChatMessage], Error>) -> Void)
     func getMessageCount(since timestamp: TimeToken, completion: @escaping (Result<Int, Error>) -> Void)
+    
+    @available(*, deprecated, message: "Please set property `avatarURL` to update user chat room avatar")
+    func updateUserChatRoomImage(url: URL, completion: @escaping (Result<Void, Error>) -> Void)
 }
 
 protocol InternalChatSessionProtocol: ChatSession {
     var blockList: BlockList { get }
     var eventRecorder: EventRecorder { get }
-    var reactionsViewModelFactory: ReactionsViewModelFactory { get }
+    var superPropertyRecorder: SuperPropertyRecorder { get }
+    var peoplePropertyRecorder: PeoplePropertyRecorder { get }
     var isReportingEnabled: Bool { get }
     var stickerRepository: StickerRepository { get }
     var recentlyUsedStickers: LimitedArray<Sticker> { get set }
-
     var reactionsVendor: ReactionVendor { get }
     
     func addInternalDelegate(_ delegate: InternalChatSessionDelegate)
@@ -94,10 +104,4 @@ protocol InternalChatSessionProtocol: ChatSession {
     
     /// Exits all channels, however does **not** disconnect from messaging client.
     func unsubscribeFromAllChannels()
-
-    var availableReactions: [ReactionID] { get set }
-    
-    /// Updates the image represinting the user in Chat
-    /// - Parameter url: a string url of the image
-    func updateUserChatImage(url: URL) -> Promise<Void>
 }

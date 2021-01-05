@@ -178,7 +178,7 @@ private extension ChatMessageActionPanelView {
     func addElementsToStack(reactions: ReactionButtonListViewModel) {
         reactions.reactions.enumerated().forEach { index, reaction in
             let reactionView = ReactionView(reactionID: reaction.id,
-                                            emoji: reaction.image,
+                                            imageURL: reaction.imageURL,
                                             reactionCount: reaction.voteCount,
                                             name: reaction.name)
             reactionView.tag = index

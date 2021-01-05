@@ -25,13 +25,13 @@ struct ImagePredictionCreated: Decodable {
     let subscribeChannel: String
     let programId: String
     let programDateTime: Date?
-    var impressionUrl: URL?
-    var rewardsUrl: URL?
-    var customData: String?
+    let impressionUrl: URL?
+    let rewardsUrl: URL?
+    let customData: String?
+    let createdAt: Date
+    let publishedAt: Date?
 
-    var createdAt: Date = Date()
-
-    var kind: WidgetKind
+    let kind: WidgetKind
 
     let animationConfirmationAsset: String = AnimationAssets.randomConfirmationEmojiAsset()
 
@@ -50,6 +50,8 @@ struct ImagePredictionCreated: Decodable {
         case impressionUrl
         case rewardsUrl
         case customData
+        case createdAt
+        case publishedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -68,5 +70,7 @@ struct ImagePredictionCreated: Decodable {
         programDateTime = try? container.decode(Date.self, forKey: .programDateTime)
         rewardsUrl = try? container.decode(URL.self, forKey: .rewardsUrl)
         customData = try? container.decode(String.self, forKey: .customData)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        publishedAt = try? container.decode(Date.self, forKey: .publishedAt)
     }
 }

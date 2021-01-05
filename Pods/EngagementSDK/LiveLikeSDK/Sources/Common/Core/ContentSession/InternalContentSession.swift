@@ -11,11 +11,6 @@ import UIKit
 //typealias ChatMessagingOutput = ChatRoom & ChatProxyOutput
 public typealias PlayerTimeSource = (() -> TimeInterval?)
 
-protocol ContentSessionChatDelegate: AnyObject {
-    func chatSession(chatSessionDidChange chatSession: InternalChatSessionProtocol?)
-    func chatSession(pauseStatusDidChange pauseStatus: PauseStatus)
-}
-
 /// Concrete implementation of `ContentSession`
 class InternalContentSession: ContentSession {
 
@@ -46,12 +41,6 @@ class InternalContentSession: ContentSession {
         }
     }
 
-    private var chatPauseStatus: PauseStatus = .unpaused {
-        didSet {
-            self.chatDelegate?.chatSession(pauseStatusDidChange: chatPauseStatus)
-        }
-    }
-
     var config: SessionConfiguration
 
     var programID: String
@@ -76,7 +65,7 @@ class InternalContentSession: ContentSession {
     private let whenAccessToken: Promise<AccessToken>
 
     let livelikeRestAPIService: LiveLikeRestAPIServicable
-    let widgetVotes: WidgetVotes
+    private let predictionVoteRepo: PredictionVoteRepository
     var sessionDidEnd: (() -> Void)?
     weak var delegate: ContentSessionDelegate? {
         didSet {
@@ -85,48 +74,71 @@ class InternalContentSession: ContentSession {
             }
         }
     }
-    
-    weak var chatDelegate: ContentSessionChatDelegate? {
-        didSet {
-            if oldValue == nil, currentChatRoom == nil {
-                // Assume that this is the first time chatDelegate assigned
-                // Automatically join the program chat room
-                firstly {
-                        self.whenProgramDetail
-                }.then { programDetail -> Promise<Void> in
-                    guard let chatRoomResource = programDetail.defaultChatRoom else {
-                        return Promise(error: ContentSessionError.failedSettingsChatSessionDelegate)
-                    }
-                    
-                    return Promise { [weak self] fulfill, reject in
-                        guard let self = self else {
-                            reject(ContentSessionError.failedSettingsChatSessionDelegate)
-                            return
-                        }
-                        
-                        var chatConfig = ChatSessionConfig(roomID: chatRoomResource.id)
-                        chatConfig.syncTimeSource = self.playerTimeSource
-                        
-                        self.sdkInstance.connectChatRoom(
-                            config: chatConfig
-                        ) { result in
-                            switch result {
-                            case .success(let currentChatRoom):
-                                DispatchQueue.main.async {
-                                    self.chatDelegate?.chatSession(chatSessionDidChange: currentChatRoom as? InternalChatSessionProtocol)
-                                    fulfill(())
-                                }
-                            case .failure(let error):
-                                reject(error)
-                            }
-                        }
-                    }
-                }.catch {
-                    log.error($0.localizedDescription)
-                }
-            } else {
-                self.chatDelegate?.chatSession(chatSessionDidChange: currentChatRoom)
+
+    private lazy var whenWidgetModelFactory: Promise<WidgetModelFactory> = {
+        return firstly {
+            Promises.zip(
+                sdkInstance.whenUserProfile,
+                self.whenProgramDetail,
+                self.whenAccessToken,
+                self.whenMessagingClients
+            )
+        }.then { (userProfile, programResource, accessToken, messagingClient) in
+            guard let widgetClient = messagingClient.widgetMessagingClient else { throw ContentSessionError.missingWidgetClient }
+            let factory = WidgetModelFactory(
+                eventRecorder: self.eventRecorder,
+                userProfile: userProfile,
+                rewardItems: programResource.rewardItems.map { RewardItem(id: $0.id, name: $0.name)},
+                leaderboardsManager: self.leaderboardsManager,
+                accessToken: accessToken,
+                widgetClient: widgetClient,
+                livelikeRestAPIService: self.livelikeRestAPIService,
+                predictionVoteRepo: self.predictionVoteRepo
+            )
+            return Promise(value: factory)
+        }
+    }()
+
+    private lazy var whenChatSession: Promise<ChatSession> = {
+        return firstly {
+            self.whenProgramDetail
+        }.then { programDetail -> Promise<ChatSession> in
+            guard let chatRoomResource = programDetail.defaultChatRoom else {
+                return Promise(error: ContentSessionError.failedSettingsChatSessionDelegate)
             }
+
+            return Promise { [weak self] fulfill, reject in
+                guard let self = self else {
+                    reject(ContentSessionError.failedSettingsChatSessionDelegate)
+                    return
+                }
+
+                var chatConfig = ChatSessionConfig(roomID: chatRoomResource.id)
+                chatConfig.shouldDisplayAvatar = self.config.chatShouldDisplayAvatar
+                chatConfig.syncTimeSource = self.playerTimeSource
+                
+                self.sdkInstance.connectChatRoom(
+                    config: chatConfig
+                ) { result in
+                    switch result {
+                    case .success(let currentChatRoom):
+                        self.currentChatRoom = currentChatRoom as? InternalChatSessionProtocol
+                        fulfill(currentChatRoom)
+                    case .failure(let error):
+                        reject(error)
+                    }
+                }
+            }
+        }
+    }()
+
+    func getChatSession(completion: @escaping (Result<ChatSession, Error>) -> Void) {
+        firstly {
+            self.whenChatSession
+        }.then { chatSession in
+            completion(.success(chatSession))
+        }.catch { error in
+            completion(.failure(error))
         }
     }
 
@@ -136,14 +148,14 @@ class InternalContentSession: ContentSession {
     var gamificationManager: GamificationViewManager?
     var rankClient: RankClient?
     private var whenRankClient = Promise<RankClient>()
-    private var nextWidgetTimelineUrl: String?
+    private var nextWidgetTimelineUrl: URL?
+    private var nextWidgetModelTimelineURL: URL?
+    private let leaderboardsManager: LeaderboardsManager
 
     // Analytics properties
 
     var eventRecorder: EventRecorder
-    private var widgetInteractedEventBuilder: WidgetInteractedEventBuilder?
     private var timeWidgetPauseStatusChanged: Date = Date()
-    private var timeChatPauseStatusChanged: Date = Date()
     
     private var sessionIsValid: Bool {
         if status == .ready {
@@ -153,17 +165,16 @@ class InternalContentSession: ContentSession {
         return false
     }
 
-    private let whenProgramDetail: Promise<ProgramDetail>
-    
-    private var storeWidgetProxy: StoreWidgetProxy = StoreWidgetProxy()
-    
-    private(set) lazy var whenWidgetQueue: Promise<WidgetQueue> = {
+    private let whenProgramDetail: Promise<ProgramDetailResource>
+
+    private(set) lazy var whenWidgetQueue: Promise<WidgetProxy> = {
         firstly {
             Promises.zip(self.whenMessagingClients,
                          self.livelikeIDVendor.whenLiveLikeID,
                          self.whenProgramDetail,
-                         self.whenAccessToken)
-        }.then { messagingClients, livelikeID, programDetail, accessToken -> Promise<WidgetQueue> in
+                         self.whenAccessToken
+            )
+        }.then { messagingClients, livelikeID, programDetail, accessToken -> Promise<WidgetProxy> in
             
             guard let widgetClient = messagingClients.widgetMessagingClient else {
                 return Promise(error: ContentSessionError.missingWidgetClient)
@@ -180,7 +191,6 @@ class InternalContentSession: ContentSession {
             widgetClient.addListener(syncWidgetProxy, toChannel: channel)
             
             let widgetQueue = syncWidgetProxy
-                .addProxy { self.storeWidgetProxy }
                 .addProxy {
                     let pauseProxy = PauseWidgetProxy(playerTimeSource: self.playerTimeSource,
                                                       initialPauseStatus: self.widgetPauseStatus)
@@ -189,39 +199,28 @@ class InternalContentSession: ContentSession {
                 }
                 .addProxy { WriteRewardsURLToRepoProxy(rewardsURLRepo: self.rewardsURLRepo) }
                 .addProxy { ImageDownloadProxy() }
-                .addProxy { ImpressionProxy(userSessionId: livelikeID.asString, accessToken: accessToken) }
                 .addProxy { WidgetLoggerProxy(playerTimeSource: self.playerTimeSource) }
                 .addProxy {
                     OnPublishProxy { [weak self] publishData in
                         guard let self = self else { return }
-                        DispatchQueue.main.async {
-                            self.delegate?.widget(self, didBecomeReady: publishData.jsonObject)
-                            
-                            let widgetFactory = ClientEventWidgetFactory(
-                                event: publishData.clientEvent,
-                                voteRepo: self.widgetVotes,
-                                widgetMessagingOutput: widgetClient,
-                                accessToken: accessToken,
-                                eventRecorder: self.eventRecorder
-                            )
-                            if let widgetController = widgetFactory.create(
-                                theme: Theme(),
-                                widgetConfig: WidgetConfig()
-                            ) {
+                        guard case let ClientEvent.widget(widgetResource) = publishData.clientEvent else { return }
+
+                        // Create WidgetDataObject
+                        firstly {
+                            self.whenWidgetModelFactory
+                        }.then(on: DispatchQueue.main) { widgetModelFactory in
+                            let widgetModel = try widgetModelFactory.make(from: widgetResource)
+                            self.delegate?.contentSession(self, didReceiveWidget: widgetModel)
+
+                            if let widgetController = DefaultWidgetFactory.makeWidget(from: widgetModel) {
                                 self.delegate?.widget(self, didBecomeReady: widgetController)
                             }
+                        }.catch { error in
+                            log.error(error)
                         }
                     }
                 }
-                .addProxy {
-                    WidgetQueue(widgetProcessor: self.storeWidgetProxy,
-                                voteRepo: self.widgetVotes,
-                                widgetMessagingOutput: widgetClient,
-                                accessToken: accessToken,
-                                eventRecorder: self.eventRecorder)
-                }
 
-            self.widgetPauseListeners.addListener(widgetQueue)
             return Promise(value: widgetQueue)
         }
     }()
@@ -245,16 +244,7 @@ class InternalContentSession: ContentSession {
     /// This allows us to remove it as a listener from the `WidgetMessagingClient`
     private var baseWidgetProxy: WidgetProxy?
     
-    var currentChatRoom: InternalChatSessionProtocol? {
-        didSet {
-            self.chatDelegate?.chatSession(chatSessionDidChange: self.currentChatRoom)
-        }
-    }
-
-    /// A dictionary of all created rooms
-    private var chatRoomsByID: [String: InternalChatSessionProtocol] = [:]
-    /// A dictionary of whether a chat room is being created or not - keyed by room id
-    private var creatingChatRoomsByID: [String: Promise<InternalChatSessionProtocol>] = [:]
+    var currentChatRoom: InternalChatSessionProtocol?
 
     // MARK: -
     required init(sdkInstance: EngagementSDK,
@@ -269,7 +259,8 @@ class InternalContentSession: ContentSession {
                   superPropertyRecorder: SuperPropertyRecorder,
                   peoplePropertyRecorder: PeoplePropertyRecorder,
                   livelikeRestAPIService: LiveLikeRestAPIServicable,
-                  widgetVotes: WidgetVotes,
+                  widgetVotes: PredictionVoteRepository,
+                  leaderboardsManager: LeaderboardsManager,
                   delegate: ContentSessionDelegate? = nil)
     {
         self.config = config
@@ -287,7 +278,8 @@ class InternalContentSession: ContentSession {
         self.superPropertyRecorder = superPropertyRecorder
         self.peoplePropertyRecorder = peoplePropertyRecorder
         self.livelikeRestAPIService = livelikeRestAPIService
-        self.widgetVotes = widgetVotes
+        self.predictionVoteRepo = widgetVotes
+        self.leaderboardsManager = leaderboardsManager
         sdkInstance.setDelegate(self)
 
         initializeDelegatePlayheadTimeSource()
@@ -295,7 +287,6 @@ class InternalContentSession: ContentSession {
         initializeMixpanelProperties()
         initializeGamification()
         initializeRankClient()
-        initializeWidgetInteractedAnalytics()
         startSession()
         
         whenMessagingClients.then { [weak self] in
@@ -344,11 +335,10 @@ class InternalContentSession: ContentSession {
             Promises.zip(whenWidgetQueue, whenRewards)
         }.then {
             let (widgetQueue, rewards) = $0
-            self.gamificationManager = GamificationViewManager(storeWidgetProxy: self.storeWidgetProxy,
-                                                               widgetRendererDelegator: widgetQueue,
-                                                               widgetEventDelegator: widgetQueue,
-                                                               rewards: rewards,
-                                                               eventRecorder: self.eventRecorder)
+            self.gamificationManager = GamificationViewManager(
+                rewards: rewards,
+                eventRecorder: self.eventRecorder
+            )
         }.catch { error in
             log.error("Failed to initialize Gamification with error: \(error.localizedDescription)")
         }
@@ -364,19 +354,6 @@ class InternalContentSession: ContentSession {
             self.whenRankClient.fulfill(rankClient)
         }.catch { error in
             log.error("Failed to initialize RankClient with error: \(error.localizedDescription)")
-        }
-    }
-    
-    private func initializeWidgetInteractedAnalytics() {
-        firstly {
-            Promises.zip(whenWidgetQueue, whenRewards)
-        }.then { widgetQueue, rewards in
-            let widgetInteractedEventBuilder = WidgetInteractedEventBuilder(eventRecorder: self.eventRecorder,
-                                                                            widgetQueue: widgetQueue,
-                                                                            rewards: rewards)
-            self.widgetInteractedEventBuilder = widgetInteractedEventBuilder
-        }.catch { error in
-            log.error("Failed to initialize WidgetInteractedEventRecorder with error: \(error.localizedDescription)")
         }
     }
 
@@ -434,13 +411,13 @@ class InternalContentSession: ContentSession {
         currentChatRoom = nil
     }
 
+    @available(*, deprecated, message: "Toggle `shouldShowIncomingMessages` and `isChatInputVisible` to achieve this functionality")
     func pause() {
         pauseWidgets()
-        pauseChat()
     }
 
+    @available(*, deprecated, message: "Toggle `shouldShowIncomingMessages` and `isChatInputVisible` to achieve this functionality")
     func resume() {
-        resumeChat()
         resumeWidgets()
         rankClient?.getUserRank()
     }
@@ -449,63 +426,157 @@ class InternalContentSession: ContentSession {
         guard sessionIsValid else { return }
         teardownSession()
     }
-    
-    func getPostedWidgets(page: WidgetPagination,
-                          completion: @escaping (Result<[Widget]?, Error>) -> Void) {
+
+    func getRewardItems(completion: @escaping (Result<[RewardItem], Error>) -> Void) {
         firstly {
             whenProgramDetail
-        }.then { program in
-            
-            var timelineUrlString: String?
-            switch page {
-            case .first:
-                timelineUrlString = program.timelineUrl
-            case .next:
-                timelineUrlString = self.nextWidgetTimelineUrl
-            }
-            
-            guard let timelineUrl = timelineUrlString,
-                let timelineURL = URL(string: timelineUrl) else {
-                    log.debug("No more posted widgets available")
-                    completion(.success(nil))
-                    return
-            }
-            
-            EngagementSDK.networking.urlSession.dataTask(with: timelineURL) { [weak self] (data, _, error) in
-                if let error = error {
-                    completion(.failure(error))
-                }
-                
-                guard let data = data else { return }
-                
-                do {
-                    let json = try JSONSerialization.jsonObject(with: data, options: [])
-                    
-                    guard let dictionary = json as? [String: Any],
-                        let jsonWidgets = dictionary["results"] as? [[String: Any]],
-                        jsonWidgets.count > 0 else {
-                        return completion(.success(nil))
-                    }
-                       
-                    self?.nextWidgetTimelineUrl = dictionary["next"] as? String ?? nil
-                    
-                    self?.sdkInstance.createWidgets(widgetJSONObjects: jsonWidgets) { result in
-                        switch result {
-                        case .success(let widgets):
-                            completion(.success(widgets))
-                        case .failure(let error):
-                            completion(.failure(error))
-                        }
-                    }
-                } catch {
-                    log.debug("Error occured on getting posted widgets: \(error.localizedDescription)")
-                    completion(.failure(error))
-                }
-                
-            }.resume()
+        }.then {
+            completion(.success($0.rewardItems.map { RewardItem(id: $0.id, name: $0.name)}))
+        }.catch {
+            completion(.failure($0))
         }
-        .catch { error in
-            log.debug("Error occured on getting posted widgets: \(error.localizedDescription)")
+    }
+
+    func getPostedWidgets(
+        page: WidgetPagination,
+        completion: @escaping (Result<[Widget]?, Error>) -> Void
+    ) {
+        //swiftlint:disable nesting
+        struct TimelineURLNotFound: Error { }
+
+        firstly {
+            Promises.zip(whenProgramDetail, whenAccessToken)
+        }.then { (program, accessToken) -> Promise<(WidgetModelFactory, PaginatedResource<WidgetResource>)> in
+            guard let timelineURL: URL = {
+                switch page {
+                case .first:
+                    return program.timelineUrl
+                case .next:
+                    return self.nextWidgetTimelineUrl
+                }
+            }() else {
+                log.debug("No more posted widgets available")
+                throw TimelineURLNotFound()
+            }
+
+            return Promises.zip(
+                self.whenWidgetModelFactory,
+                self.livelikeRestAPIService.getTimeline(timelineURL: timelineURL, accessToken: accessToken)
+            )
+        }.then { widgetModelFactory, timelineResource in
+
+            self.nextWidgetTimelineUrl = timelineResource.next
+            let widgets: [Widget] = timelineResource.results.compactMap { widgetResource in
+                do {
+                    let widgetModel = try widgetModelFactory.make(from: widgetResource)
+                    return DefaultWidgetFactory.makeWidget(from: widgetModel)
+                } catch {
+                    log.error(error.localizedDescription)
+                    return nil
+                }
+            }
+            completion(.success(widgets))
+        }.catch { error in
+            if error is TimelineURLNotFound {
+                completion(.success(nil))
+            } else {
+                log.debug("Error occured on getting posted widgets: \(error.localizedDescription)")
+                completion(.failure(error))
+            }
+        }
+    }
+
+    func getLeaderboardClients(completion: @escaping (Result<[LeaderboardClient], Error>) -> Void) {
+        firstly {
+            Promises.zip(whenProgramDetail, livelikeIDVendor.whenLiveLikeID)
+        }.then { programDetail, livelikeID in
+            Promises.all(programDetail.leaderboards.map { leaderboard in
+                self.sdkInstance.getLeaderboardAndCurrentEntry(leaderboard: leaderboard, profileID: livelikeID.asString)
+            })
+        }.then { leaderboardsAndEntries in
+            let clients = leaderboardsAndEntries.map {
+                LeaderboardClient(
+                    leaderboardResource: $0.leaderboard,
+                    currentLeaderboardEntry: $0.currentEntry,
+                    leaderboardsManager: self.leaderboardsManager
+                )
+            }
+            completion(.success(clients))
+        }.catch {
+            completion(.failure($0))
+        }
+    }
+
+    func getPostedWidgetModels(
+        page: WidgetPagination,
+        completion: @escaping (Result<[WidgetModel]?, Error>) -> Void
+    ) {
+        //swiftlint:disable nesting
+        struct TimelineURLNotFound: Error { }
+
+        firstly {
+            Promises.zip(whenProgramDetail, whenAccessToken)
+        }.then { (program, accessToken) -> Promise<(WidgetModelFactory, PaginatedResource<WidgetResource>)> in
+            guard let timelineURL: URL = {
+                switch page {
+                case .first:
+                    return program.timelineUrl
+                case .next:
+                    return self.nextWidgetModelTimelineURL
+                }
+            }() else {
+                log.debug("No more posted widgets available")
+                throw TimelineURLNotFound()
+            }
+
+            return Promises.zip(
+                self.whenWidgetModelFactory,
+                self.livelikeRestAPIService.getTimeline(timelineURL: timelineURL, accessToken: accessToken)
+            )
+        }.then { widgetModelFactory, timelineResource in
+            self.nextWidgetModelTimelineURL = timelineResource.next
+            let widgetModels = try timelineResource.results.map { widgetResource in
+                return try widgetModelFactory.make(from: widgetResource)
+            }
+            completion(.success(widgetModels))
+        }.catch { error in
+            if error is TimelineURLNotFound {
+                completion(.success(nil))
+            } else {
+                log.debug("Error occured on getting posted widgets: \(error.localizedDescription)")
+                completion(.failure(error))
+            }
+        }
+    }
+
+    func getWidgetModel(byID id: String, kind: WidgetKind, completion: @escaping (Result<WidgetModel, Error>) -> Void) {
+        firstly {
+            Promises.zip(
+                self.livelikeRestAPIService.getWidget(id: id, kind: kind),
+                self.whenWidgetModelFactory
+            )
+        }.then { (clientEvent, widgetModelFactory) in
+            guard clientEvent.programID == self.programID else {
+                throw ContentSessionError.failedToCreateWidgetModelMismatchedProgramID(widgetProgramID: clientEvent.programID, sessionProgramID: self.programID)
+            }
+            let widgetModel = try widgetModelFactory.make(from: clientEvent)
+            completion(.success(widgetModel))
+        }.catch { error in
+            completion(.failure(error))
+        }
+    }
+
+    func createWidgetModel(fromJSON jsonObject: Any, completion: @escaping (Result<WidgetModel, Error>) -> Void) {
+        firstly {
+            self.whenWidgetModelFactory
+        }.then { widgetModelFactory in
+            let widgetResource = try WidgetPayloadParser.parse(jsonObject)
+            guard widgetResource.programID == self.programID else {
+                throw ContentSessionError.failedToCreateWidgetModelMismatchedProgramID(widgetProgramID: widgetResource.programID, sessionProgramID: self.programID)
+            }
+            let widgetModel = try widgetModelFactory.make(from: widgetResource)
+            completion(.success(widgetModel))
+        }.catch { error in
             completion(.failure(error))
         }
     }
@@ -513,57 +584,21 @@ class InternalContentSession: ContentSession {
 
 // MARK: - Chat
 extension InternalContentSession {
-
-    func pauseChat() {
-        guard sessionIsValid else { return }
-        guard chatPauseStatus == .unpaused else {
-            log.verbose("Chat is already paused.")
-            return
-        }
-        eventRecorder.record(.chatPauseStatusChanged(previousStatus: chatPauseStatus, newStatus: .paused, secondsInPreviousStatus: Date().timeIntervalSince(timeChatPauseStatusChanged)))
-        
-        chatPauseStatus = .paused
-        timeChatPauseStatusChanged = Date()
-        self.chatRoomsByID.values.forEach { chatRoomAndQueue in
-            chatRoomAndQueue.pause()
-        }
-        log.info("Chat was paused.")
-    }
     
-    func resumeChat() {
-        guard sessionIsValid else { return }
-        guard chatPauseStatus == .paused else {
-            log.verbose("Chat is already unpaused.")
-            return
-        }
-        eventRecorder.record(.chatPauseStatusChanged(previousStatus: chatPauseStatus, newStatus: .unpaused, secondsInPreviousStatus: Date().timeIntervalSince(timeChatPauseStatusChanged)))
-        
-        chatPauseStatus = .unpaused
-        timeChatPauseStatusChanged = Date()
-        self.chatRoomsByID.values.forEach { chatRoomAndQueue in
-            chatRoomAndQueue.resume()
-        }
-        log.info("Chat has resumed from pause.")
-    }
-
     /// Updates the image that will represent the user in chat
     func updateUserChatRoomImage(url: URL,
                                  completion: @escaping () -> Void,
                                  failure: @escaping (Error) -> Void) {
+        
         firstly {
-            whenMessagingClients
-        }.then { _ in
-            guard let chatClient = self.currentChatRoom else {
-                return Promise(error: ContentSessionError.missingChatRoom(placeOfError: "updating user chat room image"))
-            }
-            return chatClient.updateUserChatImage(url: url)
-        }.then {
+          whenChatSession
+        }.then { chatSession in
+            chatSession.avatarURL = url
             completion()
-        }.catch {
-            failure($0)
+        }.catch { error in
+            failure(error)
         }
     }
-
 }
 
 // MARK: - Widgets
@@ -630,40 +665,5 @@ extension InternalContentSession: AwardsProfileDelegate {
             }
             return props
         }())
-    }
-}
-
-enum ContentSessionError: LocalizedError {
-    case invalidChatRoomURLTemplate
-    case invalidChatRoomURL
-    case missingChatService
-    case missingChatRoomResourceFields
-    case failedSettingsChatSessionDelegate
-    case failedLoadingInitialChat
-    case missingWidgetClient
-    case missingSubscribeChannel
-    case missingChatRoom(placeOfError: String)
-
-    var errorDescription: String? {
-        switch self {
-        case .invalidChatRoomURLTemplate:
-            return "The template provided to build a chat room url is invalid or incompatible. Expected replaceable string of '{chat_room_id}'."
-        case .invalidChatRoomURL:
-            return "The chat room resource url is not a valid URL."
-        case .missingChatRoomResourceFields:
-            return "Failed to initalize Chat because of missing required fields on the chat room resource."
-        case .missingChatService:
-            return "Failed to initialize Chat because the service is missing."
-        case .failedSettingsChatSessionDelegate:
-            return "Failed setting the Chat Session Delegate"
-        case .missingWidgetClient:
-            return "Failed creating Widget Queue due to a missing Widget Client"
-        case .missingSubscribeChannel:
-            return "Failed creating Widget Queue due to a missing Subscribe Channel"
-        case .missingChatRoom(let placeOfError):
-            return "Failed \(placeOfError) due to a missing Chat Room"
-        case .failedLoadingInitialChat:
-            return "Failed loading initial history for chat"
-        }
     }
 }

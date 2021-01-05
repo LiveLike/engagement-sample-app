@@ -7,7 +7,7 @@
 
 import UIKit
 
-class AlertWidgetLinkView: UIView {
+class AlertWidgetLinkView: ThemeableView {
     // MARK: UI Properties
 
     lazy var titleLabel: UILabel = {
@@ -31,8 +31,8 @@ class AlertWidgetLinkView: UIView {
 
     // MARK: Initialization
 
-    init() {
-        super.init(frame: .zero)
+    override init() {
+        super.init()
         configure()
     }
 

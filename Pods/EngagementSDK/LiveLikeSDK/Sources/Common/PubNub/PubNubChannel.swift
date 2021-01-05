@@ -38,11 +38,7 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
         pubnub.addListener(self)
         pubnub.subscribeToChannels([channel], withPresence: false)
     }
-
-    deinit {
-        disconnect()
-    }
-
+    
     func send(
         _ message: String,
         completion: @escaping (Result<PubSubID, Error>) -> Void
@@ -52,7 +48,7 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
             .message(message)
             .performWithCompletion { status in
                 guard !status.isError else {
-                    return completion(.failure(Errors.pubnubStatusError(errorStatus: status)))
+                    return completion(.failure(PubNubChannelError.pubnubStatusError(errorStatus: status)))
                 }
 
                 let id = PubSubID(status.data.timetoken)
@@ -71,16 +67,16 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
                 guard let self = self else { return }
                 if let status = status {
                     if status.isError{
-                        return completion(.failure(Errors.pubnubStatusError(errorStatus: status)))
+                        return completion(.failure(PubNubChannelError.pubnubStatusError(errorStatus: status)))
                     }
                 }
 
                 guard let result = result else {
-                    return completion(.failure(Errors.noMessageCountResult))
+                    return completion(.failure(PubNubChannelError.noMessageCountResult))
                 }
 
                 guard let count = result.data.channels[self._channel] else {
-                    return completion(.failure(Errors.noMessageCountForChannel(channel: self._channel)))
+                    return completion(.failure(PubNubChannelError.noMessageCountForChannel(channel: self._channel)))
                 }
 
                 completion(.success(Int(truncating: count)))
@@ -93,23 +89,66 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
         limit: UInt,
         completion: @escaping (Result<PubSubHistoryResult, Error>) -> Void
     ) {
-        self.pubnub.history()
+        self.fetchHistory(
+            start: oldestMessageDate,
+            end: newestMessageDate,
+            reverse: false,
+            limit: limit,
+            completion: completion
+        )
+    }
+
+    // Gets messages after the TimeToken
+    func fetchMessages(
+        since timestamp: TimeToken,
+        limit: UInt,
+        completion: @escaping (Result<PubSubHistoryResult, Error>) -> Void
+    ) {
+        // https://www.pubnub.com/docs/swift/storage-and-history#retrieval-scenario-2
+        // Ideally we would use Scenario 3 but it doesn't work
+        // So we need to use Scenario 2 and manually filter out messages with the exact timetoken
+        self.fetchHistory(
+            start: nil,
+            end: timestamp,
+            reverse: false,
+            limit: limit
+        ) { result in
+            switch result {
+            case .success(var historyResult):
+                historyResult.messages.removeAll(where: { $0.createdAt == timestamp.pubnubTimetoken })
+                completion(.success(historyResult))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+
+    private func fetchHistory(
+        start: TimeToken?,
+        end: TimeToken?,
+        reverse: Bool,
+        limit: UInt,
+        completion: @escaping (Result<PubSubHistoryResult, Error>) -> Void
+    ) {
+         self.pubnub.history()
             .channel(_channel)
-            .start(optional: oldestMessageDate?.pubnubTimetoken)
-            .end(optional: newestMessageDate?.pubnubTimetoken)
+            .start(optional: start?.pubnubTimetoken)
+            .end(optional: end?.pubnubTimetoken)
             .limit(limit)
-            .reverse(false)
+            .reverse(reverse)
             .includeTimeToken(self.includeTimeToken)
             .includeMessageActions(self.includeMessageActions)
-            .performWithCompletion { (result, status) in
+            .performWithCompletion { [weak self] (result, status) in
+                guard let self = self else { return }
                 if let status = status {
                     if status.isError {
-                        completion(.failure(Errors.pubnubStatusError(errorStatus: status)))
+                        completion(.failure(PubNubChannelError.pubnubStatusError(errorStatus: status)))
                         return
                     }
                 }
+
                 guard let result = result else {
-                    completion(.failure(Errors.foundNoResultsFromHistoryRequest))
+                    completion(.failure(PubNubChannelError.foundNoResultsFromHistoryRequest))
                     return
                 }
 
@@ -121,7 +160,7 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
                 }()
 
                 guard let channelResults = result.data.channels[self._channel] else {
-                    return completion(.failure(Errors.foundNoResultsForChannel(channel: self._channel)))
+                    return completion(.failure(PubNubChannelError.foundNoResultsForChannel(channel: self._channel)))
                 }
 
                 let chatMessages: [PubSubChannelMessage] = channelResults.compactMap { historyMessage in
@@ -164,7 +203,7 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
                                 }
                             }
                         }
-                        
+
                         return PubSubChannelMessage(
                             pubsubID: PubSubID(history.timetoken),
                             message: messageDict,
@@ -186,7 +225,7 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
                         )
                     )
                 )
-        }
+            }
     }
 
     func sendMessageAction(
@@ -196,7 +235,7 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
         completion: @escaping (Result<Bool, Error>) -> Void
     ) {
         guard let messageTimetoken = messageID.internalID as? NSNumber else {
-            return completion(.failure(Errors.expectedPubSubIDInternalToBeNSNumber))
+            return completion(.failure(PubNubChannelError.expectedPubSubIDInternalToBeNSNumber))
         }
 
         pubnub.addMessageAction()
@@ -209,15 +248,15 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
                 guard !status.isError else {
                     log.error(status.errorData.information)
                     if status.statusCode == 409 {
-                        completion(.failure(Errors.messageActionAlreadyAdded))
+                        completion(.failure(PubNubChannelError.messageActionAlreadyAdded))
                     } else {
-                        completion(.failure(Errors.failedToSendMessageAction))
+                        completion(.failure(PubNubChannelError.failedToSendMessageAction))
                     }
                     return
                 }
 
                 guard let action = status.data.action else {
-                    completion(.failure(Errors.foundNoAction))
+                    completion(.failure(PubNubChannelError.foundNoAction))
                     return
                 }
 
@@ -247,11 +286,11 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
         completion: @escaping (Result<Bool, Error>) -> Void
     ) {
         guard let messageTimetoken = messageID.internalID as? NSNumber else {
-            return completion(.failure(Errors.expectedPubSubIDInternalToBeNSNumber))
+            return completion(.failure(PubNubChannelError.expectedPubSubIDInternalToBeNSNumber))
         }
 
         guard let actionTimetoken = messageActionID.internalID as? NSNumber else {
-            return completion(.failure(Errors.expectedPubSubIDInternalToBeNSNumber))
+            return completion(.failure(PubNubChannelError.expectedPubSubIDInternalToBeNSNumber))
         }
 
         pubnub.removeMessageAction()
@@ -262,9 +301,9 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
                 guard !status.isError else {
                     log.error(status.errorData.information)
                     if status.statusCode == 400 {
-                        completion(.failure(Errors.messageActionDoesntExist))
+                        completion(.failure(PubNubChannelError.messageActionDoesntExist))
                     } else {
-                        completion(.failure(Errors.failedToRemoveMessageAction))
+                        completion(.failure(PubNubChannelError.failedToRemoveMessageAction))
                     }
                     return
                 }
@@ -284,14 +323,10 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
 
     func pause() {
         pauseStatus = .paused
-        pubnub.removeListener(self)
-        pubnub.unsubscribeFromChannels([_channel], withPresence: false)
     }
 
     func resume() {
         pauseStatus = .unpaused
-        pubnub.addListener(self)
-        pubnub.subscribeToChannels([_channel], withPresence: false)
     }
 
     func client(
@@ -359,50 +394,6 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
             log.info("Chat Reconnected")
         default:
             log.dev("status: \(status.category.rawValue)")
-        }
-    }
-
-    enum Errors: LocalizedError {
-        case failedToSerializeHistoryToJsonData
-        case pubnubStatusError(errorStatus: PNErrorStatus)
-        case foundNoResultsFromHistoryRequest
-        case foundNoResultsForChannel(channel: String)
-        case messageActionAlreadyAdded
-        case messageActionDoesntExist
-        case failedToSendMessageAction
-        case failedToRemoveMessageAction
-        case expectedPubSubIDInternalToBeNSNumber
-        case foundNoAction
-        case noMessageCountResult
-        case noMessageCountForChannel(channel: String)
-
-        var errorDescription: String? {
-            switch self {
-            case .failedToSerializeHistoryToJsonData:
-                return "Failed to serialize the PubNub history result as json data."
-            case .pubnubStatusError(let errorStatus):
-                return errorStatus.errorData.information
-            case .foundNoResultsFromHistoryRequest:
-                return "Failed to find results for history request."
-            case .foundNoResultsForChannel(let channel):
-                return "Didn't find any results for channel \(channel)"
-            case .messageActionAlreadyAdded:
-                return "Failed to send the message action because it already exists."
-            case .messageActionDoesntExist:
-                return "Failed to remove the message action because it doesn't exist."
-            case .failedToSendMessageAction:
-                return "Failed to send the message action."
-            case .failedToRemoveMessageAction:
-                return "Failed to remove the message action."
-            case .expectedPubSubIDInternalToBeNSNumber:
-                return "Expected the pub sub id internal to be type NSNumber."
-            case .foundNoAction:
-                return "Failed to receive an action"
-            case .noMessageCountResult:
-                return "Message count request returned nil result."
-            case .noMessageCountForChannel(let channel):
-                return "Message count for channel \(channel) not found in dictionary."
-            }
         }
     }
 }

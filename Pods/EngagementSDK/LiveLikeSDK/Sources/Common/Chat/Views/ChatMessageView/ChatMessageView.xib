@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="15705" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="17156" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
     <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="15706"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17125"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -28,7 +28,7 @@
                         <constraint firstAttribute="height" constant="2" id="cop-gG-P7j"/>
                     </constraints>
                 </view>
-                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="vCP-dF-3oi" customClass="GIFImageView" customModule="EngagementSDK" customModuleProvider="target">
+                <imageView hidden="YES" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="defaultAvatar" translatesAutoresizingMaskIntoConstraints="NO" id="vCP-dF-3oi" customClass="GIFImageView" customModule="EngagementSDK" customModuleProvider="target">
                     <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     <constraints>
@@ -107,6 +107,7 @@
                     </constraints>
                 </view>
             </subviews>
+            <viewLayoutGuide key="safeArea" id="6sR-fs-CYC"/>
             <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
             <constraints>
                 <constraint firstItem="Xht-AX-av1" firstAttribute="leading" secondItem="6sR-fs-CYC" secondAttribute="leading" constant="50" id="AMt-rQ-4pS"/>
@@ -126,7 +127,6 @@
                 <constraint firstItem="gfv-CN-wDo" firstAttribute="leading" secondItem="6sR-fs-CYC" secondAttribute="leading" id="wlt-Ne-rci"/>
             </constraints>
             <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
-            <viewLayoutGuide key="safeArea" id="6sR-fs-CYC"/>
             <connections>
                 <outlet property="alternateTimestampBottomConstraint" destination="McU-nL-qks" id="ZfI-YA-CIf"/>
                 <outlet property="alternateTimestampLabel" destination="S7e-sr-RMR" id="U3W-fQ-bJ3"/>
@@ -163,4 +163,7 @@
             <point key="canvasLocation" x="343.19999999999999" y="-504.19790104947532"/>
         </view>
     </objects>
+    <resources>
+        <image name="defaultAvatar" width="64" height="64"/>
+    </resources>
 </document>

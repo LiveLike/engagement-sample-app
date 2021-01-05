@@ -28,5 +28,6 @@ struct ApplicationConfiguration: Decodable {
     let organizationId: String
     let organizationName: String
     let createChatRoomUrl: String
-    
+    let widgetDetailUrlTemplate: String
+    let leaderboardDetailUrlTemplate: String
 }

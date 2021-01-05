@@ -16,17 +16,23 @@ class ChoiceWidgetViewModel {
     var animationConfirmationAsset: String?
     var animationTimerAsset: String?
     var customData: String?
+    var createdAt: Date
+    var publishedAt: Date?
 
     init(id: String,
          question: String,
          timeout: TimeInterval,
          options: [ChoiceWidgetOptionViewModel],
-         customData: String?) {
+         customData: String?,
+         createdAt: Date,
+         publishedAt: Date?) {
         self.id = id
         self.question = question
         self.timeout = timeout
         self.options = options
         self.customData = customData
+        self.createdAt = createdAt
+        self.publishedAt = publishedAt
     }
 }
 

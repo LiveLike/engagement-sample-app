@@ -70,7 +70,7 @@ struct ReactionVote {
 
 /// Represents the collection of all reaction votes
 struct ReactionVotes {
-    var allVotes: [ReactionVote]
+    @ReadWriteAtomic var allVotes: [ReactionVote]
 
     var reactionIDs: Set<ReactionID> {
         return Set(allVotes.map { $0.reactionID })
@@ -99,7 +99,7 @@ class ReactionButtonViewModel {
     /// The reaction vote id of the local client if it exists
     var myVoteID: ReactionVote.ID?
     /// The UIImage of this reaction
-    let image: UIImage
+    let imageURL: URL
     /// The label used for Accessibility
     let name: String
 
@@ -108,14 +108,14 @@ class ReactionButtonViewModel {
         voteCount: Int,
         isMine: Bool,
         myVoteID: ReactionVote.ID?,
-        image: UIImage,
+        imageURL: URL,
         name: String
     ) {
         self.id = id
         self.voteCount = voteCount
         self.isMine = isMine
         self.myVoteID = myVoteID
-        self.image = image
+        self.imageURL = imageURL
         self.name = name
     }
 }
@@ -124,8 +124,8 @@ class ReactionButtonViewModel {
 struct ReactionButtonListViewModel {
     var reactions: [ReactionButtonViewModel]
 
-    func image(forID id: ReactionID) -> UIImage? {
-        return reactions.first(where: { $0.id == id })?.image
+    func image(forID id: ReactionID) -> URL? {
+        return reactions.first(where: { $0.id == id })?.imageURL
     }
 
     func isMine(forID id: ReactionID) -> Bool {
@@ -143,77 +143,34 @@ struct ReactionButtonListViewModel {
     var totalReactionsCount: Int {
         return reactions.map({$0.voteCount}).reduce(0, +)
     }
-}
 
-class ReactionsViewModelFactory {
-    private let reactionAssetsVendor: ReactionVendor
-    private let mediaRepository: MediaRepository
-
-    init(
-        reactionAssetsVendor: ReactionVendor,
-        mediaRepository: MediaRepository
-    ) {
-        self.reactionAssetsVendor = reactionAssetsVendor
-        self.mediaRepository = mediaRepository
+    init(reactions: [ReactionButtonViewModel]) {
+        self.reactions = reactions
     }
 
-    func make(from reactionVotes: ReactionVotes) -> Promise<ReactionButtonListViewModel> {
-        return firstly {
-            reactionAssetsVendor.getReactions()
-        }.then { reactionAssets in
-            return Promises.all(reactionAssets.map{
-                self.reactionViewModel(reactionAsset: $0, reactionVotes: reactionVotes)
-            })
-        }.then { reactionViewModels in
-            return Promise(value: ReactionButtonListViewModel(reactions: reactionViewModels.compactMap({$0})))
+    init(reactionAssets: [ReactionAsset]) {
+        self.reactions = reactionAssets.map { reactionAsset in
+            return ReactionButtonViewModel(
+                id: reactionAsset.id,
+                voteCount: 0,
+                isMine: false,
+                myVoteID: nil,
+                imageURL: reactionAsset.imageURL,
+                name: reactionAsset.name
+            )
         }
     }
 
-    func make(from reactionAssets: [ReactionAsset]) -> Promise<ReactionButtonListViewModel> {
-        return firstly {
-            reactionAssetsVendor.getReactions()
-        }.then { reactionAssets in
-            self.downloadReactionImages(reactionAssets: reactionAssets)
-        }
-    }
-    
-    private func downloadReactionImages(reactionAssets: [ReactionAsset]) -> Promise<ReactionButtonListViewModel> {
-        firstly {
-            Promises.all(reactionAssets.map {
-                return Promises.zip(
-                    UIImage.download(url: $0.imageURL),
-                    Promise(value: $0)
-                )
-            })
-        }.then { imageDatas in
-            let reactionViewModels: [ReactionButtonViewModel] = imageDatas.compactMap { (imageData, asset) in
-                guard let image = UIImage(data: imageData) else { return nil }
-                return ReactionButtonViewModel(
-                    id: asset.id,
-                    voteCount: 0,
-                    isMine: false,
-                    myVoteID: nil,
-                    image: image,
-                    name: asset.name
-                )
-            }
-            return Promise(value: ReactionButtonListViewModel(reactions: reactionViewModels))
-        }
-    }
-
-    private func reactionViewModel(reactionAsset: ReactionAsset, reactionVotes: ReactionVotes) -> Promise<ReactionButtonViewModel?> {
-        return firstly {
-            mediaRepository.getImagePromise(url: reactionAsset.imageURL)
-        }.then { image in
+    init(reactionAssets: [ReactionAsset], reactionVotes: ReactionVotes) {
+        self.reactions = reactionAssets.map { reactionAsset in
             let reactionViewModel = ReactionButtonViewModel(
                 id: reactionAsset.id,
                 voteCount: reactionVotes.voteCount(forID: reactionAsset.id),
                 isMine: reactionVotes.isMine(forID: reactionAsset.id),
                 myVoteID: reactionVotes.allVotes.first(where: { $0.isMine })?.voteID,
-                image: image,
+                imageURL: reactionAsset.imageURL,
                 name: reactionAsset.name)
-            return Promise(value: reactionViewModel)
+            return reactionViewModel
         }
     }
-
 }

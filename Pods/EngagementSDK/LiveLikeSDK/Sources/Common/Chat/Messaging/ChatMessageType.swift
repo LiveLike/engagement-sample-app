@@ -13,8 +13,11 @@ import UIKit
     /// Unique message ID.
     var id: ChatMessageID
 
-    /// Channel URL which has this message.
+    /// Chat Room ID
     let roomID: String
+    
+    /// PubNub Channel Name
+    let channelName: String
 
     /// The message
     public let message: String
@@ -59,6 +62,7 @@ import UIKit
     init(
         id: ChatMessageID,
         roomID: String,
+        channelName: String,
         message: String,
         sender: ChatUser,
         videoTimestamp: EpochTime?,
@@ -73,6 +77,7 @@ import UIKit
     ) {
         self.id = id
         self.roomID = roomID
+        self.channelName = channelName
         self.message = message
         self.sender = sender
         self.videoTimestamp = videoTimestamp
@@ -103,6 +108,7 @@ import UIKit
 extension ChatMessage {
     convenience init(
         from chatPubnubMessage: PubSubChatPayload,
+        chatRoomID: String,
         channel: String,
         timetoken: TimeToken,
         actions: [PubSubMessageAction],
@@ -137,7 +143,8 @@ extension ChatMessage {
 
         self.init(
             id: ChatMessageID(chatPubnubMessage.id),
-            roomID: channel,
+            roomID: chatRoomID,
+            channelName: channel,
             message: chatPubnubMessage.message ?? "deleted_\(chatPubnubMessage.id)",
             sender: chatUser,
             videoTimestamp: chatPubnubMessage.programDateTime?.timeIntervalSince1970,
@@ -154,6 +161,7 @@ extension ChatMessage {
 
     convenience init(
         from chatPubnubMessage: PubSubImagePayload,
+        chatRoomID: String,
         channel: String,
         timetoken: TimeToken,
         actions: [PubSubMessageAction],
@@ -188,7 +196,8 @@ extension ChatMessage {
 
         self.init(
             id: ChatMessageID(chatPubnubMessage.id),
-            roomID: channel,
+            roomID: chatRoomID,
+            channelName: channel,
             message: "", // no message
             sender: chatUser,
             videoTimestamp: chatPubnubMessage.programDateTime?.timeIntervalSince1970,

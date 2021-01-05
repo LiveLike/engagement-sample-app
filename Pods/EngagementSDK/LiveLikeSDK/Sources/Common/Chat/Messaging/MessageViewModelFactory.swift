@@ -10,7 +10,7 @@ import UIKit
 
 class MessageViewModelFactory {
     private let stickerPacks: [StickerPack]
-    private let reactionsFactory: ReactionsViewModelFactory
+    private let reactionsFactory: ReactionVendor
     private let channel: String
     private var theme: Theme = Theme()
     private var mediaRepository: MediaRepository
@@ -18,7 +18,7 @@ class MessageViewModelFactory {
     init(
         stickerPacks: [StickerPack],
         channel: String,
-        reactionsFactory: ReactionsViewModelFactory,
+        reactionsFactory: ReactionVendor,
         mediaRepository: MediaRepository
     ) {
         self.stickerPacks = stickerPacks
@@ -33,7 +33,7 @@ class MessageViewModelFactory {
 
         return firstly {
             Promises.zip(
-                reactionsFactory.make(from: chatMessage.reactions),
+                reactionsFactory.getReactions(),
                 prepareMessage(
                     message: chatMessage.message,
                     bodyImageURL: chatMessage.bodyImageUrl,
@@ -63,14 +63,20 @@ class MessageViewModelFactory {
                 username: sender.nickName,
                 isLocalClient: isLocalClient,
                 syncPublishTimecode: chatMessage.videoTimestamp?.description,
-                channel: chatMessage.roomID,
+                chatRoomId: chatMessage.roomID,
+                channel: chatMessage.channelName,
                 badgeImageURL: sender.badgeImageURL,
-                chatReactions: reactionsViewModel,
+                chatReactions: .init(
+                    reactionAssets: reactionsViewModel,
+                    reactionVotes: chatMessage.reactions
+                ),
                 profileImageUrl: chatMessage.profileImageUrl,
                 createdAt: chatMessage.timestamp,
                 bodyImageUrl: chatMessage.bodyImageUrl,
                 bodyImageSize: chatMessage.bodyImageSize,
-                accessibilityLabel: preparedMessage.1)
+                accessibilityLabel: preparedMessage.1,
+                stickerShortcodesInMessage: preparedMessage.2
+            )
             return Promise(value: messageViewModel)
         }
     }
@@ -81,7 +87,7 @@ class MessageViewModelFactory {
         bodyImageSize: CGSize?,
         username: String,
         theme: Theme
-    ) -> Promise<(NSAttributedString, String)> {
+    ) -> Promise<(NSAttributedString, String, [String])> {
         return Promise { fulfill, _ in
             self.prepareMessage(
                 message: message,
@@ -90,7 +96,7 @@ class MessageViewModelFactory {
                 username: username,
                 theme: theme
             ) {
-                fulfill(($0, $1))
+                fulfill(($0, $1, $2))
             }
         }
     }
@@ -101,11 +107,11 @@ class MessageViewModelFactory {
         bodyImageSize: CGSize?,
         username: String,
         theme: Theme,
-        completion: @escaping (NSAttributedString, String) -> Void
+        completion: @escaping (NSAttributedString, String, [String]) -> Void
     ) {
         // Prepare image message
         if let bodyImageUrl = bodyImageURL {
-            let accessibilityLabel = ("\(username) Image")
+            let accessibilityLabel = ("\(username) \("EngagementSDK.chat.accessibility.messageWithImage".localized())")
             if let placeholder = UIImage.coloredImage(
                 from: .gray,
                 size: bodyImageSize ?? CGSize(width: 50, height: 50)
@@ -117,9 +123,9 @@ class MessageViewModelFactory {
                     isLargeImage: true
                 )
                 let attributedString = NSMutableAttributedString(attachment: stickerAttachment)
-                completion(attributedString, accessibilityLabel)
+                completion(attributedString, accessibilityLabel, [])
             } else {
-                completion(NSAttributedString(string: message), accessibilityLabel)
+                completion(NSAttributedString(string: message), accessibilityLabel, [])
             }
         }
 
@@ -132,20 +138,22 @@ class MessageViewModelFactory {
                 mediaRepository: mediaRepository
             ) { result in
                 switch result {
-                case .success(let (attributedString, stickerLabel)):
+                case .success(let (attributedString, stickerLabel, stickers)):
                     let accessibilityLabel: String = {
                         var label: String
                         if let stickerLabel = stickerLabel {
-                            label = ("\(username) Image: [\(stickerLabel)]")
+                            label = ("\(username) \("EngagementSDK.chat.accessibility.messageWithImage".localized()): [\(stickerLabel)]")
                         } else {
                             label = "\(username) \(message)"
                         }
+                        
+                        log.dev(label)
                         return label
                     }()
-                    completion(attributedString, accessibilityLabel)
+                    completion(attributedString, accessibilityLabel, stickers)
                 case .failure(let error):
                     log.error(error)
-                    completion(NSAttributedString(string: message), "")
+                    completion(NSAttributedString(string: message), "", [])
                 }
             }
         }
@@ -156,16 +164,17 @@ class MessageViewModelFactory {
         font: UIFont,
         stickerPacks: [StickerPack],
         mediaRepository: MediaRepository,
-        completion: @escaping (Result<(NSMutableAttributedString, String?), Error>) -> Void
+        completion: @escaping (Result<(NSMutableAttributedString, String?, [String]), Error>) -> Void
     ) {
         let newString = NSMutableAttributedString(string: string)
         let message = string
         let controlMessage = string
         var shortcode: String?
         var stickerLabels: String?
+        var stickerShortcodesFoundInMessage: [String] = []
         do {
             guard let placeholderImage = UIImage.coloredImage(from: .clear, size: CGSize(width: 50, height: 50)) else {
-                completion(.success((newString, nil)))
+                completion(.success((newString, nil, [])))
                 return
             }
              
@@ -176,7 +185,7 @@ class MessageViewModelFactory {
 
             // Handle no matches. Complete with original string.
             guard !matches.isEmpty else {
-                completion(.success((newString, nil)))
+                completion(.success((newString, nil, [])))
                 return
             }
             
@@ -187,7 +196,7 @@ class MessageViewModelFactory {
                 
                 // If range cannot be found be safe and just return the original string.
                 guard let range = Range(r, in: message) else {
-                    completion(.success((newString, nil)))
+                    completion(.success((newString, nil, [])))
                     return
                 }
                 shortcode = String(message[range])
@@ -196,9 +205,11 @@ class MessageViewModelFactory {
                     let shortcode = shortcode,
                     let sticker = stickerPacks.flatMap({ $0.stickers }).first(where: { $0.shortcode == shortcode})
                 else {
-                    completion(.success((newString, nil)))
+                    completion(.success((newString, nil, [])))
                     return
                 }
+
+                stickerShortcodesFoundInMessage.append(shortcode)
                 
                 // compute sticker label for the accessibility label
                 if stickerLabels == nil {
@@ -219,8 +230,9 @@ class MessageViewModelFactory {
                 if newString.rangeExists(nsrange) {
                     newString.replaceCharacters(in: nsrange, with: imageAttachmentString)
                 }
-                completion(.success((newString, stickerLabels)))
             }
+
+            completion(.success((newString, stickerLabels, stickerShortcodesFoundInMessage)))
         } catch {
             log.error("STICKERS Failed to convert sticker shortcodes to images with error: \(String(describing: error))")
             completion(.failure(error))

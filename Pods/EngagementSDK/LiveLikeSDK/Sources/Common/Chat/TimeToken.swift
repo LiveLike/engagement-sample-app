@@ -39,6 +39,11 @@ public class TimeToken: NSObject, Comparable, NSCoding {
         return lhs.pubnubTimetoken.compare(rhs.pubnubTimetoken) == .orderedAscending
     }
 
+    public override func isEqual(_ object: Any?) -> Bool {
+        guard let object = object as? TimeToken else { return false }
+        return self.pubnubTimetoken == object.pubnubTimetoken
+    }
+
     public func encode(with coder: NSCoder) {
         coder.encode(pubnubTimetoken, forKey: "pntimetoken")
     }
@@ -49,6 +54,10 @@ public class TimeToken: NSObject, Comparable, NSCoding {
         }
         self.pubnubTimetoken = pnTimeToken
         self.approximateDate = Date(timeIntervalSince1970: TimeInterval(truncating: pubnubTimetoken) / 10_000_000)
+    }
+
+    public override var description: String {
+        return "\(approximateDate) | \(pubnubTimetoken)"
     }
 
 }

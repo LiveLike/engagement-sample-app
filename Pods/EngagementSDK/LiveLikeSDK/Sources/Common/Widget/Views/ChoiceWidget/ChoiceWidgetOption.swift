@@ -7,30 +7,38 @@
 
 import UIKit
 
-typealias ChoiceWidgetOptionButton = UIButton & ChoiceWidgetOption
+typealias ChoiceWidgetOptionButton = UIView & ChoiceWidgetOption
 
-protocol ChoiceWidgetOption: AnyObject {
-    var id: String { get }
-    func setText(_ text: String, theme: Theme)
-    func setBorderColor(_ color: UIColor)
-    func setColors(_ colors: ChoiceWidgetOptionColors)
-    func customize(_ theme: Theme)
-    var onButtonPressed: ((ChoiceWidgetOptionButton) -> Void)? { get set }
-    func setImage(_ imageURL: URL)
-    func setProgress(_ percent: CGFloat)
-    var isSelected: Bool { get set }
+protocol ChoiceWidgetOptionDelegate: AnyObject {
+    func wasSelected(_ option: ChoiceWidgetOption)
+    func wasDeselected(_ option: ChoiceWidgetOption)
 }
 
-struct ChoiceWidgetOptionFactory {
-    enum Style {
-        case wideText
-        case wideTextImage
-    }
+protocol ChoiceWidgetOption: AnyObject {
+    init(id: String)
+    var id: String { get }
+    var delegate: ChoiceWidgetOptionDelegate? { get set }
+    var borderColor: UIColor { get set }
+    func setImage(_ imageURL: URL)
+    var text: String? { get set }
+    var image: UIImage? { get set }
+    func setProgress(_ percent: CGFloat)
+    var borderWidth: CGFloat { get set }
+    var background: Theme.Background? { get set }
+    var descriptionFont: UIFont? { get set }
+    var descriptionTextColor: UIColor? { get set }
+    var percentageFont: UIFont? { get set }
+    var percentageTextColor: UIColor? { get set }
+    var barBackground: Theme.Background? { get set }
+    var barCornerRadii: Theme.CornerRadii { get set }
+    var cornerRadii: Theme.CornerRadii { get set }
+    var optionThemeStyle: OptionThemeStyle { get set }
+    func applyContainerProperties(_ container: Theme.Container)
+}
 
-    func create(style: Style, id: String) -> ChoiceWidgetOptionButton {
-        switch style {
-        case .wideText: return TextChoiceWidgetOptionButton(id: id)
-        case .wideTextImage: return WideTextImageChoice(id: id)
-        }
-    }
+enum OptionThemeStyle {
+    case selected
+    case unselected
+    case correct
+    case incorrect
 }

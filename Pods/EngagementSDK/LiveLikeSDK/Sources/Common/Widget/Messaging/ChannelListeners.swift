@@ -19,27 +19,23 @@ import Foundation
 /// ```
 /// is required, otherwise a memory leak could occur
 class ChannelListeners {
-    private var channelListeners = [String: [WidgetProxyInput]]()
+    private var channelListeners = [String: Listener<WidgetProxyInput>]()
     private let synchronizingQueue = DispatchQueue(label: "com.livelike.clientListenerSynchronizer", attributes: .concurrent)
 
     func addListener(_ listener: WidgetProxyInput, forChannel channel: String) {
         synchronizingQueue.async(flags: .barrier) { [weak self] in
-            if var listeners = self?.channelListeners[channel] {
-                if listeners.contains(where: { $0 === listener }) { return }
-                listeners.append(listener)
-                self?.channelListeners[channel] = listeners
-            } else {
-                self?.channelListeners[channel] = [listener]
+            guard let self = self else { return }
+            if self.channelListeners[channel] == nil {
+                self.channelListeners[channel] = Listener()
             }
+            self.channelListeners[channel]?.addListener(listener)
         }
     }
 
     func removeListener(_ listener: WidgetProxyInput, forChannel channel: String) {
         synchronizingQueue.async(flags: .barrier) { [weak self] in
-            if var listeners = self?.channelListeners[channel] {
-                listeners.removeAll(where: { $0 === listener })
-                self?.channelListeners[channel] = listeners.isEmpty ? nil : listeners
-            }
+            guard let self = self else { return }
+            self.channelListeners[channel]?.removeListener(listener)
         }
     }
 
@@ -47,7 +43,7 @@ class ChannelListeners {
         var isEmpty = true
         synchronizingQueue.sync {
             if let listeners = channelListeners[channel] {
-                isEmpty = listeners.isEmpty
+                isEmpty = listeners.isEmpty()
             }
         }
         return isEmpty
@@ -64,13 +60,9 @@ class ChannelListeners {
             guard let self = self else { return }
             if let channel = channel {
                 guard let inputs = self.channelListeners[channel] else { return }
-                for listener in inputs {
-                    invocation(listener)
-                }
+                inputs.publish(invocation)
             } else {
-                for listener in channelListeners.values.flatMap({ $0 }) {
-                    invocation(listener)
-                }
+                channelListeners.values.forEach { $0.publish(invocation) }
             }
         }
     }

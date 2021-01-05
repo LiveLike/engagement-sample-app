@@ -45,13 +45,17 @@ extension AnalyticsEvent.Name {
     static let widgetVisibilityStatusChanged: Name = "Widget Visibility Status Changed"
     static let chatPauseStatusChanged: Name = "Chat Pause Status Changed"
     static let chatVisibilityStatusChanged: Name = "Chat Visibility Status Changed"
+    static let alertWidgetLinkOpened: Name = "Alert Link Opened"
 }
 
 extension AnalyticsEvent {
-    static func widgetDisplayed(kind: String, widgetId: String) -> AnalyticsEvent {
+    static func widgetDisplayed(kind: String, widgetId: String, widgetLink: URL?) -> AnalyticsEvent {
+        var data: [Attribute: Any] = [.widgetType: kind, .widgetId: widgetId]
+        if let widgetLink = widgetLink {
+            data[.widgetLinkUrl] = widgetLink.absoluteString
+        }
         return AnalyticsEvent(name: .widgetDisplayed,
-                              data: [.widgetType: kind,
-                                     .widgetId: widgetId])
+                              data: data)
     }
 
     static func widgetInteracted(properties: WidgetInteractedProperties) -> AnalyticsEvent {
@@ -92,6 +96,16 @@ extension AnalyticsEvent {
         return AnalyticsEvent(name: .widgetUserDismissed,
                               data: data)
     }
+    
+    static func alertWidgetLinkOpened(alertId: String, programId: String, linkUrl: String) -> AnalyticsEvent {
+        return .init(name: .alertWidgetLinkOpened,
+                     data: [
+                        .alertId: alertId,
+                        .programId: programId,
+                        .widgetLinkUrl: linkUrl,
+                        .widgetType: WidgetKind.alert.analyticsName
+        ])
+    }
 
     static var chatScrollInitiated: AnalyticsEvent {
         return AnalyticsEvent(name: .chatScrollInitiated,
@@ -109,10 +123,11 @@ extension AnalyticsEvent {
         return AnalyticsEvent(name: .chatMessageSent,
                               data: [.chatCharacterLength: properties.characterCount,
                                      .chatMessageId: properties.messageId,
-                                     .stickerId: properties.stickerIDs,
+                                     .stickerShortcodes: properties.stickerShortcodes,
                                      .stickerCount: properties.stickerCount,
                                      .stickerKeyboardIndices: properties.stickerIndices,
-                                     .chatMessageHasExternalImage: properties.hasExternalImage])
+                                     .chatMessageHasExternalImage: properties.hasExternalImage,
+                                     .chatRoomId: properties.chatRoomId])
     }
 
     static func orientationChanged(previousOrientation: Orientation, newOrientation: Orientation, secondsInPreviousOrientation: Double) -> AnalyticsEvent {

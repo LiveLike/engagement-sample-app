@@ -125,6 +125,8 @@ extension WidgetsUseCase: EngagementSDKDelegate {
 
 // MARK: - ContentSessionDelegate
 extension WidgetsUseCase: ContentSessionDelegate {
+    func contentSession(_ session: ContentSession, didReceiveWidget widget: WidgetModel) { }
+
     func playheadTimeSource(_ session: ContentSession) -> Date? {
         return nil
     }

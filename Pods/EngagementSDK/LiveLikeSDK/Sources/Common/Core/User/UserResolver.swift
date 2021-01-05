@@ -44,12 +44,10 @@ class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, Acc
     }
 
     func setNickname(nickname: String) -> Promise<String> {
-        let userProfileService = self.userProfileService
-
         return firstly {
-            whenAccessToken
-        }.then {
-            userProfileService.setNickname(nickname, forAccessToken: $0)
+            Promises.zip(whenAccessToken, livelikeAPI.whenApplicationConfig)
+        }.then { accessToken, appResource in
+            self.livelikeAPI.setNickname(profileURL: appResource.profileUrl, nickname: nickname, accessToken: accessToken)
         }.then(on: DispatchQueue.global()) { profile -> String in
             let newNickname = profile.nickname
             self.currentNickname = nickname
@@ -75,7 +73,14 @@ class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, Acc
     
     private func generateNewAccessToken() -> Promise<AccessToken> {
         return firstly {
-            accessTokenGenerator.generate()
+            livelikeAPI.whenApplicationConfig
+        }.then {
+            log.warning("""
+            The EngagementSDK is creating a new User Profile because it was initialized without an existing Access Token.
+            The created User Profile will be counted towards the Monthly Active Users (MAU) calculation.
+            For more information: https://docs.livelike.com/docs/user-profiles
+            """)
+            return self.livelikeAPI.createProfile(profileURL: $0.profileUrl)
         }.ensure { [weak self] in
             self?.accessTokenStorage.storeAccessToken(accessToken: $0.asString)
             return true
@@ -83,12 +88,11 @@ class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, Acc
     }
     
     lazy var whenProfileResource: Promise<ProfileResource> = {
-        let userProfileService = self.userProfileService
         return firstly {
-            whenAccessToken
-        }.then { accessToken in
-            return userProfileService.getProfile(forAccessToken: accessToken)
-        }.then { [weak self] profileResource in
+            Promises.zip(whenAccessToken, livelikeAPI.whenApplicationConfig)
+        }.then { accessToken, appResource in
+            self.livelikeAPI.getProfile(profileURL: appResource.profileUrl, accessToken: accessToken)
+        }.then { [weak self] profileResource -> Promise<ProfileResource> in
             let awardsProfile = AwardsProfile(from: profileResource)
             self?.awardsListeners.publish { $0.awardsProfile(didUpdate: awardsProfile) }
             return Promise(value: profileResource)
@@ -98,8 +102,7 @@ class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, Acc
     // MARK: Private Properties
 
     private let accessTokenStorage: AccessTokenStorage
-    private let userProfileService: UserProfileService
-    private let accessTokenGenerator: UserAccessTokenGenerator
+    private let livelikeAPI: LiveLikeRestAPIServicable
     private weak var sdkDelegate: InternalErrorReporter?
     private var awardsListeners: Listener<AwardsProfileDelegate> = Listener()
 
@@ -107,13 +110,11 @@ class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, Acc
      - Parameter integratorAccessToken: The access token given by the integrator to attempt to retreive a user's profile
      */
     init(accessTokenStorage: AccessTokenStorage,
-         userProfileService: UserProfileService,
-         accessTokenGenerator: UserAccessTokenGenerator,
+         livelikeAPI: LiveLikeRestAPIServicable,
          sdkDelegate: InternalErrorReporter)
     {
         self.accessTokenStorage = accessTokenStorage
-        self.userProfileService = userProfileService
-        self.accessTokenGenerator = accessTokenGenerator
+        self.livelikeAPI = livelikeAPI
         self.sdkDelegate = sdkDelegate
     }
 
@@ -123,7 +124,9 @@ class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, Acc
      */
     private func validateAccessToken(_ accessToken: AccessToken) -> Promise<AccessToken> {
         return firstly {
-            self.userProfileService.getProfile(forAccessToken: accessToken)
+            self.livelikeAPI.whenApplicationConfig
+        }.then {
+            self.livelikeAPI.getProfile(profileURL: $0.profileUrl, accessToken: accessToken)
         }.then { _ in
             // successfully loaded profile - access token is good
             Promise(value: accessToken)
@@ -188,50 +191,6 @@ protocol UserNicknameService: UserNicknameVendor {
 
 protocol UserPointsVendor {
     var whenUserPoints: Promise<Int> { get }
-}
-
-protocol UserProfileService {
-    func setNickname(_ nickname: String, forAccessToken accessToken: AccessToken) -> Promise<ProfileResource>
-    func getProfile(forAccessToken accessToken: AccessToken) -> Promise<ProfileResource>
-}
-
-class APIUserProfileService: UserProfileService {
-    private let livelikeRestAPIService: LiveLikeRestAPIServicable
-
-    init(livelikeRestAPIService: LiveLikeRestAPIServicable) {
-        self.livelikeRestAPIService = livelikeRestAPIService
-    }
-
-    func getProfile(forAccessToken accessToken: AccessToken) -> Promise<ProfileResource> {
-        return firstly {
-            self.livelikeRestAPIService.whenApplicationConfig
-        }.then { appConfig in
-            self.requestProfileResource(url: appConfig.profileUrl, accessToken: accessToken.asString)
-        }
-    }
-
-    func setNickname(_ nickname: String, forAccessToken accessToken: AccessToken) -> Promise<ProfileResource> {
-        //swiftlint:disable nesting
-        struct NicknamePatchBody: Encodable {
-            let nickname: String
-        }
-        //swiftlint:enable nesting
-
-        return firstly {
-            self.livelikeRestAPIService.whenApplicationConfig
-        }.then { appConfig in
-            let body = NicknamePatchBody(nickname: nickname)
-            let resource = Resource<ProfileResource>(url: appConfig.profileUrl,
-                                                     method: .patch(body),
-                                                     accessToken: accessToken.asString)
-            return EngagementSDK.networking.load(resource)
-        }
-    }
-
-    private func requestProfileResource(url: URL, accessToken: String) -> Promise<ProfileResource> {
-        let resource = Resource<ProfileResource>(get: url, accessToken: accessToken)
-        return EngagementSDK.networking.load(resource)
-    }
 }
 
 struct AccessToken {

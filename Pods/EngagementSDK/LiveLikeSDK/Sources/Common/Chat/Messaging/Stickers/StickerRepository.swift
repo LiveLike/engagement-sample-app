@@ -85,7 +85,3 @@ class StickerRepository {
         return prefetchPromise
     }
 }
-
-enum StickerRepositoryError: Error {
-    case invalidURL
-}
