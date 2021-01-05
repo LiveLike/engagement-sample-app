@@ -19,6 +19,10 @@
 		76FE3E9B24379912003F179B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E9A24379912003F179B /* Assets.xcassets */; };
 		76FE3E9E24379912003F179B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E9C24379912003F179B /* LaunchScreen.storyboard */; };
 		D0F08AFAE8A6FB59BFC17641 /* Pods_Sample_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9141840A08C79EA20A86BA4 /* Pods_Sample_App.framework */; };
+		D3F9FC1A25A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F9FC1925A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift */; };
+		D3F9FC2325A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F9FC2125A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift */; };
+		D3F9FC2425A4E0E000ECBAA5 /* CustomAlertWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F9FC2225A4E0E000ECBAA5 /* CustomAlertWidgetView.swift */; };
+		D3F9FC2925A4E69B00ECBAA5 /* CustomWidgetTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F9FC2825A4E69B00ECBAA5 /* CustomWidgetTimer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +42,10 @@
 		76FE3E9F24379912003F179B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		842A1B4B833DABFEBA36D5AF /* Pods-Sample App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.debug.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.debug.xcconfig"; sourceTree = "<group>"; };
 		B9141840A08C79EA20A86BA4 /* Pods_Sample_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Sample_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		D3F9FC1925A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWidgetsUseCase.swift; sourceTree = "<group>"; };
+		D3F9FC2125A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomAlertWidgetViewController.swift; sourceTree = "<group>"; };
+		D3F9FC2225A4E0E000ECBAA5 /* CustomAlertWidgetView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomAlertWidgetView.swift; sourceTree = "<group>"; };
+		D3F9FC2825A4E69B00ECBAA5 /* CustomWidgetTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWidgetTimer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,6 +76,7 @@
 				27C83D01243B8D44009F35DA /* WidgetsUseCase.swift */,
 				276401B5243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift */,
 				2757FD30249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift */,
+				D3F9FC1925A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift */,
 			);
 			path = "Use Cases";
 			sourceTree = "<group>";
@@ -101,6 +110,7 @@
 		76FE3E902437990E003F179B /* Sample App */ = {
 			isa = PBXGroup;
 			children = (
+				D3F9FC1F25A4E0C500ECBAA5 /* Custom Widgets */,
 				76FE3E912437990E003F179B /* AppDelegate.swift */,
 				76FE3E952437990E003F179B /* HomeViewController.swift */,
 				276401B4243BB5170016C2FC /* Use Cases */,
@@ -112,6 +122,16 @@
 				76FE3E9F24379912003F179B /* Info.plist */,
 			);
 			path = "Sample App";
+			sourceTree = "<group>";
+		};
+		D3F9FC1F25A4E0C500ECBAA5 /* Custom Widgets */ = {
+			isa = PBXGroup;
+			children = (
+				D3F9FC2225A4E0E000ECBAA5 /* CustomAlertWidgetView.swift */,
+				D3F9FC2125A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift */,
+				D3F9FC2825A4E69B00ECBAA5 /* CustomWidgetTimer.swift */,
+			);
+			path = "Custom Widgets";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -238,12 +258,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D3F9FC2425A4E0E000ECBAA5 /* CustomAlertWidgetView.swift in Sources */,
 				276401B6243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift in Sources */,
+				D3F9FC2325A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift in Sources */,
 				276401B3243BB0080016C2FC /* Utils+UserDefaults.swift in Sources */,
 				27C83D02243B8D44009F35DA /* WidgetsUseCase.swift in Sources */,
 				76FE3E962437990E003F179B /* HomeViewController.swift in Sources */,
+				D3F9FC2925A4E69B00ECBAA5 /* CustomWidgetTimer.swift in Sources */,
 				767AFD57243B8B2600F85E8A /* ChatUseCase.swift in Sources */,
 				76FE3E922437990E003F179B /* AppDelegate.swift in Sources */,
+				D3F9FC1A25A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift in Sources */,
 				2757FD31249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift in Sources */,
 				76FE3E942437990E003F179B /* SceneDelegate.swift in Sources */,
 			);

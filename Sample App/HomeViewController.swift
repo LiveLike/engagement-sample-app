@@ -104,6 +104,17 @@ class HomeViewController: UIViewController {
         button.addTarget(self, action: #selector(createEnterChatRoomButtonSelected ), for: .touchUpInside)
         return button
     }()
+
+    private let customWidgetModuleButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle("Custom Widgets", for: .normal)
+        button.backgroundColor = .lightGray
+        button.contentHorizontalAlignment = .left
+        button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
+        button.addTarget(self, action: #selector(customWidgetUseCaseButtonSelected ), for: .touchUpInside)
+        return button
+    }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -131,6 +142,7 @@ class HomeViewController: UIViewController {
         stackView.addArrangedSubview(widgetModuleButton)
         stackView.addArrangedSubview(widgetChatSpoilerPreventionModule)
         stackView.addArrangedSubview(createEnterChatRoomModule)
+        stackView.addArrangedSubview(customWidgetModuleButton)
         
         // Loads previous client id and program id from UserDefaults
         clientIDTextField.text = Defaults.activeClientID
@@ -216,6 +228,23 @@ class HomeViewController: UIViewController {
         let createEnterChatRoomUseCase = CreateEnterChatRoomUseCase(clientID: clientID,
                                                                             programID: programID)
         
+        createEnterChatRoomUseCase.modalPresentationStyle = .fullScreen
+        self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)
+    }
+
+    @objc func customWidgetUseCaseButtonSelected() {
+        guard let clientID = Defaults.activeClientID, !clientID.isEmpty else {
+            presentInvalidClientIDAlert()
+            return
+        }
+
+        guard let programID = Defaults.activeProgramID, !programID.isEmpty else {
+            presentInvalidProgramIDAlert()
+            return
+        }
+
+        let createEnterChatRoomUseCase = CustomWidgetsUseCase(clientID: clientID, programID: programID)
+
         createEnterChatRoomUseCase.modalPresentationStyle = .fullScreen
         self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)
     }
