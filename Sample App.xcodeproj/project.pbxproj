@@ -19,6 +19,9 @@
 		76FE3E9B24379912003F179B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E9A24379912003F179B /* Assets.xcassets */; };
 		76FE3E9E24379912003F179B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E9C24379912003F179B /* LaunchScreen.storyboard */; };
 		D0F08AFAE8A6FB59BFC17641 /* Pods_Sample_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9141840A08C79EA20A86BA4 /* Pods_Sample_App.framework */; };
+		D38CADE025A697C9000A5265 /* CustomImageSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38CADDF25A697C9000A5265 /* CustomImageSliderView.swift */; };
+		D38CADE325A69A2C000A5265 /* CustomImageSliderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38CADE225A69A2C000A5265 /* CustomImageSliderViewController.swift */; };
+		D38CADEB25A8C0EC000A5265 /* image-slider-avg.json in Resources */ = {isa = PBXBuildFile; fileRef = D38CADEA25A8C0EC000A5265 /* image-slider-avg.json */; };
 		D3F9FC1A25A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F9FC1925A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift */; };
 		D3F9FC2325A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F9FC2125A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift */; };
 		D3F9FC2425A4E0E000ECBAA5 /* CustomAlertWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F9FC2225A4E0E000ECBAA5 /* CustomAlertWidgetView.swift */; };
@@ -42,6 +45,9 @@
 		76FE3E9F24379912003F179B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		842A1B4B833DABFEBA36D5AF /* Pods-Sample App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.debug.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.debug.xcconfig"; sourceTree = "<group>"; };
 		B9141840A08C79EA20A86BA4 /* Pods_Sample_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Sample_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		D38CADDF25A697C9000A5265 /* CustomImageSliderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomImageSliderView.swift; sourceTree = "<group>"; };
+		D38CADE225A69A2C000A5265 /* CustomImageSliderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomImageSliderViewController.swift; sourceTree = "<group>"; };
+		D38CADEA25A8C0EC000A5265 /* image-slider-avg.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "image-slider-avg.json"; sourceTree = "<group>"; };
 		D3F9FC1925A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWidgetsUseCase.swift; sourceTree = "<group>"; };
 		D3F9FC2125A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomAlertWidgetViewController.swift; sourceTree = "<group>"; };
 		D3F9FC2225A4E0E000ECBAA5 /* CustomAlertWidgetView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomAlertWidgetView.swift; sourceTree = "<group>"; };
@@ -92,6 +98,7 @@
 		76FE3E852437990E003F179B = {
 			isa = PBXGroup;
 			children = (
+				D38CADE825A8C0C6000A5265 /* Resources */,
 				76FE3E902437990E003F179B /* Sample App */,
 				76FE3E8F2437990E003F179B /* Products */,
 				044B0B2B23A14386AE38E6F3 /* Pods */,
@@ -124,12 +131,30 @@
 			path = "Sample App";
 			sourceTree = "<group>";
 		};
+		D38CADE825A8C0C6000A5265 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				D38CADE925A8C0D2000A5265 /* Lottie Animations */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		D38CADE925A8C0D2000A5265 /* Lottie Animations */ = {
+			isa = PBXGroup;
+			children = (
+				D38CADEA25A8C0EC000A5265 /* image-slider-avg.json */,
+			);
+			path = "Lottie Animations";
+			sourceTree = "<group>";
+		};
 		D3F9FC1F25A4E0C500ECBAA5 /* Custom Widgets */ = {
 			isa = PBXGroup;
 			children = (
 				D3F9FC2225A4E0E000ECBAA5 /* CustomAlertWidgetView.swift */,
 				D3F9FC2125A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift */,
 				D3F9FC2825A4E69B00ECBAA5 /* CustomWidgetTimer.swift */,
+				D38CADDF25A697C9000A5265 /* CustomImageSliderView.swift */,
+				D38CADE225A69A2C000A5265 /* CustomImageSliderViewController.swift */,
 			);
 			path = "Custom Widgets";
 			sourceTree = "<group>";
@@ -197,6 +222,7 @@
 				76FE3E9E24379912003F179B /* LaunchScreen.storyboard in Resources */,
 				76FE3E9B24379912003F179B /* Assets.xcassets in Resources */,
 				76FE3E992437990E003F179B /* Main.storyboard in Resources */,
+				D38CADEB25A8C0EC000A5265 /* image-slider-avg.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,12 +287,14 @@
 				D3F9FC2425A4E0E000ECBAA5 /* CustomAlertWidgetView.swift in Sources */,
 				276401B6243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift in Sources */,
 				D3F9FC2325A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift in Sources */,
+				D38CADE025A697C9000A5265 /* CustomImageSliderView.swift in Sources */,
 				276401B3243BB0080016C2FC /* Utils+UserDefaults.swift in Sources */,
 				27C83D02243B8D44009F35DA /* WidgetsUseCase.swift in Sources */,
 				76FE3E962437990E003F179B /* HomeViewController.swift in Sources */,
 				D3F9FC2925A4E69B00ECBAA5 /* CustomWidgetTimer.swift in Sources */,
 				767AFD57243B8B2600F85E8A /* ChatUseCase.swift in Sources */,
 				76FE3E922437990E003F179B /* AppDelegate.swift in Sources */,
+				D38CADE325A69A2C000A5265 /* CustomImageSliderViewController.swift in Sources */,
 				D3F9FC1A25A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift in Sources */,
 				2757FD31249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift in Sources */,
 				76FE3E942437990E003F179B /* SceneDelegate.swift in Sources */,

@@ -117,6 +117,8 @@ extension CustomWidgetsUseCase: WidgetViewControllerDelegate {
         switch widgetModel {
         case .alert(let alertModel):
             return CustomAlertWidgetViewController(model: alertModel)
+        case .imageSlider(let imageSliderModel):
+            return CustomImageSliderViewController(model: imageSliderModel)
         default:
             return DefaultWidgetFactory.makeWidget(from: widgetModel)
         }
