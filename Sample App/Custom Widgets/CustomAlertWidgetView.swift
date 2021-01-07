@@ -11,6 +11,12 @@ class CustomAlertWidgetView: UIView {
         return stackView
     }()
 
+    let timer: CustomWidgetBarTimer = {
+        let timer = CustomWidgetBarTimer()
+        timer.translatesAutoresizingMaskIntoConstraints = false
+        return timer
+    }()
+
     let headerView: UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -85,6 +91,12 @@ class CustomAlertWidgetView: UIView {
         super.init(frame: .zero)
 
         backgroundColor = .white
+
+        addSubview(timer)
+        timer.bottomAnchor.constraint(equalTo: topAnchor).isActive = true
+        timer.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+        timer.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
+        timer.heightAnchor.constraint(equalToConstant: 5).isActive = true
 
         addSubview(stackView)
         stackView.addArrangedSubview(headerView)

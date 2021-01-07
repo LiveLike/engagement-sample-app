@@ -41,22 +41,19 @@ class CustomWidgetBarTimer: UIView {
     }
 
     func play(duration: TimeInterval) {
-        progressViewTrailingConstraintToSuperviewTrailingAnchor.isActive = false
-        progressViewTrailingConstraintToSuperviewLeadingAnchor.isActive = true
-        layoutIfNeeded()
-
-        UIView.animate(withDuration: duration, delay: 0, options: .curveLinear) { [weak self] in
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.progressViewTrailingConstraintToSuperviewTrailingAnchor.isActive = true
-            self.progressViewTrailingConstraintToSuperviewLeadingAnchor.isActive = false
+            self.progressViewTrailingConstraintToSuperviewTrailingAnchor.isActive = false
+            self.progressViewTrailingConstraintToSuperviewLeadingAnchor.isActive = true
             self.layoutIfNeeded()
-        }
-    }
 
-    func stop() {
-        progressViewTrailingConstraintToSuperviewTrailingAnchor.isActive = false
-        progressViewTrailingConstraintToSuperviewLeadingAnchor.isActive = true
-        layoutIfNeeded()
+            UIView.animate(withDuration: duration, delay: 0, options: .curveLinear) { [weak self] in
+                guard let self = self else { return }
+                self.progressViewTrailingConstraintToSuperviewTrailingAnchor.isActive = true
+                self.progressViewTrailingConstraintToSuperviewLeadingAnchor.isActive = false
+                self.layoutIfNeeded()
+            }
+        }
     }
 
 }
