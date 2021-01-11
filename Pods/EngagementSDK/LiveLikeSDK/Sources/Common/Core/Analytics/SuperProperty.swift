@@ -43,10 +43,6 @@ extension SuperProperty.Name {
     static var widgetStatus: Name = "Widget Status"
     static var officialAppName: Name = "Official App Name"
     static var sdkVersion: Name = "SDK Version"
-    static var lifetimePoints: Name = "Lifetime Points"
-    static var pointsThisProgram: Name = "Points This Program"
-    static var badgeLevelThisProgram: Name = "Badge Level This Program"
-    static var timeOfLastBadgeAward: Name = "Time of Last Badge Award"
     static var userMuteState: Name = "User Mute State"
 }
 
@@ -109,22 +105,6 @@ extension SuperProperty {
     
     static func sdkVersion(version: String) -> SuperProperty {
         return SuperProperty(name: .sdkVersion, value: version)
-    }
-    
-    static func lifetimePoints(points: Int) -> SuperProperty {
-        return SuperProperty(name: .lifetimePoints, value: points)
-    }
-    
-    static func pointsThisProgram(points: Int) -> SuperProperty {
-        return SuperProperty(name: .pointsThisProgram, value: points)
-    }
-    
-    static func badgeLevelThisProgram(level: Int) -> SuperProperty {
-        return SuperProperty(name: .badgeLevelThisProgram, value: level)
-    }
-    
-    static func timeOfLastBadgeAward(time: Date) -> SuperProperty {
-        return SuperProperty(name: .timeOfLastBadgeAward, value: time)
     }
     
     static func userMuteState(_ state: UserMuteState) -> SuperProperty {

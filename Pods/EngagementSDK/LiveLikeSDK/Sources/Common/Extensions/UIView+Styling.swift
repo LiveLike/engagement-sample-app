@@ -170,7 +170,7 @@ extension UIBezierPath {
 
         if topRightRadius != .zero{
             path.addLine(to: CGPoint(x: topRight.x-topRightRadius.width, y: topRight.y))
-            path.addCurve(to:  CGPoint(x: topRight.x, y: topRight.y+topRightRadius.height), control1: CGPoint(x: topRight.x, y: topRight.y), control2:CGPoint(x: topRight.x, y: topRight.y+topRightRadius.height))
+            path.addCurve(to: CGPoint(x: topRight.x, y: topRight.y+topRightRadius.height), control1: CGPoint(x: topRight.x, y: topRight.y), control2: CGPoint(x: topRight.x, y: topRight.y+topRightRadius.height))
         } else {
              path.addLine(to: CGPoint(x: topRight.x, y: topRight.y))
         }
@@ -191,7 +191,7 @@ extension UIBezierPath {
 
         if topLeftRadius != .zero{
             path.addLine(to: CGPoint(x: topLeft.x, y: topLeft.y+topLeftRadius.height))
-            path.addCurve(to: CGPoint(x: topLeft.x+topLeftRadius.width, y: topLeft.y) , control1: CGPoint(x: topLeft.x, y: topLeft.y) , control2: CGPoint(x: topLeft.x+topLeftRadius.width, y: topLeft.y))
+            path.addCurve(to: CGPoint(x: topLeft.x+topLeftRadius.width, y: topLeft.y), control1: CGPoint(x: topLeft.x, y: topLeft.y), control2: CGPoint(x: topLeft.x+topLeftRadius.width, y: topLeft.y))
         } else {
             path.addLine(to: CGPoint(x: topLeft.x, y: topLeft.y))
         }

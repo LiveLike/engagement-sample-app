@@ -24,7 +24,7 @@ class Animator {
   /// A delegate responsible for displaying the GIF frames.
   private weak var delegate: GIFAnimatable!
     
-  private var animationBlock: (() -> Void)? = nil
+  private var animationBlock: (() -> Void)?
 
   /// Responsible for starting and stopping the animation.
   private lazy var displayLink: CADisplayLink = { [unowned self] in
@@ -179,7 +179,7 @@ class Animator {
 }
 
 /// A proxy class to avoid a retain cycle with the display link.
-fileprivate class DisplayLinkProxy {
+private class DisplayLinkProxy {
 
   /// The target animator.
   private weak var target: Animator?

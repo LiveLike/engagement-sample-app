@@ -40,4 +40,3 @@ extension Theme {
         public var link: Text
     }
 }
-

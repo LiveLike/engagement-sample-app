@@ -33,7 +33,6 @@ class MessageViewModel: Equatable {
     let chatRoomId: String
     let channelName: String // PubNub Channel Name
     private(set) var isDeleted: Bool = false
-    var badgeImageURL: URL?
     let createdAt: Date
     
     var chatReactions: ReactionButtonListViewModel
@@ -57,7 +56,6 @@ class MessageViewModel: Equatable {
          syncPublishTimecode: String?,
          chatRoomId: String,
          channel: String,
-         badgeImageURL: URL?,
          chatReactions: ReactionButtonListViewModel,
          profileImageUrl: URL?,
          createdAt: Date,
@@ -73,7 +71,6 @@ class MessageViewModel: Equatable {
         self.isLocalClient = isLocalClient
         self.syncPublishTimecode = syncPublishTimecode
         self.channelName = channel
-        self.badgeImageURL = badgeImageURL
         self.chatReactions = chatReactions
         self.profileImageUrl = profileImageUrl
         self.createdAt = createdAt

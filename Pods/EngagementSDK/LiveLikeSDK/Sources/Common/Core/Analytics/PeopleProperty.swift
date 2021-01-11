@@ -21,7 +21,6 @@ enum PeopleProperty {
     case lastChatStatus(status: ChatStatus)
     case timeOfLastChatMessage(time: Date)
     case lastWidgetStatus(status: WidgetStatus)
-    case lifetimePoints(points: Int)
     case lastProgramID(programID: String)
     case lastProgramName(name: String)
     case userMuteState(UserMuteState)
@@ -54,8 +53,6 @@ enum PeopleProperty {
             return "Time Of Last Chat Message"
         case .lastWidgetStatus:
             return "Last Widget Status"
-        case .lifetimePoints:
-            return "Lifetime Points"
         case .lastProgramID:
             return "Last Program ID"
         case .lastProgramName:
@@ -93,8 +90,6 @@ enum PeopleProperty {
             return time
         case let .lastWidgetStatus(status):
             return status.analyticsName
-        case let .lifetimePoints(points):
-            return points
         case let .lastProgramID(programID):
             return programID
         case let .lastProgramName(name):

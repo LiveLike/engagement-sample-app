@@ -164,7 +164,6 @@ public class WidgetViewController: UIViewController {
             return
         }
         session.resumeWidgets()
-        session.rankClient?.getUserRank()
     }
 
     private func addSwipeToDismissGesture(to view: UIView) {
@@ -235,7 +234,7 @@ public class WidgetViewController: UIViewController {
     }
     
     private func showNextWidgetInQueue() {
-        guard let session = session as? InternalContentSession else { return }
+        guard (session as? InternalContentSession) != nil else { return }
         
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }

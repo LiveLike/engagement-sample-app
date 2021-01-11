@@ -14,7 +14,7 @@ import Foundation
 /// Once a `UserSession` is created from livelike CMS, that value is
 /// persisted across application launches. Before sending a request to
 /// livelike backend we check the local persistent store and use that value.
-class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, AccessTokenVendor, UserProfileVendor {
+class UserResolver: LiveLikeIDVendor, UserNicknameService, AccessTokenVendor, UserProfileVendor {
     // MARK: - Internal Properties
 
     lazy var whenLiveLikeID: Promise<LiveLikeID> = {
@@ -54,14 +54,6 @@ class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, Acc
             return newNickname
         }
     }
-    
-    lazy var whenUserPoints: Promise<Int> = {
-        firstly {
-            self.whenProfileResource
-        }.then { profileResource in
-            profileResource.points
-        }
-    }()
 
     lazy var whenAccessToken: Promise<AccessToken> = {
         if let accessTokenString = self.accessTokenStorage.fetchAccessToken() {
@@ -91,11 +83,7 @@ class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, Acc
         return firstly {
             Promises.zip(whenAccessToken, livelikeAPI.whenApplicationConfig)
         }.then { accessToken, appResource in
-            self.livelikeAPI.getProfile(profileURL: appResource.profileUrl, accessToken: accessToken)
-        }.then { [weak self] profileResource -> Promise<ProfileResource> in
-            let awardsProfile = AwardsProfile(from: profileResource)
-            self?.awardsListeners.publish { $0.awardsProfile(didUpdate: awardsProfile) }
-            return Promise(value: profileResource)
+            return self.livelikeAPI.getProfile(profileURL: appResource.profileUrl, accessToken: accessToken)
         }
     }()
 
@@ -104,7 +92,6 @@ class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, Acc
     private let accessTokenStorage: AccessTokenStorage
     private let livelikeAPI: LiveLikeRestAPIServicable
     private weak var sdkDelegate: InternalErrorReporter?
-    private var awardsListeners: Listener<AwardsProfileDelegate> = Listener()
 
     /**
      - Parameter integratorAccessToken: The access token given by the integrator to attempt to retreive a user's profile
@@ -143,16 +130,6 @@ class UserResolver: LiveLikeIDVendor, UserNicknameService, UserPointsVendor, Acc
     }
 }
 
-extension UserResolver: AwardsProfileVendor {
-    func addDelegate(_ delegate: AwardsProfileDelegate) {
-        awardsListeners.addListener(delegate)
-    }
-
-    func removeDelegate(_ delegate: AwardsProfileDelegate) {
-        awardsListeners.removeListener(delegate)
-    }
-}
-
 // MARK: - Network Request
 
 /// Represents a user's profile
@@ -160,11 +137,6 @@ public struct ProfileResource: Decodable {
     public let id: String
     public let nickname: String
     public let chatRoomMembershipsUrl: URL
-    
-    // Gamification Properties
-    let points: Int
-    let badges: [APIRewardsClient.BadgeResource]
-    let currentBadge: APIRewardsClient.BadgeResource?
 }
 
 protocol UserProfileVendor {
@@ -187,10 +159,6 @@ protocol UserNicknameVendor: AnyObject {
 
 protocol UserNicknameService: UserNicknameVendor {
     func setNickname(nickname: String) -> Promise<String>
-}
-
-protocol UserPointsVendor {
-    var whenUserPoints: Promise<Int> { get }
 }
 
 struct AccessToken {

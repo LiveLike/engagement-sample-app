@@ -19,12 +19,14 @@ class MessageViewModelFactory {
         stickerPacks: [StickerPack],
         channel: String,
         reactionsFactory: ReactionVendor,
-        mediaRepository: MediaRepository
+        mediaRepository: MediaRepository,
+        theme: Theme
     ) {
         self.stickerPacks = stickerPacks
         self.channel = channel
         self.reactionsFactory = reactionsFactory
         self.mediaRepository = mediaRepository
+        self.theme = theme
     }
 
     func create(from chatMessage: ChatMessage) -> Promise<MessageViewModel> {
@@ -43,11 +45,6 @@ class MessageViewModelFactory {
                 )
             )
         }.then { reactionsViewModel, preparedMessage in
-            
-            if let badgeImageURL = sender.badgeImageURL {
-                self.mediaRepository.prefetchMedia(url: badgeImageURL)
-            }
-            
             if let profileImageURL = chatMessage.profileImageUrl {
                 self.mediaRepository.prefetchMedia(url: profileImageURL)
             }
@@ -65,7 +62,6 @@ class MessageViewModelFactory {
                 syncPublishTimecode: chatMessage.videoTimestamp?.description,
                 chatRoomId: chatMessage.roomID,
                 channel: chatMessage.channelName,
-                badgeImageURL: sender.badgeImageURL,
                 chatReactions: .init(
                     reactionAssets: reactionsViewModel,
                     reactionVotes: chatMessage.reactions
@@ -81,6 +77,7 @@ class MessageViewModelFactory {
         }
     }
     
+    // swiftlint:disable large_tuple
     private func prepareMessage(
         message: String,
         bodyImageURL: URL?,
@@ -133,7 +130,7 @@ class MessageViewModelFactory {
         else {
             replaceStickerShortcodeWithImage(
                 string: message,
-                font: theme.fontPrimary,
+                font: theme.messageTextFont,
                 stickerPacks: stickerPacks,
                 mediaRepository: mediaRepository
             ) { result in
@@ -166,7 +163,7 @@ class MessageViewModelFactory {
         mediaRepository: MediaRepository,
         completion: @escaping (Result<(NSMutableAttributedString, String?, [String]), Error>) -> Void
     ) {
-        let newString = NSMutableAttributedString(string: string)
+        let newString = NSMutableAttributedString(string: string, attributes: [NSAttributedString.Key.font: font])
         let message = string
         let controlMessage = string
         var shortcode: String?

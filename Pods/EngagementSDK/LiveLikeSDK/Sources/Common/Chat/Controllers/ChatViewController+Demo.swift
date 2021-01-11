@@ -18,8 +18,7 @@ public extension ChatViewController {
             isLocalUser: false,
             nickName: "tester",
             friendDiscoveryKey: nil,
-            friendName: nil,
-            badgeImageURL: nil
+            friendName: nil
         )
         let chatMessageType = ChatMessage(
             id: ChatMessageID(UUID().uuidString),

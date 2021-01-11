@@ -14,7 +14,6 @@ class ChoiceWidgetViewModel {
     var timeout: TimeInterval
     var confirmationMessage: String?
     var animationConfirmationAsset: String?
-    var animationTimerAsset: String?
     var customData: String?
     var createdAt: Date
     var publishedAt: Date?

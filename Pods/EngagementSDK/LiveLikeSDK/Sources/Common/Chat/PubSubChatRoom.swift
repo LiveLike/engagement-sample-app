@@ -136,8 +136,7 @@ private extension PubSubChatRoom {
                     isLocalUser: true,
                     nickName: nickname,
                     friendDiscoveryKey: nil,
-                    friendName: nil,
-                    badgeImageURL: clientMessage.badge?.imageURL
+                    friendName: nil
                 )
                 let chatMessageID = ChatMessageID(messageID)
                 let mockMessage = ChatMessage(
@@ -182,7 +181,6 @@ private extension PubSubChatRoom {
                                     senderId: self.userID.asString,
                                     senderNickname: nickname,
                                     senderImageUrl: self.avatarURL,
-                                    badgeImageUrl: clientMessage.badge?.imageURL,
                                     programDateTime: pdt
                                 )
                                 let message = PubSubChatImage(
@@ -224,7 +222,6 @@ private extension PubSubChatRoom {
                 senderId: userID.asString,
                 senderNickname: nickname,
                 senderImageUrl: avatarURL,
-                badgeImageUrl: clientMessage.badge?.imageURL,
                 programDateTime: pdt,
                 filteredMessage: nil,
                 contentFilter: nil
@@ -874,7 +871,6 @@ struct PubSubChatPayload: Codable {
     var senderId: String?
     var senderNickname: String?
     var senderImageUrl: URL?
-    var badgeImageUrl: URL?
     var programDateTime: Date?
     // The message after it has been filtered
     var filteredMessage: String?
@@ -891,7 +887,6 @@ struct PubSubChatPayload: Codable {
         case senderId
         case senderNickname
         case senderImageUrl
-        case badgeImageUrl
         case programDateTime
         case filteredMessage
         case contentFilter
@@ -904,7 +899,6 @@ struct PubSubChatPayload: Codable {
         self.senderId = try? container.decode(String.self, forKey: .senderId)
         self.senderNickname = try? container.decode(String.self, forKey: .senderNickname)
         self.senderImageUrl = try? container.decode(URL.self, forKey: .senderImageUrl)
-        self.badgeImageUrl = try? container.decode(URL.self, forKey: .badgeImageUrl)
         self.programDateTime = try? container.decode(Date.self, forKey: .programDateTime)
         self.filteredMessage = try? container.decode(String.self, forKey: .filteredMessage)
         self.contentFilter = try? container.decode([ChatFilter].self, forKey: .contentFilter)
@@ -915,7 +909,6 @@ struct PubSubChatPayload: Codable {
          senderId: String?,
          senderNickname: String?,
          senderImageUrl: URL?,
-         badgeImageUrl: URL?,
          programDateTime: Date?,
          filteredMessage: String?,
          contentFilter: [ChatFilter]?) {
@@ -924,7 +917,6 @@ struct PubSubChatPayload: Codable {
         self.senderId = senderId
         self.senderNickname = senderNickname
         self.senderImageUrl = senderImageUrl
-        self.badgeImageUrl = badgeImageUrl
         self.programDateTime = programDateTime
         self.filteredMessage = filteredMessage
         self.contentFilter = contentFilter
@@ -939,7 +931,6 @@ struct PubSubImagePayload: Codable {
     let senderId: String
     let senderNickname: String
     let senderImageUrl: URL?
-    let badgeImageUrl: URL?
     let programDateTime: Date?
     
     private enum CodingKeys: String, CodingKey {
@@ -950,7 +941,6 @@ struct PubSubImagePayload: Codable {
         case senderId
         case senderNickname
         case senderImageUrl
-        case badgeImageUrl
         case programDateTime
     }
     
@@ -963,7 +953,6 @@ struct PubSubImagePayload: Codable {
         self.senderId = try container.decode(String.self, forKey: .senderId)
         self.senderNickname = try container.decode(String.self, forKey: .senderNickname)
         self.senderImageUrl = try? container.decode(URL.self, forKey: .senderImageUrl)
-        self.badgeImageUrl = try? container.decode(URL.self, forKey: .badgeImageUrl)
         self.programDateTime = try? container.decode(Date.self, forKey: .programDateTime)
     }
     
@@ -974,7 +963,6 @@ struct PubSubImagePayload: Codable {
          senderId: String,
          senderNickname: String,
          senderImageUrl: URL?,
-         badgeImageUrl: URL?,
          programDateTime: Date?) {
         self.id = id.lowercased()
         self.imageUrl = imageUrl
@@ -983,7 +971,6 @@ struct PubSubImagePayload: Codable {
         self.senderId = senderId
         self.senderNickname = senderNickname
         self.senderImageUrl = senderImageUrl
-        self.badgeImageUrl = badgeImageUrl
         self.programDateTime = programDateTime
     }
 }

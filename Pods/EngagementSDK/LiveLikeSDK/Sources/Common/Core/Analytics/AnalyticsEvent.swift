@@ -68,11 +68,6 @@ extension AnalyticsEvent {
                     .firstTapTime: properties.firstTapTime,
                     .lastTapTime: properties.lastTapTime,
                     .numberOfTaps: properties.numberOfTaps,
-                    .pointsEarned: properties.pointsEarned,
-                    .badgeEarned: properties.badgeEarned,
-                    .levelEarned: properties.badgeLevelEarned,
-                    .pointsInCurrentLevel: properties.pointsInCurrentlevel,
-                    .pointsToNextLevel: properties.pointsToNextLevel,
                 ]
                 return props.compactMapValues { $0 }
             }()

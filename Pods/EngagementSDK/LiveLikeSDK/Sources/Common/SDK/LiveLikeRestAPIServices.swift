@@ -33,6 +33,24 @@ public enum Pagination {
     case previous
 }
 
+// MARK: - Decodables
+
+/// Wraps a Decodable as an optional
+/// Useful for decoding collections of dynamic objects which may fail and throw an error
+public struct OptionalObject<Base: Decodable>: Decodable {
+    public let value: Base?
+
+    public init(from decoder: Decoder) throws {
+        do {
+            let container = try decoder.singleValueContainer()
+            self.value = try container.decode(Base.self)
+        } catch {
+            log.error(error)
+            self.value = nil
+        }
+    }
+}
+
 /// A generic result type that can be used when parsing paginated results from backend
 struct PaginatedResource<Element: Decodable>: Decodable {
     internal init(previous: URL?, count: Int, next: URL?, results: [Element]) {
@@ -46,6 +64,22 @@ struct PaginatedResource<Element: Decodable>: Decodable {
     let count: Int
     let next: URL?
     let results: [Element]
+
+    enum CodingKeys: CodingKey {
+        case previous
+        case count
+        case next
+        case results
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.previous = try container.decode(URL?.self, forKey: .previous)
+        self.next = try container.decode(URL?.self, forKey: .next)
+        self.count = try container.decode(Int.self, forKey: .count)
+        // compactMaps unexpected or corrupt elements
+        self.results = try container.decode([OptionalObject<Element>].self, forKey: .results).compactMap { $0.value }
+    }
 }
 
 struct RewardItemResource: Decodable {
@@ -130,6 +164,17 @@ struct ImageSliderVoteResource: Decodable {
     let rewards: [RewardResource]
 }
 
+// MARK: - Encodables
+
+struct CreateChatRoomBody: Encodable {
+    let title: String?
+    let visibility: String
+}
+
+struct CheerMeterVote: Encodable {
+    let voteCount: Int
+}
+
 protocol LiveLikeRestAPIServicable {
     var whenApplicationConfig: Promise<ApplicationConfiguration> { get }
     
@@ -212,9 +257,6 @@ protocol LiveLikeRestAPIServicable {
 class LiveLikeRestAPIServices: LiveLikeRestAPIServicable {
 
     func createCheerMeterVote(voteCount: Int, voteURL: URL, accessToken: AccessToken) -> Promise<CheerMeterVoteResponse> {
-        struct CheerMeterVote: Encodable {
-            let voteCount: Int
-        }
         let vote = CheerMeterVote(voteCount: voteCount)
         let resource = Resource<CheerMeterVoteResponse>(url: voteURL, method: .post(vote), accessToken: accessToken.asString)
         return EngagementSDK.networking.load(resource)
@@ -286,11 +328,6 @@ class LiveLikeRestAPIServices: LiveLikeRestAPIServicable {
         appConfig: ApplicationConfiguration
     ) -> Promise<ChatRoomResource> {
 
-        struct CreateChatRoomBody: Encodable {
-            let title: String?
-            let visibility: String
-        }
-        
         guard let createChatRoomURL = URL(string: appConfig.createChatRoomUrl) else {
             return Promise(error: CreateChatRoomResourceError.failedCreatingChatRoomUrl)
         }

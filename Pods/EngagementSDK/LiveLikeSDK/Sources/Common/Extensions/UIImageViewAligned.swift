@@ -10,7 +10,7 @@ struct UIImageViewAlignmentMask: OptionSet {
     init(rawValue: Int) { self.rawValue = rawValue }
 
     /// The option to align the content to the center.
-    static let center = UIImageViewAlignmentMask(rawValue: 0)
+    static let center = UIImageViewAlignmentMask([])
     /// The option to align the content to the left.
     static let left = UIImageViewAlignmentMask(rawValue: 1)
     /// The option to align the content to the right.

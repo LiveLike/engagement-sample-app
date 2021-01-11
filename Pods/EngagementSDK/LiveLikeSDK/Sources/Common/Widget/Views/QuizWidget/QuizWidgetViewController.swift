@@ -338,15 +338,11 @@ private extension QuizWidgetViewController {
 extension QuizWidgetViewController: QuizWidgetModelDelegate {
     func quizWidgetModel(_ model: QuizWidgetModel, answerCountDidChange voteCount: Int, forChoice optionID: String) {
         guard currentState == .results else { return } // Only update progress while in results state
-
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            let totalVoteCount = model.choices.map { $0.answerCount }.reduce(0, +)
-            guard totalVoteCount > 0 else {
-                return
-            }
             guard let optionView = self.quizWidget.options.first(where: { $0.id == optionID }) else { return }
-            optionView.setProgress((CGFloat(voteCount) / CGFloat(totalVoteCount)))
+            guard model.totalAnswerCount > 0 else { return }
+            optionView.setProgress((CGFloat(voteCount) / CGFloat(model.totalAnswerCount)))
         }
     }
 }

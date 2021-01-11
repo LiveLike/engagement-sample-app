@@ -22,9 +22,6 @@ struct ChatUser {
     /// User nickname
     let nickName: String
     
-    /// User's badge at the time of this message
-    let badgeImageURL: URL?
-
     let friendDiscoveryKey: String?
     let friendName: String?
     
@@ -33,16 +30,14 @@ struct ChatUser {
          isLocalUser: Bool,
          nickName: String,
          friendDiscoveryKey: String?,
-         friendName: String?,
-         badgeImageURL: URL?)
-    {
+         friendName: String?
+    ) {
         id = userId
         self.isActive = isActive
         self.isLocalUser = isLocalUser
         self.nickName = nickName
         self.friendDiscoveryKey = friendDiscoveryKey
         self.friendName = friendName
-        self.badgeImageURL = badgeImageURL
     }
 }
 

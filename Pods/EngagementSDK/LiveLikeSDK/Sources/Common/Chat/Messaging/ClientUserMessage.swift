@@ -10,7 +10,6 @@ import UIKit
 struct ClientMessage {
     var message: String?
     var timeStamp: EpochTime? // represents player time source
-    var badge: Badge?
     var reactions: ReactionVotes?
     var imageURL: URL?
     var imageSize: CGSize?
