@@ -145,7 +145,8 @@ final public class MessageViewController: UIViewController {
                         stickerPacks: self.stickerPacks,
                         channel: "",
                         reactionsFactory: chatSession.reactionsVendor,
-                        mediaRepository: EngagementSDK.mediaRepository
+                        mediaRepository: EngagementSDK.mediaRepository,
+                        theme: self.theme
                     )
 
                     let adapter = ChatAdapter(
@@ -233,6 +234,7 @@ final public class MessageViewController: UIViewController {
 
     public override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
+        // swiftlint:disable notification_center_detachment
         NotificationCenter.default.removeObserver(self)
     }
 

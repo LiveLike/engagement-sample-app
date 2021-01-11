@@ -25,7 +25,6 @@ class InternalContentSession: ContentSession {
 
     var messagingClients: MessagingClients?
     var widgetChannel: String?
-    let rewardsURLRepo = RewardsURLRepo()
 
     var status: SessionStatus = .uninitialized {
         didSet {
@@ -61,7 +60,6 @@ class InternalContentSession: ContentSession {
     let sdkInstance: EngagementSDK
     private let livelikeIDVendor: LiveLikeIDVendor
     let nicknameVendor: UserNicknameVendor
-    private(set) var userPointsVendor: UserPointsVendor
     private let whenAccessToken: Promise<AccessToken>
 
     let livelikeRestAPIService: LiveLikeRestAPIServicable
@@ -145,9 +143,6 @@ class InternalContentSession: ContentSession {
     weak var player: AVPlayer?
     var periodicTimebaseObserver: Any?
 
-    var gamificationManager: GamificationViewManager?
-    var rankClient: RankClient?
-    private var whenRankClient = Promise<RankClient>()
     private var nextWidgetTimelineUrl: URL?
     private var nextWidgetModelTimelineURL: URL?
     private let leaderboardsManager: LeaderboardsManager
@@ -167,78 +162,6 @@ class InternalContentSession: ContentSession {
 
     private let whenProgramDetail: Promise<ProgramDetailResource>
 
-    private(set) lazy var whenWidgetQueue: Promise<WidgetProxy> = {
-        firstly {
-            Promises.zip(self.whenMessagingClients,
-                         self.livelikeIDVendor.whenLiveLikeID,
-                         self.whenProgramDetail,
-                         self.whenAccessToken
-            )
-        }.then { messagingClients, livelikeID, programDetail, accessToken -> Promise<WidgetProxy> in
-            
-            guard let widgetClient = messagingClients.widgetMessagingClient else {
-                return Promise(error: ContentSessionError.missingWidgetClient)
-            }
-            
-            guard let channel = programDetail.subscribeChannel else {
-                return Promise(error: ContentSessionError.missingSubscribeChannel)
-            }
-            
-            self.widgetChannel = channel
-            
-            let syncWidgetProxy = SynchronizedWidgetProxy(playerTimeSource: self.playerTimeSource)
-            self.baseWidgetProxy = syncWidgetProxy
-            widgetClient.addListener(syncWidgetProxy, toChannel: channel)
-            
-            let widgetQueue = syncWidgetProxy
-                .addProxy {
-                    let pauseProxy = PauseWidgetProxy(playerTimeSource: self.playerTimeSource,
-                                                      initialPauseStatus: self.widgetPauseStatus)
-                    self.widgetPauseListeners.addListener(pauseProxy)
-                    return pauseProxy
-                }
-                .addProxy { WriteRewardsURLToRepoProxy(rewardsURLRepo: self.rewardsURLRepo) }
-                .addProxy { ImageDownloadProxy() }
-                .addProxy { WidgetLoggerProxy(playerTimeSource: self.playerTimeSource) }
-                .addProxy {
-                    OnPublishProxy { [weak self] publishData in
-                        guard let self = self else { return }
-                        guard case let ClientEvent.widget(widgetResource) = publishData.clientEvent else { return }
-
-                        // Create WidgetDataObject
-                        firstly {
-                            self.whenWidgetModelFactory
-                        }.then(on: DispatchQueue.main) { widgetModelFactory in
-                            let widgetModel = try widgetModelFactory.make(from: widgetResource)
-                            self.delegate?.contentSession(self, didReceiveWidget: widgetModel)
-
-                            if let widgetController = DefaultWidgetFactory.makeWidget(from: widgetModel) {
-                                self.delegate?.widget(self, didBecomeReady: widgetController)
-                            }
-                        }.catch { error in
-                            log.error(error)
-                        }
-                    }
-                }
-
-            return Promise(value: widgetQueue)
-        }
-    }()
-    
-    private(set) lazy var whenRewards: Promise<Rewards> = {
-        firstly {
-            Promises.zip(self.whenAccessToken, self.whenProgramDetail, self.whenRankClient)
-        }.then { accessToken, programResource, rankClient in
-            let rewards = Rewards(rewardsURLRepo: self.rewardsURLRepo,
-                                  rewardsClient: APIRewardsClient(accessToken: accessToken),
-                                  rewardsType: programResource.rewardsType,
-                                  superPropertyRecorder: self.superPropertyRecorder,
-                                  peoplePropertyRecorder: self.peoplePropertyRecorder,
-                                  rankClient: rankClient)
-            return Promise(value: rewards)
-        }
-    }()
-
     /// Maintains a reference to the base widget proxy
     ///
     /// This allows us to remove it as a listener from the `WidgetMessagingClient`
@@ -252,7 +175,6 @@ class InternalContentSession: ContentSession {
                   whenMessagingClients: Promise<InternalContentSession.MessagingClients>,
                   livelikeIDVendor: LiveLikeIDVendor,
                   nicknameVendor: UserNicknameVendor,
-                  userPointsVendor: UserPointsVendor,
                   programDetailVendor: ProgramDetailVendor,
                   whenAccessToken: Promise<AccessToken>,
                   eventRecorder: EventRecorder,
@@ -267,7 +189,6 @@ class InternalContentSession: ContentSession {
         self.whenMessagingClients = whenMessagingClients
         self.livelikeIDVendor = livelikeIDVendor
         self.nicknameVendor = nicknameVendor
-        self.userPointsVendor = userPointsVendor
         self.delegate = delegate
         programID = config.programID
         self.sdkInstance = sdkInstance
@@ -282,11 +203,9 @@ class InternalContentSession: ContentSession {
         self.leaderboardsManager = leaderboardsManager
         sdkInstance.setDelegate(self)
 
+        initializeWidgetProxy()
         initializeDelegatePlayheadTimeSource()
-
         initializeMixpanelProperties()
-        initializeGamification()
-        initializeRankClient()
         startSession()
         
         whenMessagingClients.then { [weak self] in
@@ -320,41 +239,12 @@ class InternalContentSession: ContentSession {
     private func initializeMixpanelProperties() {
         superPropertyRecorder.register([
             .chatStatus(status: .enabled),
-            .widgetStatus(status: .enabled),
-            .pointsThisProgram(points: 0),
-            .badgeLevelThisProgram(level: 0),
+            .widgetStatus(status: .enabled)
         ])
         peoplePropertyRecorder.record([
             .lastChatStatus(status: .enabled),
             .lastWidgetStatus(status: .enabled),
         ])
-    }
-    
-    private func initializeGamification() {
-        firstly {
-            Promises.zip(whenWidgetQueue, whenRewards)
-        }.then {
-            let (widgetQueue, rewards) = $0
-            self.gamificationManager = GamificationViewManager(
-                rewards: rewards,
-                eventRecorder: self.eventRecorder
-            )
-        }.catch { error in
-            log.error("Failed to initialize Gamification with error: \(error.localizedDescription)")
-        }
-    }
-    
-    private func initializeRankClient() {
-        firstly {
-            Promises.zip(whenProgramDetail, whenAccessToken)
-        }.then { programResource, accessToken in
-            let rankClient = RankClient(rankURL: programResource.rankUrl, accessToken: accessToken, rewardsType: programResource.rewardsType)
-            rankClient.addDelegate(self)
-            self.rankClient = rankClient
-            self.whenRankClient.fulfill(rankClient)
-        }.catch { error in
-            log.error("Failed to initialize RankClient with error: \(error.localizedDescription)")
-        }
     }
 
     deinit {
@@ -393,15 +283,70 @@ class InternalContentSession: ContentSession {
             }
         }
     }
+
+    private func initializeWidgetProxy() {
+        firstly {
+            Promises.zip(
+                self.whenMessagingClients,
+                self.whenProgramDetail
+            )
+        }.then { messagingClients, programDetail -> Promise<WidgetProxy> in
+            guard let widgetClient = messagingClients.widgetMessagingClient else {
+                return Promise(error: ContentSessionError.missingWidgetClient)
+            }
+
+            guard let channel = programDetail.subscribeChannel else {
+                return Promise(error: ContentSessionError.missingSubscribeChannel)
+            }
+
+            self.widgetChannel = channel
+
+            let syncWidgetProxy = SynchronizedWidgetProxy(playerTimeSource: self.playerTimeSource)
+            self.baseWidgetProxy = syncWidgetProxy
+            widgetClient.addListener(syncWidgetProxy, toChannel: channel)
+
+            let widgetQueue = syncWidgetProxy
+                .addProxy {
+                    let pauseProxy = PauseWidgetProxy(playerTimeSource: self.playerTimeSource,
+                                                      initialPauseStatus: self.widgetPauseStatus)
+                    self.widgetPauseListeners.addListener(pauseProxy)
+                    return pauseProxy
+                }
+                .addProxy { ImageDownloadProxy() }
+                .addProxy { WidgetLoggerProxy(playerTimeSource: self.playerTimeSource) }
+                .addProxy {
+                    OnPublishProxy { [weak self] publishData in
+                        guard let self = self else { return }
+                        guard case let ClientEvent.widget(widgetResource) = publishData.clientEvent else { return }
+
+                        // Create WidgetDataObject
+                        firstly {
+                            self.whenWidgetModelFactory
+                        }.then(on: DispatchQueue.main) { widgetModelFactory in
+                            let widgetModel = try widgetModelFactory.make(from: widgetResource)
+                            self.delegate?.contentSession(self, didReceiveWidget: widgetModel)
+
+                            if let widgetController = DefaultWidgetFactory.makeWidget(from: widgetModel) {
+                                self.delegate?.widget(self, didBecomeReady: widgetController)
+                            }
+                        }.catch { error in
+                            log.error(error)
+                        }
+                    }
+                }
+
+            return Promise(value: widgetQueue)
+        }.catch {
+            log.error($0)
+        }
+    }
     
     private func teardownSession() {
         // clear the client detail super properties
         superPropertyRecorder.register([.programId(id: ""),
                                         .programName(name: ""),
                                         .league(leagueName: ""),
-                                        .sport(sportName: ""),
-                                        .pointsThisProgram(points: 0),
-                                        .badgeLevelThisProgram(level: 0)])
+                                        .sport(sportName: "")])
         sessionDidEnd?()
         if let widgetChannel = self.widgetChannel, let baseProxy = baseWidgetProxy {
             messagingClients?.widgetMessagingClient?.removeListener(baseProxy, fromChannel: widgetChannel)
@@ -419,7 +364,6 @@ class InternalContentSession: ContentSession {
     @available(*, deprecated, message: "Toggle `shouldShowIncomingMessages` and `isChatInputVisible` to achieve this functionality")
     func resume() {
         resumeWidgets()
-        rankClient?.getUserRank()
     }
 
     func close() {
@@ -649,21 +593,5 @@ extension InternalContentSession: PauseDelegate {
         case .unpaused:
             resumeWidgets()
         }
-    }
-}
-
-// MARK: - AwardsProfileDelegate
-extension InternalContentSession: AwardsProfileDelegate {
-    func awardsProfile(didUpdate awardsProfile: AwardsProfile) {
-        superPropertyRecorder.register({
-            var props: [SuperProperty] = [
-                .pointsThisProgram(points: Int(awardsProfile.totalPoints))
-            ]
-            
-            if let badgeLevelThisProgram = awardsProfile.currentBadge?.level {
-                props.append(.badgeLevelThisProgram(level: badgeLevelThisProgram))
-            }
-            return props
-        }())
     }
 }

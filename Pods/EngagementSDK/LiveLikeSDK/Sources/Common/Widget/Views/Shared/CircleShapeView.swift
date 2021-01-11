@@ -40,6 +40,7 @@ class CircleShapeView: UIView {
 // MARK: Properties
 
 extension CircleShapeView {
+    // swiftlint:disable implicit_getter
     var fillColor: CGColor? {
         get { return circleLayer.fillColor }
         set { circleLayer.fillColor = newValue }

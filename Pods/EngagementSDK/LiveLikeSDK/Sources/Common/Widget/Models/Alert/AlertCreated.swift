@@ -26,6 +26,4 @@ struct AlertCreated: Decodable {
     let imageUrl: URL?
     var rewardsUrl: URL?
     let customData: String?
-    let animationTimerAsset: String = "timer"
-    
 }

@@ -52,11 +52,6 @@ extension AnalyticsEvent.Attribute {
     static let newVisibilityStatus: Attribute = "New Visibility Status"
     static let secondsInPreviousVisibilityStatus: Attribute = "Seconds In Previous Visibility Status"
     static let completionType: Attribute = "Completion Type"
-    static let pointsEarned: Attribute = "Points Earned"
-    static let levelEarned: Attribute = "Level Earned"
-    static let badgeEarned: Attribute = "Badge Earned"
-    static let pointsInCurrentLevel: Attribute = "Points In Current Level"
-    static let pointsToNextLevel: Attribute = "Points To Next Level"
     static let chatMessageHasExternalImage: Attribute = "Has External Image"
     static let alertId: Attribute = "Alert Id"
 }

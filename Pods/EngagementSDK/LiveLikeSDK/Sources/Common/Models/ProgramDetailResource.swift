@@ -19,7 +19,6 @@ struct ProgramDetailResource: Decodable {
     let subscribeChannel: String?
     let syncSessionsUrl: URL
     let rankUrl: URL
-    let rewardsType: RewardsType
     let reactionPacksUrl: URL?
     let defaultChatRoom: ChatRoomResource?
     let timelineUrl: URL
@@ -28,10 +27,4 @@ struct ProgramDetailResource: Decodable {
 
     /// Exclusively for CMS and Demo use
     let streamUrl: String?
-}
-
-enum RewardsType: String, Decodable, Equatable {
-    case pointsOnly = "points"
-    case pointsAndBadges = "badges"
-    case noRewards = "none"
 }

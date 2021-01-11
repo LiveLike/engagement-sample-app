@@ -70,37 +70,6 @@ public class ChatViewController: UIViewController {
                     log.error(error)
                 }
             }
-
-            firstly {
-                sessionImpl.whenRewards
-            }.then { [weak self] rewards in
-                guard let self = self else { return }
-
-                rewards.currentBadgeDidChange.append { [weak self] badge in
-                    guard let badge = badge else { return } //ignore nils
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        let badgeViewModel = BadgeViewModel(from: badge, rewards: rewards)
-                        self?.profileStatusBar.setBadge(badgeViewModel: badgeViewModel)
-                    }
-                }
-
-                rewards.currentRankDidChange.append { [weak self] rank in
-                    // Do not show rank in profile bar unless points > 0
-                    guard rewards.currentPoints ?? 0 > 0 else { return }
-                    self?.profileStatusBar.setUserRank(userRank: rank)
-                }
-
-                rewards.currentPointsDidChange.append { [weak self] points in
-                    // If points greater than 0 try updating rank
-                    if let rank = rewards.currentRank, points ?? 0 > 0 {
-                        self?.profileStatusBar.setUserRank(userRank: rank)
-                    }
-                    self?.profileStatusBar.setUserRewardPoints(points: points)
-                }
-
-            }.catch {
-                log.error($0.localizedDescription)
-            }
         }
     }
 

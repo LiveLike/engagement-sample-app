@@ -9,7 +9,6 @@ import Foundation
 
 struct ChatMessageMetadata: Codable {
     let programDateTime: Date?
-    let badgeImageUrl: URL?
     let imageUrl: URL?
 }
 

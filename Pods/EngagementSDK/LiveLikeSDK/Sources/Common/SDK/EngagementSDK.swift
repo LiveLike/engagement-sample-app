@@ -57,7 +57,6 @@ public class EngagementSDK: NSObject {
     private let accessTokenVendor: AccessTokenVendor
     private let livelikeIDVendor: LiveLikeIDVendor
     private let userNicknameService: UserNicknameService
-    private let userPointsVendor: UserPointsVendor
     private let userProfileVendor: UserProfileVendor
     private let sdkErrorReporter: InternalErrorReporter
     private let predictionVoteRepo: PredictionVoteRepository
@@ -128,9 +127,7 @@ public class EngagementSDK: NSObject {
             accessTokenVendor: userResolver,
             livelikeIDVendor: userResolver,
             userNicknameService: userResolver,
-            userPointsVendor: userResolver,
             userProfileVendor: userResolver,
-            awardsProfileVendor: userResolver,
             sdkErrorReporter: sdkErrorReporter
         )
     }
@@ -141,9 +138,7 @@ public class EngagementSDK: NSObject {
         accessTokenVendor: AccessTokenVendor,
         livelikeIDVendor: LiveLikeIDVendor,
         userNicknameService: UserNicknameService,
-        userPointsVendor: UserPointsVendor,
         userProfileVendor: UserProfileVendor,
-        awardsProfileVendor: AwardsProfileVendor,
         sdkErrorReporter: InternalErrorReporter
     ) {
         self.config = config
@@ -152,7 +147,6 @@ public class EngagementSDK: NSObject {
         self.livelikeRestAPIService = livelikeRestAPIService
         self.livelikeIDVendor = livelikeIDVendor
         self.userNicknameService = userNicknameService
-        self.userPointsVendor = userPointsVendor
         self.userProfileVendor = userProfileVendor
         self.sdkErrorReporter = sdkErrorReporter
         analytics = Analytics(livelikeRestAPIService: livelikeRestAPIService)
@@ -165,7 +159,6 @@ public class EngagementSDK: NSObject {
 
         super.init()
         sdkErrorReporter.delegate = self
-        awardsProfileVendor.addDelegate(self)
         whenMessagingClients = messagingClientPromise()
 
         whenMessagingClients.catch { [weak self] error in
@@ -366,7 +359,7 @@ public extension EngagementSDK {
         }
     }
 
-    func getUserDisplayName(completion: @escaping (Result<String,Error>) -> Void) {
+    func getUserDisplayName(completion: @escaping (Result<String, Error>) -> Void) {
         firstly {
             userNicknameService.whenInitialNickname
         }.then { _ in
@@ -875,7 +868,6 @@ private extension EngagementSDK {
                                       whenMessagingClients: whenMessagingClients,
                                       livelikeIDVendor: livelikeIDVendor,
                                       nicknameVendor: userNicknameService,
-                                      userPointsVendor: userPointsVendor,
                                       programDetailVendor: programDetailVendor,
                                       whenAccessToken: accessTokenVendor.whenAccessToken,
                                       eventRecorder: eventRecorder,
@@ -990,12 +982,5 @@ extension EngagementSDK: InternalErrorDelegate {
     // Repeat errors to the intergrator delegate
     func setupError(_ error: EngagementSDK.SetupError) {
         delegate?.sdk?(self, setupFailedWithError: error)
-    }
-}
-
-extension EngagementSDK: AwardsProfileDelegate {
-    func awardsProfile(didUpdate awardsProfile: AwardsProfile) {
-        analytics.register([.lifetimePoints(points: Int(awardsProfile.totalPoints))])
-        analytics.record([.lifetimePoints(points: Int(awardsProfile.totalPoints))])
     }
 }

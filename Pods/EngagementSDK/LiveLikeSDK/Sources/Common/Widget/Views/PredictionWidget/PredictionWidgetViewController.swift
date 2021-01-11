@@ -250,16 +250,13 @@ class PredictionWidgetViewController: Widget {
 
 extension PredictionWidgetViewController: PredictionWidgetModelDelegate {
     func predictionWidgetModel(_ model: PredictionWidgetModel, voteCountDidChange voteCount: Int, forOption optionID: String) {
+        guard self.canShowResults else { return }
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             guard let option = self.predictionWidgetView.options.first(where: { $0.id == optionID }) else { return }
-
-            if self.canShowResults {
-                let totalVotes = self.model.options.map{ $0.voteCount }.reduce(0, +)
-                guard totalVotes > 0 else { return }
-                let progress: CGFloat = CGFloat(voteCount) / CGFloat(totalVotes)
-                option.setProgress(progress)
-            }
+            guard model.totalVoteCount > 0 else { return }
+            let progress: CGFloat = CGFloat(voteCount) / CGFloat(model.totalVoteCount)
+            option.setProgress(progress)
         }
     }
 }

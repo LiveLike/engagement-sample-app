@@ -33,6 +33,8 @@ public class PredictionWidgetModel: PredictionWidgetModelable {
     public let confirmationMessage: String
     /// Does the Prediction widget contain images
     public let containsImages: Bool
+    /// The updated total count of votes on the Prediction
+    @Atomic public internal(set) var totalVoteCount: Int
 
     // MARK: Metadata
 
@@ -72,6 +74,7 @@ public class PredictionWidgetModel: PredictionWidgetModelable {
         self.options = resource.options.map { Option(resource: $0) }
         self.confirmationMessage = resource.confirmationMessage
         self.containsImages = false
+        self.totalVoteCount = resource.options.map { $0.voteCount }.reduce(0, +)
         self.id = resource.id
         self.kind = resource.kind
         self.createdAt = resource.createdAt
@@ -105,6 +108,7 @@ public class PredictionWidgetModel: PredictionWidgetModelable {
         self.options = resource.options.map { Option(resource: $0) }
         self.confirmationMessage = resource.confirmationMessage
         self.containsImages = true
+        self.totalVoteCount = resource.options.map { $0.voteCount }.reduce(0, +)
         self.id = resource.id
         self.kind = resource.kind
         self.createdAt = resource.createdAt
@@ -220,8 +224,13 @@ extension PredictionWidgetModel: WidgetProxyInput {
     func publish(event: WidgetProxyPublishData) {
         switch event.clientEvent {
         case .textPredictionResults(let results), .imagePredictionResults(let results):
+            // Update model
+            self.totalVoteCount = results.options.map { $0.voteCount }.reduce(0, +)
             results.options.forEach { result in
                 self.options.first(where: { $0.id == result.id })?.voteCount = result.voteCount
+            }
+            // Notify delegate
+            results.options.forEach { result in
                 self.delegate?.predictionWidgetModel(self, voteCountDidChange: result.voteCount, forOption: result.id)
             }
         default:

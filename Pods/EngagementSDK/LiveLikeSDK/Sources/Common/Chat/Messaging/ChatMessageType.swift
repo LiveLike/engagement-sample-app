@@ -121,8 +121,7 @@ extension ChatMessage {
             isLocalUser: senderID == userID,
             nickName: chatPubnubMessage.senderNickname ?? "deleted_\(chatPubnubMessage.id)",
             friendDiscoveryKey: nil,
-            friendName: nil,
-            badgeImageURL: chatPubnubMessage.badgeImageUrl
+            friendName: nil
         )
 
         let reactions: ReactionVotes = {
@@ -174,8 +173,7 @@ extension ChatMessage {
             isLocalUser: senderID == userID,
             nickName: chatPubnubMessage.senderNickname,
             friendDiscoveryKey: nil,
-            friendName: nil,
-            badgeImageURL: chatPubnubMessage.badgeImageUrl
+            friendName: nil
         )
 
         let reactions: ReactionVotes = {
