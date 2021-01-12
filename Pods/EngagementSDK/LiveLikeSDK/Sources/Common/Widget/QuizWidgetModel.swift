@@ -31,6 +31,8 @@ public class QuizWidgetModel: QuizWidgetModelable {
     public let choices: [Choice]
     /// Does the Quiz contain images
     public let containsImages: Bool
+    /// The updated total count of answers on the Quiz
+    @Atomic public internal(set) var totalAnswerCount: Int
 
     // MARK: Metadata
 
@@ -69,6 +71,7 @@ public class QuizWidgetModel: QuizWidgetModelable {
         self.kind = data.kind
         self.question = data.question
         self.choices = data.choices.map { Choice(data: $0) }
+        self.totalAnswerCount = data.choices.map { $0.answerCount }.reduce(0, +)
         self.customData = data.customData
         self.createdAt = data.createdAt
         self.publishedAt = data.publishedAt
@@ -99,6 +102,7 @@ public class QuizWidgetModel: QuizWidgetModelable {
         self.kind = data.kind
         self.question = data.question
         self.choices = data.choices.map { Choice(data: $0) }
+        self.totalAnswerCount = data.choices.map { $0.answerCount }.reduce(0, +)
         self.customData = data.customData
         self.createdAt = data.createdAt
         self.publishedAt = data.publishedAt
@@ -234,9 +238,15 @@ extension QuizWidgetModel: WidgetProxyInput {
     func publish(event: WidgetProxyPublishData) {
         switch event.clientEvent {
         case let .textQuizResults(results), let .imageQuizResults(results):
+            // Update model
+            self.totalAnswerCount = results.choices.map { $0.answerCount }.reduce(0, +)
             results.choices.forEach { choice in
                 self.choices.first(where: { $0.id == choice.id})?.answerCount = choice.answerCount
-                self.delegate?.quizWidgetModel(self, answerCountDidChange: choice.answerCount, forChoice: choice.id)
+            }
+            // Notify delegate
+            guard let delegate = self.delegate else { return }
+            results.choices.forEach { choice in
+                delegate.quizWidgetModel(self, answerCountDidChange: choice.answerCount, forChoice: choice.id)
             }
         default:
             log.error("Received event \(event.clientEvent.description) in QuizWidgetLiveResultsClient when only .textQuizResults were expected.")

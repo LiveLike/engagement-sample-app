@@ -39,8 +39,6 @@ enum WidgetResource: CustomStringConvertible, Decodable {
             self = try .imageSliderCreated(ImageSliderCreated(from: decoder))
         case .cheerMeter:
             self = try .cheerMeterCreated(CheerMeterCreated(from: decoder))
-        case .gamification:
-            throw NilError()
         }
     }
 

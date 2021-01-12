@@ -13,11 +13,4 @@ struct WidgetInteractedProperties {
     var firstTapTime: Date
     var lastTapTime: Date
     var numberOfTaps: Int
-    
-    // Gamification Properties
-    var pointsEarned: Int = 0
-    var badgeLevelEarned: Int?
-    var badgeEarned: String?
-    var pointsInCurrentlevel: Int?
-    var pointsToNextLevel: Int?
 }

@@ -195,6 +195,10 @@ public class ChatInputView: UIView {
                 }
 
                 self.stickerInputView.stickerPacks = self.recentlyUsedStickerPacks + self.stickerPacks
+                self.keyboardToggleButton.setImage(self.theme.chatStickerKeyboardIcon, for: .normal)
+                self.keyboardToggleButton.setImage(self.theme.chatStickerKeyboardIconSelected, for: .selected)
+                self.keyboardToggleButton.tintColor = self.theme.chatStickerKeyboardIconTint
+                self.keyboardToggleButton.isSelected = false
                 self.keyboardToggleButton.isHidden = !self.doStickersExist(stickerPacks: self.stickerPacks)
             }
         }
@@ -273,11 +277,11 @@ public class ChatInputView: UIView {
     func setKeyboardIcon(_ type: KeyboardType) {
         switch type {
         case .standard:
-            let image = UIImage(named: "chat_emoji_button", in: Bundle(for: ChatInputView.self), compatibleWith: nil)
-            keyboardToggleButton.setImage(image, for: .normal)
+            keyboardToggleButton.isSelected = false
+            keyboardToggleButton.tintColor = theme.chatStickerKeyboardIconTint
         case .sticker:
-            let image = UIImage(named: "chat_keyboard_button", in: Bundle(for: ChatInputView.self), compatibleWith: nil)
-            keyboardToggleButton.setImage(image, for: .normal)
+            keyboardToggleButton.isSelected = true
+            keyboardToggleButton.tintColor = theme.chatStickerKeyboardIconSelectedTint
         }
     }
 

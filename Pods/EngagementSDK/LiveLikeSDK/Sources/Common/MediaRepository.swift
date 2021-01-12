@@ -159,7 +159,7 @@ class MediaRepository {
     func prefetchMedia(urls: [URL], completion: ((Result<Bool, Error>) -> Void)? = nil) {
         var prefectCount = urls.count
         urls.forEach {
-            prefetchMedia(url: $0) { result in
+            prefetchMedia(url: $0) { _ in
                 prefectCount -= 1
                 if prefectCount == 0 {
                     completion?(.success(true))

@@ -69,6 +69,8 @@ protocol QuizWidgetModelable: WidgetModelable {
 
     var choices: [QuizWidgetModel.Choice] { get }
 
+    var totalAnswerCount: Int { get }
+
     func lockInAnswer(choiceID: String, completion: @escaping (Result<QuizWidgetModel.Answer, Error>) -> Void)
 
 }
@@ -81,6 +83,8 @@ protocol PredictionWidgetModelable: WidgetModelable {
     var options: [PredictionWidgetModel.Option] { get }
 
     var confirmationMessage: String { get }
+
+    var totalVoteCount: Int { get }
 
     func lockInVote(optionID: String, completion: @escaping (Result<PredictionVote, Error>) -> Void)
 
@@ -104,6 +108,8 @@ protocol PollWidgetModelable: WidgetModelable {
     var question: String { get }
     
     var options: [PollWidgetModel.Option] { get }
+
+    var totalVoteCount: Int { get }
     
     func submitVote(optionID: String, completion: @escaping (Result<PollWidgetModel.Vote, Error>) -> Void)
         

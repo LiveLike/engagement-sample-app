@@ -79,7 +79,6 @@ class ChatMessageView: UIView {
     private var message: MessageViewModel?
     private let badgePadding: CGFloat = 16.0 // 14pt for badge + 2pt for leading
     private let timestampPadding: CGFloat = 2.0
-    private var badgeExists: Bool = false
     private var cellImageUrl: URL?
     private var timestampExists: Bool = false
     private var shouldDisplayAvatar: Bool = false
@@ -154,13 +153,6 @@ class ChatMessageView: UIView {
             return defaultTimestamp
             
         }()
-        
-        if let imageUrl = message.badgeImageURL {
-            self.badgeImageView.setImage(url: imageUrl)
-            self.badgeExists = true
-        } else {
-            self.badgeExists = false
-        }
                 
         self.reactionsDisplayView.set(chatReactions: message.chatReactions, theme: self.theme)
         self.reactionHintImageView.isHidden = message.chatReactions.totalReactionsCount != 0
@@ -193,19 +185,13 @@ class ChatMessageView: UIView {
         usernameLabel.textColor = isLocalClientMessage ? theme.myUsernameTextColor : theme.usernameTextColor
         usernameLabel.font = theme.fontSecondary
         timestampLabelTrailingPaddingConstraint?.constant = theme.messageMargins.right
-        timestampLabelToBadgePaddingConstraint?.constant = badgeExists ? theme.messagePadding : theme.messagePadding - badgePadding
+        timestampLabelToBadgePaddingConstraint?.constant = theme.messagePadding - badgePadding
         alternateTimestampLeadingPaddingConstraint?.constant = theme.messagePadding
         alternateTimestampTopPaddingConstraint?.constant = theme.chatMessageTimestampTopPadding
         messageLeadPaddingConstraint.constant = theme.messagePadding
         messageTrailingPaddingConstraint.constant = theme.messagePadding
         usernameLeadingConstraint?.constant = theme.messagePadding
-        usernameTrailingConstraint?.constant = {
-            var constant = theme.messagePadding
-            if badgeExists {
-                constant += badgePadding
-            }
-            return constant
-        }()
+        usernameTrailingConstraint?.constant = theme.messagePadding
 
         timestampLabelToBadgePaddingConstraint?.isActive = timestampExists
         timestampLabelTrailingPaddingConstraint?.isActive = timestampExists
@@ -214,9 +200,6 @@ class ChatMessageView: UIView {
 
         let usernameRowWidth: CGFloat = {
             var width = usernameLabel.intrinsicContentSize.width
-            if badgeExists {
-                width += badgePadding
-            }
             width += timestampLabel.intrinsicContentSize.width
             return width
         }()
@@ -314,6 +297,7 @@ internal extension ChatMessageView {
 // MARK: - Protocol conformances
 
 extension ChatMessageView: Selectable {
+    // swiftlint:disable implicit_getter
     var isSelected: Bool {
         get { return state == .showingActionsPanel }
         set {

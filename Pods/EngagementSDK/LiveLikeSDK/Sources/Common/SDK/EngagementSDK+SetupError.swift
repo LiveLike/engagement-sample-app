@@ -44,7 +44,7 @@ extension EngagementSDK.SetupError: LocalizedError {
         case let .invalidUserAccessToken(userAccessToken):
             return "Failed to load user's profile with the user access token '\(userAccessToken)' because it was malformed or doesn't exist."
             
-        case let .invalidAPIOrigin:
+        case .invalidAPIOrigin:
             return "Failed to initialize the Engagement SDK due to a bad request. Please check that the custom api origin is correct."
         
         }

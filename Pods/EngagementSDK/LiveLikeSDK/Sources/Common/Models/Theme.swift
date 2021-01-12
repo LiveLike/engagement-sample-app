@@ -66,6 +66,8 @@ public class Theme: NSObject {
     @objc public var myUsernameTextColor: UIColor
     /// Changes the text color of Chat messages
     @objc public var messageTextColor: UIColor
+    /// Changes the font of Chat messages
+    @objc public var messageTextFont: UIFont
     /// Changes the background color of Chat bubble
     @objc public var messageBackgroundColor: UIColor
     /// Changes the background color of the Chat bubble when selected
@@ -159,6 +161,14 @@ public class Theme: NSObject {
     @objc public var chatStickerKeyboardPrimaryColor: UIColor
     /// Changes the secondary color of the sticker keyboard
     @objc public var chatStickerKeyboardSecondaryColor: UIColor
+    /// Change the chat sticker keyboard icon in `.normal` state
+    @objc public var chatStickerKeyboardIcon: UIImage
+    /// Changes the tint color of the sticker keyboard icon in `.normal` state
+    @objc public var chatStickerKeyboardIconTint: UIColor
+    /// Change the chat sticker keyboard icon in `.selected` state
+    @objc public var chatStickerKeyboardIconSelected: UIImage
+    /// Changes the tint color of the sticker keyboard icon in `.selected` state
+    @objc public var chatStickerKeyboardIconSelectedTint: UIColor
 
     // MARK: - Widget
 
@@ -343,6 +353,11 @@ public class Theme: NSObject {
         chatDetailSecondaryColor = UIColor(rInt: 35, gInt: 40, bInt: 45)
         chatStickerKeyboardPrimaryColor = UIColor(rInt: 20, gInt: 20, bInt: 20)
         chatStickerKeyboardSecondaryColor = UIColor(rInt: 40, gInt: 40, bInt: 40)
+        chatStickerKeyboardIcon = UIImage(named: "chat_emoji_button", in: Bundle(for: Theme.self), compatibleWith: nil)!.withRenderingMode(.alwaysTemplate)
+        chatStickerKeyboardIconSelected = UIImage(named: "chat_keyboard_button", in: Bundle(for: Theme.self), compatibleWith: nil)!.withRenderingMode(.alwaysTemplate)
+        chatStickerKeyboardIconTint = .white
+        chatStickerKeyboardIconSelectedTint = .white
+        
         chatCornerRadius = 12
         chatLeadingMargin = 16
         chatTrailingMargin = 16
@@ -351,6 +366,7 @@ public class Theme: NSObject {
         myUsernameTextColor = UIColor(rInt: 50, gInt: 200, bInt: 250)
 
         messageTextColor = UIColor(white: 1, alpha: 0.9)
+        messageTextFont = UIFont.systemFont(ofSize: 17.0)
         messageBackgroundColor = UIColor(white: 0, alpha: 0.4)
         messageSelectedColor = UIColor(rInt: 100, gInt: 100, bInt: 100, alpha: 0.4)
         messagePadding = 16

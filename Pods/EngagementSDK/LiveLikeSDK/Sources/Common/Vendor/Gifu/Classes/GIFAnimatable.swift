@@ -17,7 +17,6 @@ protocol GIFAnimatable: class {
   var contentMode: UIView.ContentMode { get set }
 }
 
-
 /// A single-property protocol that animatable classes can optionally conform to.
 protocol ImageContainer {
   /// Used for displaying the animation frames.
@@ -108,8 +107,8 @@ extension GIFAnimatable {
   /// - parameter imageName: The file name of the GIF in the main bundle.
   /// - parameter loopCount: Desired number of loops, <= 0 for infinite loop.
   func prepareForAnimation(withGIFNamed imageName: String,
-                                  loopCount: Int = 0,
-                                  completionHandler: (() -> Void)? = nil) {
+                           loopCount: Int = 0,
+                           completionHandler: (() -> Void)? = nil) {
     animator?.prepareForAnimation(withGIFNamed: imageName,
                                   size: frame.size,
                                   contentMode: contentMode,
@@ -122,8 +121,8 @@ extension GIFAnimatable {
   /// - parameter imageData: GIF image data.
   /// - parameter loopCount: Desired number of loops, <= 0 for infinite loop.
   func prepareForAnimation(withGIFData imageData: Data,
-                                  loopCount: Int = 0,
-                                  completionHandler: (() -> Void)? = nil) {
+                           loopCount: Int = 0,
+                           completionHandler: (() -> Void)? = nil) {
     if var imageContainer = self as? ImageContainer {
       imageContainer.image = UIImage(data: imageData)
     }
@@ -140,8 +139,8 @@ extension GIFAnimatable {
   /// - parameter imageURL: GIF image url.
   /// - parameter loopCount: Desired number of loops, <= 0 for infinite loop.
   func prepareForAnimation(withGIFURL imageURL: URL,
-                                  loopCount: Int = 0,
-                                  completionHandler: (() -> Void)? = nil) {
+                           loopCount: Int = 0,
+                           completionHandler: (() -> Void)? = nil) {
     let session = EngagementSDK.networking.urlSession
     let task = session.dataTask(with: imageURL) { (data, response, error) in
       switch (data, response, error) {

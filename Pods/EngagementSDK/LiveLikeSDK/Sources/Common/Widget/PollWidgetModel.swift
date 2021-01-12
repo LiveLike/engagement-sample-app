@@ -30,6 +30,9 @@ public class PollWidgetModel: PollWidgetModelable {
     
     /// The question of the Poll Widget
     public let question: String
+
+    /// The updated total count of votes on the Poll
+    @Atomic public internal(set) var totalVoteCount: Int
     
     // MARK: Metadata
     
@@ -86,6 +89,7 @@ public class PollWidgetModel: PollWidgetModelable {
                 voteCount: $0.voteCount
             )
         }
+        self.totalVoteCount = data.options.map { $0.voteCount }.reduce(0, +)
         self.customData = data.customData
         self.createdAt = data.createdAt
         self.publishedAt = data.publishedAt
@@ -125,6 +129,7 @@ public class PollWidgetModel: PollWidgetModelable {
                 voteCount: $0.voteCount
             )
         }
+        self.totalVoteCount = data.options.map { $0.voteCount }.reduce(0, +)
         self.customData = data.customData
         self.createdAt = data.createdAt
         self.publishedAt = data.publishedAt
@@ -271,9 +276,15 @@ extension PollWidgetModel: WidgetProxyInput {
     func publish(event: WidgetProxyPublishData) {
         switch event.clientEvent {
         case let .imagePollResults(results):
+            // Update model
+            self.totalVoteCount = results.options.map { $0.voteCount }.reduce(0, +)
             results.options.forEach { option in
                 self.options.first(where: { $0.id == option.id})?.voteCount = option.voteCount
-                self.delegate?.pollWidgetModel(
+            }
+            // Notify delegate
+            guard let delegate = self.delegate else { return }
+            results.options.forEach { option in
+                delegate.pollWidgetModel(
                     self,
                     voteCountDidChange: option.voteCount,
                     forOption: option.id

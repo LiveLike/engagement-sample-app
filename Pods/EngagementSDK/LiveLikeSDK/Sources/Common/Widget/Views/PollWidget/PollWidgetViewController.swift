@@ -294,11 +294,9 @@ extension PollWidgetViewController: PollWidgetModelDelegate {
     func pollWidgetModel(_ model: PollWidgetModel, voteCountDidChange answerCount: Int, forOption optionID: String) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
+            guard model.totalVoteCount > 0 else { return }
             guard let optionButton = self.widgetView.options.first(where: { $0.id == optionID }) else { return }
-           
-            let totalVotes = model.options.map { $0.voteCount }.reduce(0, +)
-            guard totalVotes > 0 else { return }
-            optionButton.setProgress(CGFloat(answerCount) / CGFloat(totalVotes))
+            optionButton.setProgress(CGFloat(answerCount) / CGFloat(model.totalVoteCount))
         }
     }
 }
