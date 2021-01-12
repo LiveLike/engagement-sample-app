@@ -1,4 +1,3 @@
-import Lottie
 import UIKit
 
 class CustomAlertWidgetView: UIView {
@@ -9,12 +8,6 @@ class CustomAlertWidgetView: UIView {
         stackView.distribution = .equalSpacing
         stackView.spacing = 10
         return stackView
-    }()
-
-    let timer: CustomWidgetBarTimer = {
-        let timer = CustomWidgetBarTimer()
-        timer.translatesAutoresizingMaskIntoConstraints = false
-        return timer
     }()
 
     let headerView: UIView = {
@@ -36,7 +29,7 @@ class CustomAlertWidgetView: UIView {
     let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 15, weight: .bold)
-        label.textColor = UIColor(red: 0, green: 0, blue: 0, alpha: 1)
+        label.textColor = UIColor(red: 0, green: 0, blue: 0,alpha: 1.0)
         label.textAlignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -77,7 +70,7 @@ class CustomAlertWidgetView: UIView {
         button.titleLabel?.textColor = .white
         button.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
         button.layer.cornerRadius = 4
-        button.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 1)
+        button.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 1.0)
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
@@ -91,12 +84,6 @@ class CustomAlertWidgetView: UIView {
         super.init(frame: .zero)
 
         backgroundColor = .white
-
-        addSubview(timer)
-        timer.bottomAnchor.constraint(equalTo: topAnchor).isActive = true
-        timer.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
-        timer.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
-        timer.heightAnchor.constraint(equalToConstant: 5).isActive = true
 
         addSubview(stackView)
         stackView.addArrangedSubview(headerView)

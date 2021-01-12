@@ -116,7 +116,17 @@ extension CustomWidgetsUseCase: WidgetViewControllerDelegate {
     ) -> Widget? {
         switch widgetModel {
         case .alert(let alertModel):
-            return CustomAlertWidgetViewController(model: alertModel)
+            return SponsoredAlertWidgetViewController(model: alertModel)
+        case .imageSlider(let model):
+            return CustomImageSliderViewController(model: model)
+        case .poll(let model):
+            return CustomTextPollWidgetViewController(model: model)
+        case .quiz(let model):
+            return CustomTextQuizWidgetViewController(model: model)
+        case .prediction(let model):
+            return CustomTextPredictionWidgetViewController(model: model)
+        case .predictionFollowUp(let model):
+            return CustomTextPredictionFollowUpWidgetViewController(model: model)
         default:
             return DefaultWidgetFactory.makeWidget(from: widgetModel)
         }

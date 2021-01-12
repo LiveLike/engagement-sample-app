@@ -1,15 +1,6 @@
-//
-//  CustomWidgetTimer.swift
-//  Sample App
-//
-//  Created by Jelzon Monzon on 1/5/21.
-//  Copyright © 2021 LiveLike. All rights reserved.
-//
-
 import UIKit
 
 class CustomWidgetBarTimer: UIView {
-
     var progressView: UIView = {
         let view = UIView()
         view.backgroundColor = UIColor(red: 250/255, green: 200/255, blue: 60/255, alpha: 1)
@@ -55,5 +46,4 @@ class CustomWidgetBarTimer: UIView {
             }
         }
     }
-
 }
