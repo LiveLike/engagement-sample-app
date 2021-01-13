@@ -119,21 +119,34 @@ extension CustomWidgetsUseCase: WidgetViewControllerDelegate {
             return SponsoredAlertWidgetViewController(model: alertModel)
         case .imageSlider(let model):
             return CustomImageSliderViewController(model: model)
-        case .poll(let model):
-            return CustomTextPollWidgetViewController(model: model)
         case .quiz(let model):
+            if model.containsImages {
+                return CustomImageQuizWidgetViewController(model: model)
+            }
             return CustomTextQuizWidgetViewController(model: model)
         case .prediction(let model):
+            if model.containsImages {
+                return CustomImagePredictionWidget(model: model)
+            }
             return CustomTextPredictionWidgetViewController(model: model)
         case .predictionFollowUp(let model):
+            if model.containsImages {
+                return CustomImgPredictionFollowUpWidgetVC(model: model)
+            }
             return CustomTextPredictionFollowUpWidgetViewController(model: model)
+        case .poll(let model):
+            if model.containsImages {
+                return CustomImagePollWidgetViewController(model: model)
+            } else {
+                return CustomTextPollWidgetViewController(model: model)
+            }
         default:
             return DefaultWidgetFactory.makeWidget(from: widgetModel)
         }
     }
 }
 
-// MARK: AccessTokenStorage
+// MARK: AccessTokenStorages
 extension CustomWidgetsUseCase: AccessTokenStorage {
     func fetchAccessToken() -> String? {
         return Defaults.userAccessToken

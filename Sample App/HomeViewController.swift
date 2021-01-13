@@ -120,7 +120,7 @@ class HomeViewController: UIViewController {
         super.viewDidLoad()
         
         title = "Engagement SDK \(EngagementSDK.version)"
-    
+        
         view.addSubview(stackView)
         
         let safeArea = self.view.safeAreaLayoutGuide
