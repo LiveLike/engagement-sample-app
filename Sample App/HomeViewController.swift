@@ -120,6 +120,9 @@ class HomeViewController: UIViewController {
         super.viewDidLoad()
         
         title = "Engagement SDK \(EngagementSDK.version)"
+        
+        Defaults.activeClientID = "8PqSNDgIVHnXuJuGte1HdvOjOqhCFE1ZCR3qhqaS"
+        Defaults.activeProgramID = "6834f1fd-f24d-4538-ba51-63544f9d78eb"
     
         view.addSubview(stackView)
         

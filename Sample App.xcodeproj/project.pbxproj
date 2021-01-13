@@ -7,9 +7,25 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2706E66925AE5A4500996A8B /* CustomImagePollWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2706E66825AE5A4500996A8B /* CustomImagePollWidgetViewController.swift */; };
+		2706E66C25AE5AC900996A8B /* CustomImageOptionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2706E66B25AE5AC900996A8B /* CustomImageOptionCell.swift */; };
 		2757FD31249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2757FD30249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift */; };
 		276401B3243BB0080016C2FC /* Utils+UserDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276401B2243BB0080016C2FC /* Utils+UserDefaults.swift */; };
 		276401B6243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276401B5243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift */; };
+		2772CEBA25AE7A8E00EA27CE /* CustomWidgetBarTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CEB925AE7A8E00EA27CE /* CustomWidgetBarTimer.swift */; };
+		2772CEBE25AE7AA800EA27CE /* CustomImagePollWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CEBC25AE7AA800EA27CE /* CustomImagePollWidgetViewController.swift */; };
+		2772CEBF25AE7AA800EA27CE /* CustomImageOptionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CEBD25AE7AA800EA27CE /* CustomImageOptionCell.swift */; };
+		2772CEC925AE7B5800EA27CE /* CustomImageSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CEC725AE7B5800EA27CE /* CustomImageSliderView.swift */; };
+		2772CECA25AE7B5800EA27CE /* CustomImageSliderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CEC825AE7B5800EA27CE /* CustomImageSliderViewController.swift */; };
+		2772CED125AE7B7500EA27CE /* CustomTextPollWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CECC25AE7B7500EA27CE /* CustomTextPollWidgetViewController.swift */; };
+		2772CED225AE7B7500EA27CE /* CustomTextChoiceWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CECD25AE7B7500EA27CE /* CustomTextChoiceWidgetView.swift */; };
+		2772CED325AE7B7500EA27CE /* CustomTextPredictionWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CECE25AE7B7500EA27CE /* CustomTextPredictionWidgetViewController.swift */; };
+		2772CED425AE7B7500EA27CE /* CustomTextPredictionFollowUpViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CECF25AE7B7500EA27CE /* CustomTextPredictionFollowUpViewController.swift */; };
+		2772CED525AE7B7500EA27CE /* CustomTextQuizWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CED025AE7B7500EA27CE /* CustomTextQuizWidgetViewController.swift */; };
+		2772CED825AE7C5300EA27CE /* CustomImagePredictionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CED725AE7C5300EA27CE /* CustomImagePredictionWidget.swift */; };
+		2772CEE725AE7E7C00EA27CE /* CustomWidgetOptionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CEE625AE7E7C00EA27CE /* CustomWidgetOptionsView.swift */; };
+		2772CEF025AE800F00EA27CE /* CustomImageQuizWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CEEF25AE800F00EA27CE /* CustomImageQuizWidgetViewController.swift */; };
+		2772CEF725AE81B900EA27CE /* CustomImgPredictionFollowUpWidgetVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CEF625AE81B900EA27CE /* CustomImgPredictionFollowUpWidgetVC.swift */; };
 		27C83D02243B8D44009F35DA /* WidgetsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27C83D01243B8D44009F35DA /* WidgetsUseCase.swift */; };
 		767AFD57243B8B2600F85E8A /* ChatUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767AFD56243B8B2600F85E8A /* ChatUseCase.swift */; };
 		76FE3E922437990E003F179B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE3E912437990E003F179B /* AppDelegate.swift */; };
@@ -19,25 +35,32 @@
 		76FE3E9B24379912003F179B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E9A24379912003F179B /* Assets.xcassets */; };
 		76FE3E9E24379912003F179B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E9C24379912003F179B /* LaunchScreen.storyboard */; };
 		D0F08AFAE8A6FB59BFC17641 /* Pods_Sample_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9141840A08C79EA20A86BA4 /* Pods_Sample_App.framework */; };
-		D3CB4DAA25AE61550042BE4D /* CustomTextChoiceWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DA125AE61540042BE4D /* CustomTextChoiceWidgetView.swift */; };
-		D3CB4DAB25AE61550042BE4D /* CustomTextPollWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DA225AE61540042BE4D /* CustomTextPollWidgetViewController.swift */; };
-		D3CB4DAC25AE61550042BE4D /* CustomImageSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DA325AE61540042BE4D /* CustomImageSliderView.swift */; };
-		D3CB4DAD25AE61550042BE4D /* CustomTextPredictionWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DA425AE61540042BE4D /* CustomTextPredictionWidgetViewController.swift */; };
-		D3CB4DAE25AE61550042BE4D /* CustomTextPredictionFollowUpViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DA525AE61540042BE4D /* CustomTextPredictionFollowUpViewController.swift */; };
-		D3CB4DAF25AE61550042BE4D /* CustomAlertWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DA625AE61540042BE4D /* CustomAlertWidgetViewController.swift */; };
-		D3CB4DB025AE61550042BE4D /* CustomImageSliderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DA725AE61540042BE4D /* CustomImageSliderViewController.swift */; };
-		D3CB4DB125AE61550042BE4D /* CustomTextQuizWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DA825AE61540042BE4D /* CustomTextQuizWidgetViewController.swift */; };
-		D3CB4DB225AE61550042BE4D /* CustomAlertWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DA925AE61550042BE4D /* CustomAlertWidgetView.swift */; };
-		D3CB4DB725AE621E0042BE4D /* CustomWidgetBarTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DB625AE621E0042BE4D /* CustomWidgetBarTimer.swift */; };
-		D3CB4DBC25AE64740042BE4D /* image-slider-avg.json in Resources */ = {isa = PBXBuildFile; fileRef = D3CB4DBB25AE64740042BE4D /* image-slider-avg.json */; };
 		D3F9FC1A25A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F9FC1925A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift */; };
+		D3F9FC2325A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F9FC2125A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift */; };
+		D3F9FC2425A4E0E000ECBAA5 /* CustomAlertWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F9FC2225A4E0E000ECBAA5 /* CustomAlertWidgetView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		18CA8D5CBB21254E2489C76B /* Pods-Sample App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.release.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.release.xcconfig"; sourceTree = "<group>"; };
+		2706E66825AE5A4500996A8B /* CustomImagePollWidgetViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomImagePollWidgetViewController.swift; sourceTree = "<group>"; };
+		2706E66B25AE5AC900996A8B /* CustomImageOptionCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomImageOptionCell.swift; sourceTree = "<group>"; };
 		2757FD30249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateEnterChatRoomUseCase.swift; sourceTree = "<group>"; };
 		276401B2243BB0080016C2FC /* Utils+UserDefaults.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Utils+UserDefaults.swift"; sourceTree = "<group>"; };
 		276401B5243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetChatSpoilerPreventionUseCase.swift; sourceTree = "<group>"; };
+		2772CEB925AE7A8E00EA27CE /* CustomWidgetBarTimer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomWidgetBarTimer.swift; sourceTree = "<group>"; };
+		2772CEBC25AE7AA800EA27CE /* CustomImagePollWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomImagePollWidgetViewController.swift; sourceTree = "<group>"; };
+		2772CEBD25AE7AA800EA27CE /* CustomImageOptionCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomImageOptionCell.swift; sourceTree = "<group>"; };
+		2772CEC725AE7B5800EA27CE /* CustomImageSliderView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomImageSliderView.swift; sourceTree = "<group>"; };
+		2772CEC825AE7B5800EA27CE /* CustomImageSliderViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomImageSliderViewController.swift; sourceTree = "<group>"; };
+		2772CECC25AE7B7500EA27CE /* CustomTextPollWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomTextPollWidgetViewController.swift; sourceTree = "<group>"; };
+		2772CECD25AE7B7500EA27CE /* CustomTextChoiceWidgetView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomTextChoiceWidgetView.swift; sourceTree = "<group>"; };
+		2772CECE25AE7B7500EA27CE /* CustomTextPredictionWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomTextPredictionWidgetViewController.swift; sourceTree = "<group>"; };
+		2772CECF25AE7B7500EA27CE /* CustomTextPredictionFollowUpViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomTextPredictionFollowUpViewController.swift; sourceTree = "<group>"; };
+		2772CED025AE7B7500EA27CE /* CustomTextQuizWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomTextQuizWidgetViewController.swift; sourceTree = "<group>"; };
+		2772CED725AE7C5300EA27CE /* CustomImagePredictionWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomImagePredictionWidget.swift; sourceTree = "<group>"; };
+		2772CEE625AE7E7C00EA27CE /* CustomWidgetOptionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWidgetOptionsView.swift; sourceTree = "<group>"; };
+		2772CEEF25AE800F00EA27CE /* CustomImageQuizWidgetViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomImageQuizWidgetViewController.swift; sourceTree = "<group>"; };
+		2772CEF625AE81B900EA27CE /* CustomImgPredictionFollowUpWidgetVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomImgPredictionFollowUpWidgetVC.swift; sourceTree = "<group>"; };
 		27C83D01243B8D44009F35DA /* WidgetsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetsUseCase.swift; sourceTree = "<group>"; };
 		767AFD56243B8B2600F85E8A /* ChatUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatUseCase.swift; sourceTree = "<group>"; };
 		76FE3E8E2437990E003F179B /* Sample App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Sample App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -50,18 +73,9 @@
 		76FE3E9F24379912003F179B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		842A1B4B833DABFEBA36D5AF /* Pods-Sample App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.debug.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.debug.xcconfig"; sourceTree = "<group>"; };
 		B9141840A08C79EA20A86BA4 /* Pods_Sample_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Sample_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		D3CB4DA125AE61540042BE4D /* CustomTextChoiceWidgetView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomTextChoiceWidgetView.swift; sourceTree = "<group>"; };
-		D3CB4DA225AE61540042BE4D /* CustomTextPollWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomTextPollWidgetViewController.swift; sourceTree = "<group>"; };
-		D3CB4DA325AE61540042BE4D /* CustomImageSliderView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomImageSliderView.swift; sourceTree = "<group>"; };
-		D3CB4DA425AE61540042BE4D /* CustomTextPredictionWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomTextPredictionWidgetViewController.swift; sourceTree = "<group>"; };
-		D3CB4DA525AE61540042BE4D /* CustomTextPredictionFollowUpViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomTextPredictionFollowUpViewController.swift; sourceTree = "<group>"; };
-		D3CB4DA625AE61540042BE4D /* CustomAlertWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomAlertWidgetViewController.swift; sourceTree = "<group>"; };
-		D3CB4DA725AE61540042BE4D /* CustomImageSliderViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomImageSliderViewController.swift; sourceTree = "<group>"; };
-		D3CB4DA825AE61540042BE4D /* CustomTextQuizWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomTextQuizWidgetViewController.swift; sourceTree = "<group>"; };
-		D3CB4DA925AE61550042BE4D /* CustomAlertWidgetView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomAlertWidgetView.swift; sourceTree = "<group>"; };
-		D3CB4DB625AE621E0042BE4D /* CustomWidgetBarTimer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomWidgetBarTimer.swift; sourceTree = "<group>"; };
-		D3CB4DBB25AE64740042BE4D /* image-slider-avg.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "image-slider-avg.json"; sourceTree = "<group>"; };
 		D3F9FC1925A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWidgetsUseCase.swift; sourceTree = "<group>"; };
+		D3F9FC2125A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomAlertWidgetViewController.swift; sourceTree = "<group>"; };
+		D3F9FC2225A4E0E000ECBAA5 /* CustomAlertWidgetView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomAlertWidgetView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -143,17 +157,24 @@
 		D3F9FC1F25A4E0C500ECBAA5 /* Custom Widgets */ = {
 			isa = PBXGroup;
 			children = (
-				D3CB4DBB25AE64740042BE4D /* image-slider-avg.json */,
-				D3CB4DA325AE61540042BE4D /* CustomImageSliderView.swift */,
-				D3CB4DA725AE61540042BE4D /* CustomImageSliderViewController.swift */,
-				D3CB4DA125AE61540042BE4D /* CustomTextChoiceWidgetView.swift */,
-				D3CB4DA225AE61540042BE4D /* CustomTextPollWidgetViewController.swift */,
-				D3CB4DA525AE61540042BE4D /* CustomTextPredictionFollowUpViewController.swift */,
-				D3CB4DA425AE61540042BE4D /* CustomTextPredictionWidgetViewController.swift */,
-				D3CB4DA825AE61540042BE4D /* CustomTextQuizWidgetViewController.swift */,
-				D3CB4DA925AE61550042BE4D /* CustomAlertWidgetView.swift */,
-				D3CB4DA625AE61540042BE4D /* CustomAlertWidgetViewController.swift */,
-				D3CB4DB625AE621E0042BE4D /* CustomWidgetBarTimer.swift */,
+				2772CECD25AE7B7500EA27CE /* CustomTextChoiceWidgetView.swift */,
+				2772CECC25AE7B7500EA27CE /* CustomTextPollWidgetViewController.swift */,
+				2772CECF25AE7B7500EA27CE /* CustomTextPredictionFollowUpViewController.swift */,
+				2772CECE25AE7B7500EA27CE /* CustomTextPredictionWidgetViewController.swift */,
+				2772CED025AE7B7500EA27CE /* CustomTextQuizWidgetViewController.swift */,
+				2772CEC725AE7B5800EA27CE /* CustomImageSliderView.swift */,
+				2772CEC825AE7B5800EA27CE /* CustomImageSliderViewController.swift */,
+				2772CEBD25AE7AA800EA27CE /* CustomImageOptionCell.swift */,
+				2772CEBC25AE7AA800EA27CE /* CustomImagePollWidgetViewController.swift */,
+				2772CEB925AE7A8E00EA27CE /* CustomWidgetBarTimer.swift */,
+				2706E66B25AE5AC900996A8B /* CustomImageOptionCell.swift */,
+				D3F9FC2225A4E0E000ECBAA5 /* CustomAlertWidgetView.swift */,
+				D3F9FC2125A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift */,
+				2706E66825AE5A4500996A8B /* CustomImagePollWidgetViewController.swift */,
+				2772CED725AE7C5300EA27CE /* CustomImagePredictionWidget.swift */,
+				2772CEE625AE7E7C00EA27CE /* CustomWidgetOptionsView.swift */,
+				2772CEEF25AE800F00EA27CE /* CustomImageQuizWidgetViewController.swift */,
+				2772CEF625AE81B900EA27CE /* CustomImgPredictionFollowUpWidgetVC.swift */,
 			);
 			path = "Custom Widgets";
 			sourceTree = "<group>";
@@ -221,7 +242,6 @@
 				76FE3E9E24379912003F179B /* LaunchScreen.storyboard in Resources */,
 				76FE3E9B24379912003F179B /* Assets.xcassets in Resources */,
 				76FE3E992437990E003F179B /* Main.storyboard in Resources */,
-				D3CB4DBC25AE64740042BE4D /* image-slider-avg.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -283,25 +303,33 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D3CB4DB025AE61550042BE4D /* CustomImageSliderViewController.swift in Sources */,
-				D3CB4DAD25AE61550042BE4D /* CustomTextPredictionWidgetViewController.swift in Sources */,
+				2772CEBA25AE7A8E00EA27CE /* CustomWidgetBarTimer.swift in Sources */,
+				2772CEE725AE7E7C00EA27CE /* CustomWidgetOptionsView.swift in Sources */,
+				2772CED425AE7B7500EA27CE /* CustomTextPredictionFollowUpViewController.swift in Sources */,
+				2772CED125AE7B7500EA27CE /* CustomTextPollWidgetViewController.swift in Sources */,
+				2772CED525AE7B7500EA27CE /* CustomTextQuizWidgetViewController.swift in Sources */,
+				D3F9FC2425A4E0E000ECBAA5 /* CustomAlertWidgetView.swift in Sources */,
+				2772CEC925AE7B5800EA27CE /* CustomImageSliderView.swift in Sources */,
+				2706E66C25AE5AC900996A8B /* CustomImageOptionCell.swift in Sources */,
+				2772CEF025AE800F00EA27CE /* CustomImageQuizWidgetViewController.swift in Sources */,
+				2772CECA25AE7B5800EA27CE /* CustomImageSliderViewController.swift in Sources */,
 				276401B6243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift in Sources */,
-				D3CB4DB225AE61550042BE4D /* CustomAlertWidgetView.swift in Sources */,
+				D3F9FC2325A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift in Sources */,
+				2706E66925AE5A4500996A8B /* CustomImagePollWidgetViewController.swift in Sources */,
 				276401B3243BB0080016C2FC /* Utils+UserDefaults.swift in Sources */,
+				2772CEBE25AE7AA800EA27CE /* CustomImagePollWidgetViewController.swift in Sources */,
 				27C83D02243B8D44009F35DA /* WidgetsUseCase.swift in Sources */,
 				76FE3E962437990E003F179B /* HomeViewController.swift in Sources */,
-				D3CB4DAB25AE61550042BE4D /* CustomTextPollWidgetViewController.swift in Sources */,
 				767AFD57243B8B2600F85E8A /* ChatUseCase.swift in Sources */,
+				2772CEF725AE81B900EA27CE /* CustomImgPredictionFollowUpWidgetVC.swift in Sources */,
 				76FE3E922437990E003F179B /* AppDelegate.swift in Sources */,
 				D3F9FC1A25A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift in Sources */,
+				2772CED325AE7B7500EA27CE /* CustomTextPredictionWidgetViewController.swift in Sources */,
+				2772CEBF25AE7AA800EA27CE /* CustomImageOptionCell.swift in Sources */,
 				2757FD31249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift in Sources */,
-				D3CB4DB725AE621E0042BE4D /* CustomWidgetBarTimer.swift in Sources */,
-				D3CB4DAA25AE61550042BE4D /* CustomTextChoiceWidgetView.swift in Sources */,
-				D3CB4DAF25AE61550042BE4D /* CustomAlertWidgetViewController.swift in Sources */,
-				D3CB4DB125AE61550042BE4D /* CustomTextQuizWidgetViewController.swift in Sources */,
-				D3CB4DAC25AE61550042BE4D /* CustomImageSliderView.swift in Sources */,
+				2772CED825AE7C5300EA27CE /* CustomImagePredictionWidget.swift in Sources */,
+				2772CED225AE7B7500EA27CE /* CustomTextChoiceWidgetView.swift in Sources */,
 				76FE3E942437990E003F179B /* SceneDelegate.swift in Sources */,
-				D3CB4DAE25AE61550042BE4D /* CustomTextPredictionFollowUpViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

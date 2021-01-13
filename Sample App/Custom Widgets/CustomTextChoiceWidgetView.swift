@@ -27,7 +27,7 @@ class CustomTextChoiceWidgetView: UIView {
         let label = UILabel()
         label.text = "CHOICE WIDGET"
         label.font = .systemFont(ofSize: 11, weight: .medium)
-        label.textColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.3)
+        label.textColor = UIColor(red: 0/255, green: 0/255, blue: 0/255, alpha: 0.3)
         label.textAlignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -36,7 +36,7 @@ class CustomTextChoiceWidgetView: UIView {
     let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 15, weight: .bold)
-        label.textColor = UIColor(red: 0, green: 0, blue: 0,alpha: 1.0)
+        label.textColor = UIColor(red: 0/255, green: 0/255, blue: 0/255, alpha: 1.0)
         label.textAlignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
