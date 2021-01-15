@@ -35,6 +35,11 @@
 		76FE3E9B24379912003F179B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E9A24379912003F179B /* Assets.xcassets */; };
 		76FE3E9E24379912003F179B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E9C24379912003F179B /* LaunchScreen.storyboard */; };
 		D0F08AFAE8A6FB59BFC17641 /* Pods_Sample_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9141840A08C79EA20A86BA4 /* Pods_Sample_App.framework */; };
+		D3CB4DCE25B1ECB20042BE4D /* CustomCheerMeterWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DCB25B1ECB20042BE4D /* CustomCheerMeterWidgetView.swift */; };
+		D3CB4DCF25B1ECB20042BE4D /* CustomCheerMeterWinnerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DCC25B1ECB20042BE4D /* CustomCheerMeterWinnerView.swift */; };
+		D3CB4DD025B1ECB20042BE4D /* CustomCheerMeterWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DCD25B1ECB20042BE4D /* CustomCheerMeterWidgetViewController.swift */; };
+		D3CB4DD425B1ECCA0042BE4D /* vs-1-light.json in Resources */ = {isa = PBXBuildFile; fileRef = D3CB4DD225B1ECCA0042BE4D /* vs-1-light.json */; };
+		D3CB4DD525B1ECCA0042BE4D /* win-1.json in Resources */ = {isa = PBXBuildFile; fileRef = D3CB4DD325B1ECCA0042BE4D /* win-1.json */; };
 		D3F9FC1A25A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F9FC1925A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift */; };
 		D3F9FC2325A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F9FC2125A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift */; };
 		D3F9FC2425A4E0E000ECBAA5 /* CustomAlertWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F9FC2225A4E0E000ECBAA5 /* CustomAlertWidgetView.swift */; };
@@ -73,6 +78,11 @@
 		76FE3E9F24379912003F179B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		842A1B4B833DABFEBA36D5AF /* Pods-Sample App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.debug.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.debug.xcconfig"; sourceTree = "<group>"; };
 		B9141840A08C79EA20A86BA4 /* Pods_Sample_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Sample_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		D3CB4DCB25B1ECB20042BE4D /* CustomCheerMeterWidgetView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomCheerMeterWidgetView.swift; sourceTree = "<group>"; };
+		D3CB4DCC25B1ECB20042BE4D /* CustomCheerMeterWinnerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomCheerMeterWinnerView.swift; sourceTree = "<group>"; };
+		D3CB4DCD25B1ECB20042BE4D /* CustomCheerMeterWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomCheerMeterWidgetViewController.swift; sourceTree = "<group>"; };
+		D3CB4DD225B1ECCA0042BE4D /* vs-1-light.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "vs-1-light.json"; sourceTree = "<group>"; };
+		D3CB4DD325B1ECCA0042BE4D /* win-1.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "win-1.json"; sourceTree = "<group>"; };
 		D3F9FC1925A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWidgetsUseCase.swift; sourceTree = "<group>"; };
 		D3F9FC2125A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomAlertWidgetViewController.swift; sourceTree = "<group>"; };
 		D3F9FC2225A4E0E000ECBAA5 /* CustomAlertWidgetView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomAlertWidgetView.swift; sourceTree = "<group>"; };
@@ -157,6 +167,8 @@
 		D3F9FC1F25A4E0C500ECBAA5 /* Custom Widgets */ = {
 			isa = PBXGroup;
 			children = (
+				D3CB4DD225B1ECCA0042BE4D /* vs-1-light.json */,
+				D3CB4DD325B1ECCA0042BE4D /* win-1.json */,
 				2772CECD25AE7B7500EA27CE /* CustomTextChoiceWidgetView.swift */,
 				2772CECC25AE7B7500EA27CE /* CustomTextPollWidgetViewController.swift */,
 				2772CECF25AE7B7500EA27CE /* CustomTextPredictionFollowUpViewController.swift */,
@@ -175,6 +187,9 @@
 				2772CEE625AE7E7C00EA27CE /* CustomWidgetOptionsView.swift */,
 				2772CEEF25AE800F00EA27CE /* CustomImageQuizWidgetViewController.swift */,
 				2772CEF625AE81B900EA27CE /* CustomImgPredictionFollowUpWidgetVC.swift */,
+				D3CB4DCB25B1ECB20042BE4D /* CustomCheerMeterWidgetView.swift */,
+				D3CB4DCD25B1ECB20042BE4D /* CustomCheerMeterWidgetViewController.swift */,
+				D3CB4DCC25B1ECB20042BE4D /* CustomCheerMeterWinnerView.swift */,
 			);
 			path = "Custom Widgets";
 			sourceTree = "<group>";
@@ -241,7 +256,9 @@
 			files = (
 				76FE3E9E24379912003F179B /* LaunchScreen.storyboard in Resources */,
 				76FE3E9B24379912003F179B /* Assets.xcassets in Resources */,
+				D3CB4DD525B1ECCA0042BE4D /* win-1.json in Resources */,
 				76FE3E992437990E003F179B /* Main.storyboard in Resources */,
+				D3CB4DD425B1ECCA0042BE4D /* vs-1-light.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -309,6 +326,7 @@
 				2772CED125AE7B7500EA27CE /* CustomTextPollWidgetViewController.swift in Sources */,
 				2772CED525AE7B7500EA27CE /* CustomTextQuizWidgetViewController.swift in Sources */,
 				D3F9FC2425A4E0E000ECBAA5 /* CustomAlertWidgetView.swift in Sources */,
+				D3CB4DCE25B1ECB20042BE4D /* CustomCheerMeterWidgetView.swift in Sources */,
 				2772CEC925AE7B5800EA27CE /* CustomImageSliderView.swift in Sources */,
 				2706E66C25AE5AC900996A8B /* CustomImageOptionCell.swift in Sources */,
 				2772CEF025AE800F00EA27CE /* CustomImageQuizWidgetViewController.swift in Sources */,
@@ -329,7 +347,9 @@
 				2757FD31249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift in Sources */,
 				2772CED825AE7C5300EA27CE /* CustomImagePredictionWidget.swift in Sources */,
 				2772CED225AE7B7500EA27CE /* CustomTextChoiceWidgetView.swift in Sources */,
+				D3CB4DD025B1ECB20042BE4D /* CustomCheerMeterWidgetViewController.swift in Sources */,
 				76FE3E942437990E003F179B /* SceneDelegate.swift in Sources */,
+				D3CB4DCF25B1ECB20042BE4D /* CustomCheerMeterWinnerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
