@@ -140,8 +140,11 @@ extension CustomWidgetsUseCase: WidgetViewControllerDelegate {
             } else {
                 return CustomTextPollWidgetViewController(model: model)
             }
-        default:
-            return DefaultWidgetFactory.makeWidget(from: widgetModel)
+        case .cheerMeter(let model):
+            if model.options.count == 2 {
+                return CustomCheerMeterWidgetViewController(model: model)
+            }
+            return nil
         }
     }
 }
