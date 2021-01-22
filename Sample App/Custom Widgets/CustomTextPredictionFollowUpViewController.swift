@@ -86,5 +86,6 @@ class CustomTextPredictionFollowUpWidgetViewController: Widget {
         DispatchQueue.main.asyncAfter(deadline: .now() + model.interactionTimeInterval) {
             self.delegate?.widgetDidEnterState(widget: self, state: .finished)
         }
+        model.registerImpression()
     }
 }

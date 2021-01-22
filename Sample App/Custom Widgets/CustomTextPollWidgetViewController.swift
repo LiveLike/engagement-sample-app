@@ -63,6 +63,7 @@ class CustomTextPollWidgetViewController: Widget {
                 self.delegate?.widgetDidEnterState(widget: self, state: .finished)
             }
         }
+        model.registerImpression()
     }
 
     @objc private func optionSelected(_ button: UIButton) {

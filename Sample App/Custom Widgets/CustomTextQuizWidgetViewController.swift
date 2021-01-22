@@ -89,6 +89,7 @@ class CustomTextQuizWidgetViewController: Widget {
                 self.delegate?.widgetDidEnterState(widget: self, state: .finished)
             }
         }
+        model.registerImpression()
     }
 
     @objc private func choiceSelected(_ button: UIButton) {

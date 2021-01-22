@@ -69,6 +69,7 @@ class CustomTextPredictionWidgetViewController: Widget {
                 }
             }
         }
+        model.registerImpression()
     }
 
     @objc private func optionSelected(_ button: UIButton) {
