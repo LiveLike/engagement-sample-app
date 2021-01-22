@@ -91,6 +91,7 @@ class CustomCheerMeterWidgetViewController: Widget {
                 self.delegate?.widgetDidEnterState(widget: self, state: .finished)
             }
         }
+        model.registerImpression()
     }
 
     @objc func optionViewASelected() {

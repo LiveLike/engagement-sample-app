@@ -49,6 +49,7 @@ class CustomAlertWidgetViewController: Widget {
             guard let self = self else { return }
             self.delegate?.widgetDidEnterState(widget: self, state: .finished)
         }
+        model.registerImpression()
     }
 
     @objc private func alertWidgetLinkButtonSelected() {

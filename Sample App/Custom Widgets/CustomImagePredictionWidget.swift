@@ -72,6 +72,7 @@ class CustomImagePredictionWidget: Widget, UICollectionViewDelegate, UICollectio
             }
         }
 
+        model.registerImpression()
         view = widgetView
     }
 

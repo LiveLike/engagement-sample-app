@@ -92,6 +92,7 @@ class CustomImageSliderViewController: Widget {
                 }
             }
         }
+        model.registerImpression()
     }
 
     func updateMagnitudeIndicator(_ magnitude: Double) {
