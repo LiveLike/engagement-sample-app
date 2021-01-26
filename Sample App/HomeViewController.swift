@@ -155,8 +155,6 @@ class HomeViewController: UIViewController {
         stackView.addArrangedSubview(createEnterChatRoomModule)
         stackView.addArrangedSubview(customWidgetModuleButton)
         stackView.addArrangedSubview(mml2021WidgetModuleButton)
-        Defaults.activeClientID = "8PqSNDgIVHnXuJuGte1HdvOjOqhCFE1ZCR3qhqaS"
-        Defaults.activeProgramID = "6834f1fd-f24d-4538-ba51-63544f9d78eb"
         
         // Loads previous client id and program id from UserDefaults
         clientIDTextField.text = Defaults.activeClientID
