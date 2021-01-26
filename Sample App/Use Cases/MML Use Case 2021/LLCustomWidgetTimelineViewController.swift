@@ -8,7 +8,7 @@
 import EngagementSDK
 import UIKit
 
-class CustomWidgetTimelineViewController: UIViewController {
+class LLCustomWidgetTimelineViewController: UIViewController {
     private let cellReuseIdentifer: String = "myCell"
     private let session: ContentSession
 
@@ -79,7 +79,7 @@ class CustomWidgetTimelineViewController: UIViewController {
     }
 }
 
-extension CustomWidgetTimelineViewController: ContentSessionDelegate {
+extension LLCustomWidgetTimelineViewController: ContentSessionDelegate {
     func playheadTimeSource(_ session: ContentSession) -> Date? { return nil }
     func session(_ session: ContentSession, didChangeStatus status: SessionStatus) {}
     func session(_ session: ContentSession, didReceiveError error: Error) {}
@@ -95,7 +95,7 @@ extension CustomWidgetTimelineViewController: ContentSessionDelegate {
     }
 }
 
-extension CustomWidgetTimelineViewController: UITableViewDataSource {
+extension LLCustomWidgetTimelineViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return widgetModels.count
     }

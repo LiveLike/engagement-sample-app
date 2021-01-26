@@ -27,7 +27,7 @@ class MMLUseCase2021: UIViewController {
     }()
 
     private var chatController: ChatViewController = ChatViewController()
-    private var timelineViewController: CustomWidgetTimelineViewController!
+    private var timelineViewController: LLCustomWidgetTimelineViewController!
     private var liveLikeSDK: LiveLikeSDKBuilder
 
     init(clientID: String, programID: String) {

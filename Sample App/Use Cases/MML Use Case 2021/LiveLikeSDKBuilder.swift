@@ -29,8 +29,8 @@ final class LiveLikeSDKBuilder {
         return chatVC
     }
 
-    func makeTimelineViewController() -> CustomWidgetTimelineViewController {
-        let timelineViewController = CustomWidgetTimelineViewController(session: session)
+    func makeTimelineViewController() -> LLCustomWidgetTimelineViewController {
+        let timelineViewController = LLCustomWidgetTimelineViewController(session: session)
         return timelineViewController
     }
 }
