@@ -207,6 +207,8 @@ protocol LiveLikeRestAPIServicable {
     func deleteChatRoomMembership(roomID: String,
                                   accessToken: AccessToken) -> Promise<Bool>
     
+    func getChatUserMutedStatus(profileID: String, roomID: String, accessToken: AccessToken) -> Promise<ChatUserMuteStatusResource>
+    
     /// Get widget details of a widget
     func getWidget(id: String, kind: WidgetKind) -> Promise<WidgetResource>
     
@@ -399,6 +401,24 @@ class LiveLikeRestAPIServices: LiveLikeRestAPIServicable {
             return EngagementSDK.networking.load(resource)
         }.then { chatRoomMember in
             return Promise(value: chatRoomMember)
+        }
+    }
+    
+    func getChatUserMutedStatus(profileID: String, roomID: String, accessToken: AccessToken) -> Promise<ChatUserMuteStatusResource> {
+        return firstly {
+            self.getChatRoomResource(roomID: roomID, accessToken: accessToken)
+        }.then { chatRoomResource -> Promise<ChatUserMuteStatusResource> in
+            
+            let stringToReplace = "{profile_id}"
+            guard chatRoomResource.mutedStatusUrlTemplate.contains(stringToReplace) else {
+                return Promise(error: ContentSessionError.invalidUserMutedStatusURLTemplate)
+            }
+            let urlTemplateFilled = chatRoomResource.mutedStatusUrlTemplate.replacingOccurrences(of: stringToReplace, with: profileID)
+            guard let chatUserMutedStatusURL = URL(string: urlTemplateFilled) else {
+                return Promise(error: ContentSessionError.invalidUserMutedStatusURL)
+            }
+            let resource = Resource<ChatUserMuteStatusResource>(get: chatUserMutedStatusURL)
+            return EngagementSDK.networking.load(resource)
         }
     }
     

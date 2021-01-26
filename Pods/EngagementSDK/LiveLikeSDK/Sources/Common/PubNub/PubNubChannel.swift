@@ -48,6 +48,9 @@ class PubNubChannel: NSObject, PubSubChannel, PNObjectEventListener {
             .message(message)
             .performWithCompletion { status in
                 guard !status.isError else {
+                    if status.statusCode == 403 {
+                        return completion(.failure(PubNubChannelError.sendMessageFailedAccessDenied))
+                    }
                     return completion(.failure(PubNubChannelError.pubnubStatusError(errorStatus: status)))
                 }
 

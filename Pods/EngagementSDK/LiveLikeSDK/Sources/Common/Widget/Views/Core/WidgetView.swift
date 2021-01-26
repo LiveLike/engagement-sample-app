@@ -20,12 +20,12 @@ open class Widget: UIViewController, WidgetViewModel {
     public let options: Set<WidgetOption>?
     public let customData: String?
 
-    public var previousState: WidgetState?
-    public var currentState: WidgetState
-    public weak var delegate: WidgetViewDelegate?
-    public var userDidInteract: Bool
-    public var theme: Theme
-    public var dismissSwipeableView: UIView {
+    open var previousState: WidgetState?
+    open var currentState: WidgetState
+    open weak var delegate: WidgetViewDelegate?
+    open var userDidInteract: Bool
+    open var theme: Theme
+    open var dismissSwipeableView: UIView {
         return view
     }
 
@@ -266,7 +266,7 @@ open class Widget: UIViewController, WidgetViewModel {
         fatalError("init(coder:) has not been implemented")
     }
 
-    public func moveToNextState() { }
-    public func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) { }
-    public func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) { }
+    open func moveToNextState() { }
+    open func addCloseButton(_ completion: @escaping (WidgetViewModel) -> Void) { }
+    open func addTimer(seconds: TimeInterval, completion: @escaping (WidgetViewModel) -> Void) { }
 }

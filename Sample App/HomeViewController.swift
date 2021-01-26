@@ -116,6 +116,17 @@ class HomeViewController: UIViewController {
         return button
     }()
     
+    private let mml2021WidgetModuleButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle("MML Use Case 2021", for: .normal)
+        button.backgroundColor = .lightGray
+        button.contentHorizontalAlignment = .left
+        button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
+        button.addTarget(self, action: #selector(mml2021UseCaseButtonSelected), for: .touchUpInside)
+        return button
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -143,6 +154,9 @@ class HomeViewController: UIViewController {
         stackView.addArrangedSubview(widgetChatSpoilerPreventionModule)
         stackView.addArrangedSubview(createEnterChatRoomModule)
         stackView.addArrangedSubview(customWidgetModuleButton)
+        stackView.addArrangedSubview(mml2021WidgetModuleButton)
+        Defaults.activeClientID = "8PqSNDgIVHnXuJuGte1HdvOjOqhCFE1ZCR3qhqaS"
+        Defaults.activeProgramID = "6834f1fd-f24d-4538-ba51-63544f9d78eb"
         
         // Loads previous client id and program id from UserDefaults
         clientIDTextField.text = Defaults.activeClientID
@@ -244,6 +258,23 @@ class HomeViewController: UIViewController {
         }
 
         let createEnterChatRoomUseCase = CustomWidgetsUseCase(clientID: clientID, programID: programID)
+
+        createEnterChatRoomUseCase.modalPresentationStyle = .fullScreen
+        self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)
+    }
+    
+    @objc func mml2021UseCaseButtonSelected() {
+        guard let clientID = Defaults.activeClientID, !clientID.isEmpty else {
+            presentInvalidClientIDAlert()
+            return
+        }
+
+        guard let programID = Defaults.activeProgramID, !programID.isEmpty else {
+            presentInvalidProgramIDAlert()
+            return
+        }
+
+        let createEnterChatRoomUseCase = MMLUseCase2021(clientID: clientID, programID: programID)
 
         createEnterChatRoomUseCase.modalPresentationStyle = .fullScreen
         self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)

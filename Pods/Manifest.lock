@@ -1,32 +1,41 @@
 PODS:
-  - EngagementSDK (2.14):
+  - EngagementSDK (2.15):
     - lottie-ios (~> 3.0)
-    - Mixpanel-swift (~> 2.5.8)
+    - Mixpanel-swift (~> 2.7)
     - PubNub (~> 4.12.0)
   - lottie-ios (3.1.9)
-  - Mixpanel-swift (2.5.9):
-    - Mixpanel-swift/Complete (= 2.5.9)
-  - Mixpanel-swift/Complete (2.5.9)
+  - Mixpanel-swift (2.8.2):
+    - Mixpanel-swift/Complete (= 2.8.2)
+  - Mixpanel-swift/Complete (2.8.2)
   - PubNub (4.12.0):
     - PubNub/Core (= 4.12.0)
   - PubNub/Core (4.12.0)
 
 DEPENDENCIES:
-  - EngagementSDK
+  - "EngagementSDK (from `git@bitbucket.org:livelike/livelike-ios-sdk.git`, branch `feature/ES-1336-adds-timeline-to-mml-poc`)"
 
 SPEC REPOS:
-  https://github.com/cocoapods/specs.git:
-    - EngagementSDK
+  trunk:
     - lottie-ios
     - Mixpanel-swift
     - PubNub
 
+EXTERNAL SOURCES:
+  EngagementSDK:
+    :branch: feature/ES-1336-adds-timeline-to-mml-poc
+    :git: "git@bitbucket.org:livelike/livelike-ios-sdk.git"
+
+CHECKOUT OPTIONS:
+  EngagementSDK:
+    :commit: 674620c26ea127742caa56e805f22e023b5f30ca
+    :git: "git@bitbucket.org:livelike/livelike-ios-sdk.git"
+
 SPEC CHECKSUMS:
-  EngagementSDK: 9f00f5ae02c79b8bc4ea5cbb92d3036b28b643d5
+  EngagementSDK: dbf92962a915a970ea6dda4599e5139cde92112d
   lottie-ios: 3a3758ef5a008e762faec9c9d50a39842f26d124
-  Mixpanel-swift: 4a2e061c8b7a5000ed7f72d2a6196884b5de8b49
+  Mixpanel-swift: ef37387899c8967fa95d492887f4bcc980041aa0
   PubNub: 44e2eb39746e7231b98b978a8e3b9726b11dca9c
 
-PODFILE CHECKSUM: ebd3afff3ce63b7f9d0766cef8ea1e586de6e96a
+PODFILE CHECKSUM: a12d776bf3e6707ffee3a49c419d40bdbdd2648c
 
-COCOAPODS: 1.6.1
+COCOAPODS: 1.8.4
