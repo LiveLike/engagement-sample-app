@@ -165,7 +165,8 @@ public class PollWidgetModel: PollWidgetModelable {
     
     /// Submit or update an already submitted vote by `optionID`
     public func submitVote(optionID: String, completion: @escaping (Result<PollWidgetModel.Vote, Error>) -> Void = { _ in }){
-        
+        self.eventRecorder.record(.widgetEngaged(kind: self.kind, id: self.id))
+
         // Avoid repeat vote on a previously voted option
         guard lastSuccessfulVote?.optionId != optionID else {
             log.error("\(PollWidgetModelError.voteAlreadySubmitted.localizedDescription)")
@@ -276,6 +277,7 @@ extension PollWidgetModel: WidgetProxyInput {
     func publish(event: WidgetProxyPublishData) {
         switch event.clientEvent {
         case let .imagePollResults(results):
+            guard results.id == self.id else { return }
             // Update model
             self.totalVoteCount = results.options.map { $0.voteCount }.reduce(0, +)
             results.options.forEach { option in

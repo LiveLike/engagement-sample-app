@@ -138,3 +138,25 @@ extension CustomWidgetTimelineViewController: UITableViewDataSource {
         return cell
     }
 }
+
+// TODO: Remove once 2.17 is live
+extension WidgetModel {
+    var id: String {
+        switch self {
+        case .cheerMeter(let model):
+            return model.id
+        case .alert(let model):
+            return model.id
+        case .quiz(let model):
+            return model.id
+        case .prediction(let model):
+            return model.id
+        case .predictionFollowUp(let model):
+            return model.id
+        case .poll(let model):
+            return model.id
+        case .imageSlider(let model):
+            return model.id
+        }
+    }
+}

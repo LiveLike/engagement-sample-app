@@ -16,23 +16,4 @@ public enum WidgetModel {
     case predictionFollowUp(PredictionFollowUpWidgetModel)
     case poll(PollWidgetModel)
     case imageSlider(ImageSliderWidgetModel)
-
-    public var id: String {
-        switch self {
-        case .cheerMeter(let model):
-            return model.id
-        case .alert(let model):
-            return model.id
-        case .quiz(let model):
-            return model.id
-        case .prediction(let model):
-            return model.id
-        case .predictionFollowUp(let model):
-            return model.id
-        case .poll(let model):
-            return model.id
-        case .imageSlider(let model):
-            return model.id
-        }
-    }
 }

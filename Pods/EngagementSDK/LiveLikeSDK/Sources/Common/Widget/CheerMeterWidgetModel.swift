@@ -120,6 +120,7 @@ public class CheerMeterWidgetModel: CheerMeterWidgetModelable {
     /// - Parameter optionID: The id of the `Option` to submit a vote
     public func submitVote(optionID: String) {
         batchedVoteCounterByID[optionID] = (batchedVoteCounterByID[optionID] ?? 0) + 1
+        self.eventRecorder.record(.widgetEngaged(kind: self.kind, id: self.id))
         // Create timer on first vote
         if throttleTimer == nil {
             Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
@@ -242,6 +243,7 @@ extension CheerMeterWidgetModel: WidgetProxyInput {
         guard case let .cheerMeterResults(payload) = event.clientEvent else {
             return
         }
+        guard payload.id == self.id else { return }
         payload.options.forEach { option in
             /// Update the option's voteCount then notify delegate
             self.options.first(where: { $0.id == option.id })?.voteCount = option.voteCount

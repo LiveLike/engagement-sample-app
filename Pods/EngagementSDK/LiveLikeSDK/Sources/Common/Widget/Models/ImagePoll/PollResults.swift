@@ -18,11 +18,8 @@ struct PollResultsOption {
 }
 
 struct PollResults {
+    let id: String
     var options: [PollResultsOption]
-
-    init(options: [PollResultsOption]) {
-        self.options = options
-    }
 }
 
 extension PollResultsOption: Decodable {}
