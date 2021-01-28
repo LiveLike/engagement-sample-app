@@ -39,6 +39,7 @@ class CustomWidgetOptionsView: UIView {
         label.font = .systemFont(ofSize: 15, weight: .bold)
         label.textColor = UIColor(red: 0/255, green: 0/255, blue: 0/255, alpha: 1.0)
         label.textAlignment = .center
+        label.numberOfLines = 0
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -115,7 +116,7 @@ class CustomWidgetOptionsView: UIView {
             titleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor),
             titleLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor),
             titleLabel.bottomAnchor.constraint(equalTo: headerView.bottomAnchor),
-            titleLabel.heightAnchor.constraint(equalToConstant: 18)
+            titleLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 18)
         ])
 
         stackView.addArrangedSubview(bodyView)
