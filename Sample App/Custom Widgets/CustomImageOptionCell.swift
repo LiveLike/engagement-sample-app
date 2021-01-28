@@ -19,6 +19,8 @@ class CustomImageOptionCell: UICollectionViewCell {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.textAlignment = .left
+        label.numberOfLines = 2
+        label.adjustsFontSizeToFitWidth = true
         label.font = UIFont(name: "HelveticaNeue-Regular", size: 14.0)
         return label
     }()
@@ -87,6 +89,7 @@ class CustomImageOptionCell: UICollectionViewCell {
 
             choiceMainLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10.0),
             choiceMainLabel.trailingAnchor.constraint(equalTo: imageView.leadingAnchor, constant: -10.0),
+            choiceMainLabel.heightAnchor.constraint(equalToConstant: 30),
 
             choiceSecondaryLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10.0),
             choiceSecondaryLabel.topAnchor.constraint(equalTo: choiceMainLabel.bottomAnchor, constant: 3.0),
