@@ -31,6 +31,7 @@ class CustomAlertWidgetView: UIView {
         label.font = .systemFont(ofSize: 15, weight: .bold)
         label.textColor = UIColor(red: 0, green: 0, blue: 0,alpha: 1.0)
         label.textAlignment = .center
+        label.numberOfLines = 0
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -107,7 +108,7 @@ class CustomAlertWidgetView: UIView {
             titleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor).isActive = true
             titleLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor).isActive = true
             titleLabel.bottomAnchor.constraint(equalTo: headerView.bottomAnchor).isActive = true
-            titleLabel.heightAnchor.constraint(equalToConstant: 18).isActive = true
+            titleLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 18).isActive = true
         }
 
         // Text and Media
