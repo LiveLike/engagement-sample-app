@@ -53,10 +53,7 @@ class CustomAlertWidgetViewController: Widget {
     }
 
     @objc private func alertWidgetLinkButtonSelected() {
-        guard let linkURL = model.linkURL else {
-            return
-        }
-        UIApplication.shared.open(linkURL, options: [:], completionHandler: nil)
+        self.model.openLinkUrl()
     }
 }
 
