@@ -1,4 +1,5 @@
 import EngagementSDK
+import Lottie
 import UIKit
 
 class CustomTextQuizWidgetViewController: Widget {
@@ -10,6 +11,13 @@ class CustomTextQuizWidgetViewController: Widget {
         let timer = CustomWidgetBarTimer()
         timer.translatesAutoresizingMaskIntoConstraints = false
         return timer
+    }()
+
+    let resultAnimationView: AnimationView = {
+        let animationView = AnimationView()
+        animationView.translatesAutoresizingMaskIntoConstraints = false
+        animationView.isUserInteractionEnabled = false
+        return animationView
     }()
 
     var choiceView: CustomTextChoiceWidgetView {
@@ -49,6 +57,12 @@ class CustomTextQuizWidgetViewController: Widget {
         timer.trailingAnchor.constraint(equalTo: choiceView.trailingAnchor).isActive = true
         timer.heightAnchor.constraint(equalToConstant: 5).isActive = true
 
+        choiceView.addSubview(resultAnimationView)
+        resultAnimationView.topAnchor.constraint(equalTo: choiceView.topAnchor).isActive = true
+        resultAnimationView.leadingAnchor.constraint(equalTo: choiceView.leadingAnchor).isActive = true
+        resultAnimationView.trailingAnchor.constraint(equalTo: choiceView.trailingAnchor).isActive = true
+        resultAnimationView.bottomAnchor.constraint(equalTo: choiceView.bottomAnchor).isActive = true
+
         view = choiceView
     }
 
@@ -83,6 +97,18 @@ class CustomTextQuizWidgetViewController: Widget {
                 } else if !choice.isCorrect, choice.id == selectedChoiceID {
                     choiceView.progressView.backgroundColor = UIColor(red: 255/255, green: 60/255, blue: 60/255, alpha: 1.0)
                 }
+            }
+
+            if
+                let selectedChoice = self.model.choices.first(where: { $0.id == selectedChoiceID }),
+                selectedChoice.isCorrect
+            {
+                self.resultAnimationView.animation = Animation.filepath(Theme().lottieFilepaths.win.randomElement()!)
+            } else {
+                self.resultAnimationView.animation = Animation.filepath(Theme().lottieFilepaths.lose.randomElement()!)
+            }
+            self.resultAnimationView.play { _ in
+                self.resultAnimationView.isHidden = true
             }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
