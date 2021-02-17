@@ -348,6 +348,9 @@ public class ChatInputView: UIView {
             chatSession.eventRecorder.record(.keyboardHidden(properties: keyboardProperties))
         }.catch {
             log.error($0.localizedDescription)
+            if $0.localizedDescription == PubNubChannelError.sendMessageFailedAccessDenied.errorDescription {
+                self.delegate?.chatInputError(title: "", message: "EngagementSDK.chat.error.sendMessageFailedAccessDenied".localized())
+            }
         }
     }
 

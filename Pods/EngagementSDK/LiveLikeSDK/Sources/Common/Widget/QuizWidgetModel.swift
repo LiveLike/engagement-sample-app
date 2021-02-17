@@ -128,6 +128,8 @@ public class QuizWidgetModel: QuizWidgetModelable {
 
     /// Locks in an answer for the Quiz. Call this when the user has made their final decision. Once an answer is locked it cannot be changed.
     public func lockInAnswer(choiceID: String, completion: @escaping (Result<Answer, Error>) -> Void) {
+        self.eventRecorder.record(.widgetEngaged(kind: self.kind, id: self.id))
+
         guard !isLockInAnswerInProgress else {
             completion(.failure(QuizWidgetModelError.concurrentLockInAnswer))
             return
@@ -160,6 +162,9 @@ public class QuizWidgetModel: QuizWidgetModelable {
     /// An `impression` is used to calculate user engagement on the Producer Site.
     /// Call this once when the widget is first displayed to the user.
     public func registerImpression(completion: @escaping (Result<Void, Error>) -> Void = { _ in }) {
+        self.eventRecorder.record(
+            .widgetDisplayed(kind: kind.analyticsName, widgetId: id, widgetLink: nil)
+        )
         guard let impressionURL = self.impressionURL else { return }
         firstly {
             livelikeAPI.createImpression(
@@ -238,6 +243,7 @@ extension QuizWidgetModel: WidgetProxyInput {
     func publish(event: WidgetProxyPublishData) {
         switch event.clientEvent {
         case let .textQuizResults(results), let .imageQuizResults(results):
+            guard results.id == self.id else { return }
             // Update model
             self.totalAnswerCount = results.choices.map { $0.answerCount }.reduce(0, +)
             results.choices.forEach { choice in

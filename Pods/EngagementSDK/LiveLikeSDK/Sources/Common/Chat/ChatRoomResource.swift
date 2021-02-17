@@ -16,6 +16,7 @@ struct ChatRoomResource: Decodable {
     var stickerPacksUrl: URL
     var reactionPacksUrl: URL
     var membershipsUrl: URL
+    var mutedStatusUrlTemplate: String
     var visibility: ChatRoomVisibilty
 
     struct Channels: Decodable {
@@ -27,6 +28,15 @@ struct ChatRoomResource: Decodable {
     struct Channel: Decodable {
         var pubnub: String?
     }
+}
+
+struct ChatUserMuteStatusResource: Decodable {
+    let isMuted: Bool
+}
+
+/// Used to signify current chat user's mute status
+public struct ChatUserMuteStatus {
+    public let isMuted: Bool
 }
 
 /// Used to signify the visibility of a chat room

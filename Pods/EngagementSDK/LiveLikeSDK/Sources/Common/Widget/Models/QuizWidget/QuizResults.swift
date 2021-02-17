@@ -8,11 +8,8 @@
 import Foundation
 
 struct QuizResults: Decodable {
+    let id: String
     var choices: [QuizResult]
-
-    init(choices: [QuizResult]) {
-        self.choices = choices
-    }
 }
 
 struct QuizResult: Decodable {

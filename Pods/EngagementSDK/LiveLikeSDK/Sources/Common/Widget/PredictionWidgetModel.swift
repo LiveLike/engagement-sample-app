@@ -136,8 +136,9 @@ public class PredictionWidgetModel: PredictionWidgetModelable {
 
     /// Locks in a vote for the Prediction. Call this when the user has made their final decision. Only one vote is allowed per user.
     public func lockInVote(optionID: String, completion: @escaping ((Result<PredictionVote, Error>) -> Void) = { _ in }) {
+        self.eventRecorder.record(.widgetEngaged(kind: self.kind, id: self.id))
+        
         guard let voteURL = self.options.first(where: { $0.id == optionID })?.voteURL else { return }
-
         // Send vote
         firstly {
             self.livelikeAPI.createPredictionVote(voteURL: voteURL, accessToken: self.userProfile.accessToken)
@@ -170,6 +171,9 @@ public class PredictionWidgetModel: PredictionWidgetModelable {
     /// An `impression` is used to calculate user engagement on the Producer Site.
     /// Call this once when the widget is first displayed to the user.
     public func registerImpression(completion: @escaping (Result<Void, Error>) -> Void = { _ in }) {
+        self.eventRecorder.record(
+            .widgetDisplayed(kind: kind.analyticsName, widgetId: id, widgetLink: nil)
+        )
         guard let impressionURL = self.impressionURL else { return }
         firstly {
             livelikeAPI.createImpression(
@@ -224,6 +228,7 @@ extension PredictionWidgetModel: WidgetProxyInput {
     func publish(event: WidgetProxyPublishData) {
         switch event.clientEvent {
         case .textPredictionResults(let results), .imagePredictionResults(let results):
+            guard results.id == self.id else { return }
             // Update model
             self.totalVoteCount = results.options.map { $0.voteCount }.reduce(0, +)
             results.options.forEach { result in

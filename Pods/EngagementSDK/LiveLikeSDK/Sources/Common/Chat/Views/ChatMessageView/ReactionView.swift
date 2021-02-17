@@ -78,10 +78,16 @@ extension ReactionView {
 
     func setTheme(_ theme: Theme){
         reactionCountLabel.textColor = theme.chatReactions.panelCountsColor
+        reactionCountLabel.font = theme.messageReactionsCountFont
         reactionFocusView.backgroundColor = theme.reactionsPopupSelectedBackground
     }
 
     func setCount(_ count: Int) {
+        guard count > 0 else {
+            reactionCountLabel.text = nil
+            return
+        }
+
         reactionCountLabel.text = String(count)
     }
     

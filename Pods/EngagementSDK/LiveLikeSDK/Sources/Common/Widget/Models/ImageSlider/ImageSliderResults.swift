@@ -8,6 +8,7 @@
 import Foundation
 
 struct ImageSliderResults: Decodable {
+    let id: String
     // null when there are not votes
     var averageMagnitude: String?
 }

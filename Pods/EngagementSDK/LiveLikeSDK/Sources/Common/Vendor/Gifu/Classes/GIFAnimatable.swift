@@ -57,12 +57,15 @@ extension GIFAnimatable {
   /// - parameter loopCount: Desired number of loops, <= 0 for infinite loop.
   /// - parameter completionHandler: Completion callback function
   func animate(withGIFNamed imageName: String, loopCount: Int = 0, preparationBlock: (() -> Void)? = nil, animationBlock: (() -> Void)? = nil) {
-    animator?.animate(withGIFNamed: imageName,
-                      size: frame.size,
-                      contentMode: contentMode,
-                      loopCount: loopCount,
-                      preparationBlock: preparationBlock,
-                      animationBlock: animationBlock)
+    DispatchQueue.main.async { [weak self] in
+        guard let self = self else { return }
+        self.animator?.animate(withGIFNamed: imageName,
+                               size: self.frame.size,
+                               contentMode: self.contentMode,
+                               loopCount: loopCount,
+                               preparationBlock: preparationBlock,
+                               animationBlock: animationBlock)
+    }
   }
 
   /// Prepare for animation and start animating immediately.
@@ -71,12 +74,15 @@ extension GIFAnimatable {
   /// - parameter loopCount: Desired number of loops, <= 0 for infinite loop.
   /// - parameter completionHandler: Completion callback function
   func animate(withGIFData imageData: Data, loopCount: Int = 0, preparationBlock: (() -> Void)? = nil, animationBlock: (() -> Void)? = nil) {
-    animator?.animate(withGIFData: imageData,
-                      size: frame.size,
-                      contentMode: contentMode,
-                      loopCount: loopCount,
-                      preparationBlock: preparationBlock,
-                      animationBlock: animationBlock)
+    DispatchQueue.main.async { [weak self] in
+        guard let self = self else { return }
+        self.animator?.animate(withGIFData: imageData,
+                               size: self.frame.size,
+                               contentMode: self.contentMode,
+                               loopCount: loopCount,
+                               preparationBlock: preparationBlock,
+                               animationBlock: animationBlock)
+    }
   }
 
   /// Prepare for animation and start animating immediately.
@@ -92,9 +98,7 @@ extension GIFAnimatable {
       case (.none, _, let error?):
         print("Error downloading gif:", error.localizedDescription, "at url:", imageURL.absoluteString)
       case (let data?, _, _):
-        DispatchQueue.main.async {
           self.animate(withGIFData: data, loopCount: loopCount, preparationBlock: preparationBlock, animationBlock: animationBlock)
-        }
       default: ()
       }
     }
@@ -109,11 +113,14 @@ extension GIFAnimatable {
   func prepareForAnimation(withGIFNamed imageName: String,
                            loopCount: Int = 0,
                            completionHandler: (() -> Void)? = nil) {
-    animator?.prepareForAnimation(withGIFNamed: imageName,
-                                  size: frame.size,
-                                  contentMode: contentMode,
-                                  loopCount: loopCount,
-                                  completionHandler: completionHandler)
+    DispatchQueue.main.async { [weak self] in
+        guard let self = self else { return }
+        self.animator?.prepareForAnimation(withGIFNamed: imageName,
+                                           size: self.frame.size,
+                                           contentMode: self.contentMode,
+                                           loopCount: loopCount,
+                                           completionHandler: completionHandler)
+    }
   }
 
   /// Prepare for animation and start animating immediately.
@@ -123,15 +130,18 @@ extension GIFAnimatable {
   func prepareForAnimation(withGIFData imageData: Data,
                            loopCount: Int = 0,
                            completionHandler: (() -> Void)? = nil) {
-    if var imageContainer = self as? ImageContainer {
-      imageContainer.image = UIImage(data: imageData)
-    }
+    DispatchQueue.main.async { [weak self] in
+        guard let self = self else { return }
+        if var imageContainer = self as? ImageContainer {
+          imageContainer.image = UIImage(data: imageData)
+        }
 
-    animator?.prepareForAnimation(withGIFData: imageData,
-                                  size: frame.size,
-                                  contentMode: contentMode,
-                                  loopCount: loopCount,
-                                  completionHandler: completionHandler)
+        self.animator?.prepareForAnimation(withGIFData: imageData,
+                                           size: self.frame.size,
+                                           contentMode: self.contentMode,
+                                           loopCount: loopCount,
+                                           completionHandler: completionHandler)
+    }
   }
 
   /// Prepare for animation and start animating immediately.
@@ -147,11 +157,9 @@ extension GIFAnimatable {
       case (.none, _, let error?):
         print("Error downloading gif:", error.localizedDescription, "at url:", imageURL.absoluteString)
       case (let data?, _, _):
-        DispatchQueue.main.async {
           self.prepareForAnimation(withGIFData: data,
                                    loopCount: loopCount,
                                    completionHandler: completionHandler)
-        }
       default: ()
       }
     }

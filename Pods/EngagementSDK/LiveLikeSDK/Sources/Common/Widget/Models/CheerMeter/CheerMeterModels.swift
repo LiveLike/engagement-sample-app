@@ -34,6 +34,7 @@ struct CheerOption: Codable {
 }
 
 struct CheerMeterResults: Decodable {
+    let id: String
     let options: [CheerMeterResult]
 }
 

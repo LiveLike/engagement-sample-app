@@ -62,6 +62,10 @@ public class Theme: NSObject {
     
     // MARK: Chat Cell
     @objc public var usernameTextColor: UIColor
+    /// Set username font in a Chat Cell
+    @objc public var usernameTextFont: UIFont
+    /// Set username font in a Chat Cell to be uppercased
+    @objc public var usernameTextUppercased: Bool
     /// Changes the username of the local user's Chat messages
     @objc public var myUsernameTextColor: UIColor
     /// Changes the text color of Chat messages
@@ -86,12 +90,22 @@ public class Theme: NSObject {
     // MARK: Chat Reactions
     /// Changes the vertical position of Reactions for each message
     @objc public var messageReactionsVerticalOffset: CGFloat
+    /// Changes the vertical position of the Reactions for each message
+    @objc public var messageReactionsVerticalAlignment: VerticalAlignment
+    /// Set the space between message reaction icons
+    @objc public var messageReactionsSpaceBetweenIcons: CGFloat
+    /// Set the leading space for message reaction count label
+    @objc public var messageReactionsCountLeadingMargin: CGFloat
+    /// Set the message reactions count font
+    @objc public var messageReactionsCountFont: UIFont
     /// Changes the horizontal position of the Reactions panel for each message
     @objc public var reactionsPopupHorizontalAlignment: HorizontalAlignment
     /// Changes the horizontal offset of the Reactions panel for each message
     @objc public var reactionsPopupHorizontalOffset: CGFloat
     /// Changes the vertical offset of the Reactions panel for each message
     @objc public var reactionsPopupVerticalOffset: CGFloat
+    /// Set vertical alignment of reactions pop up
+    @objc public var reactionsPopupVerticalAlignment: VerticalAlignment
     /// Changes the corner radius of the Reactions popup for each message
     @objc public var reactionsPopupCornerRadius: CGFloat
     /// Changes the background color of the reaction popup
@@ -100,6 +114,8 @@ public class Theme: NSObject {
     @objc public var reactionsPopupSelectedBackground: UIColor
     /// Changes the image used as a chat reaction hint
     @objc public var reactionsImageHint: UIImage?
+    /// Set reactions pop up count font
+    @objc public var reactionsPopupCountFont: UIFont
     
     // MARK: Chat Cell Borders
     /// Changes the size of the top chat cell border
@@ -146,12 +162,12 @@ public class Theme: NSObject {
 
     /// Changes the font of the chat message timestamp label
     @objc public var chatMessageTimestampFont: UIFont
-
     /// Changes the text color of the chat message timestamp label
     @objc public var chatMessageTimestampTextColor: UIColor
-
     /// Changes the distance between the chat message and the timestamp
     @objc public var chatMessageTimestampTopPadding: CGFloat
+    /// Set chat message time stamp uppercased
+    @objc public var chatMessageTimestampUppercased: Bool
 
     /// Changes the color of the loading indicator for chat.
     @objc public var chatLoadingIndicatorColor: UIColor
@@ -169,6 +185,14 @@ public class Theme: NSObject {
     @objc public var chatStickerKeyboardIconSelected: UIImage
     /// Changes the tint color of the sticker keyboard icon in `.selected` state
     @objc public var chatStickerKeyboardIconSelectedTint: UIColor
+
+    // MARK: Snap To Live button
+    /// Changes the horizontal alignment of the "Snap To Live" button
+    @objc public var snapToLiveButtonHorizontalAlignment: HorizontalAlignment
+    /// Add a horizontal offset to the "Snap To Live" button
+    @objc public var snapToLiveButtonHorizontalOffset: CGFloat
+    /// Add a vertical offset to the "Snap To Live" button
+    @objc public var snapToLiveButtonVerticalOffset: CGFloat
 
     // MARK: - Widget
 
@@ -362,7 +386,9 @@ public class Theme: NSObject {
         chatLeadingMargin = 16
         chatTrailingMargin = 16
 
+        usernameTextFont = fontSecondary
         usernameTextColor = UIColor(white: 1, alpha: 0.4)
+        usernameTextUppercased = false
         myUsernameTextColor = UIColor(rInt: 50, gInt: 200, bInt: 250)
 
         messageTextColor = UIColor(white: 1, alpha: 0.9)
@@ -378,10 +404,17 @@ public class Theme: NSObject {
         messageTopBorderColor = .clear
         messageBottomBorderHeight = 0
         messageBottomBorderColor = .clear
+        
         messageReactionsVerticalOffset = 3.0
+        messageReactionsVerticalAlignment = .top
+        messageReactionsSpaceBetweenIcons = 0.0
+        messageReactionsCountLeadingMargin = 3.0
+        messageReactionsCountFont = UIFont.systemFont(ofSize: 10, weight: .bold)
+        reactionsPopupCountFont = fontSecondary.withSize(10.0)
         reactionsPopupHorizontalAlignment = .left
         reactionsPopupHorizontalOffset = 16.0
         reactionsPopupVerticalOffset = 0.0
+        reactionsPopupVerticalAlignment = .top
         reactionsPopupCornerRadius = 12.0
         reactionsPopupBackground = UIColor(white: 1, alpha: 0.9)
         reactionsPopupSelectedBackground = UIColor(rInt: 0/255, gInt: 0/255, bInt: 0/255, alpha: 0.2)
@@ -430,8 +463,13 @@ public class Theme: NSObject {
         chatMessageTimestampFont = UIFont.systemFont(ofSize: 8)
         chatMessageTimestampTextColor = UIColor(white: 1, alpha: 0.4)
         chatMessageTimestampTopPadding = 6.0
+        chatMessageTimestampUppercased = false
 
         chatLoadingIndicatorColor = .white
+        
+        snapToLiveButtonHorizontalAlignment = .right
+        snapToLiveButtonHorizontalOffset = 0.0
+        snapToLiveButtonVerticalOffset = -16.0
 
         lottieFilepaths = LottieFilepaths(
             predictionTimerComplete: [

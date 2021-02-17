@@ -21,7 +21,6 @@ class ReactionsDisplayView: UIView {
         return view
     }()
     private var reactionImageViewsByID: [String: UIImageView] = [:]
-    private let customSpacingAfterLastReaction = CGFloat(3.0)
     private let mediaRepository = EngagementSDK.mediaRepository
     
     init() {
@@ -35,7 +34,7 @@ class ReactionsDisplayView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    private var theme: Theme?
+    private var theme: Theme = Theme()
 
     private func makeImageView(for chatReaction: ReactionButtonViewModel) -> UIImageView {
         let imageView = UIImageView()
@@ -63,12 +62,15 @@ class ReactionsDisplayView: UIView {
     }
 
     private func adjustReactionLabelSpacing(){
+        stackView.arrangedSubviews.forEach({
+            stackView.osAdaptive_setCustomSpacing(theme.messageReactionsSpaceBetweenIcons, after: $0)
+        })
+        
         guard let reactionLabelIndex = stackView.arrangedSubviews.firstIndex(of: reactionCountLabel) else { return }
         guard let viewAfterReactionLabel = stackView.arrangedSubviews[safe: reactionLabelIndex - 1] else { return }
-            stackView.osAdaptive_setCustomSpacing(
-                customSpacingAfterLastReaction,
-                after: viewAfterReactionLabel)
-        }
+        stackView.osAdaptive_setCustomSpacing(theme.messageReactionsCountLeadingMargin, after: viewAfterReactionLabel)
+    }
+    
 }
 
 internal extension ReactionsDisplayView {
@@ -108,8 +110,10 @@ internal extension ReactionsDisplayView {
     }
     
     func setTheme(_ theme: Theme) {
-        reactionCountLabel.font = theme.fontSecondary.withSize(10.0)
+        reactionCountLabel.font = theme.reactionsPopupCountFont
         reactionCountLabel.textColor = theme.chatReactions.displayCountsColor
+
+        adjustReactionLabelSpacing()
     }
     
     func addReactionToStack(reactionModelView: ReactionButtonViewModel) {

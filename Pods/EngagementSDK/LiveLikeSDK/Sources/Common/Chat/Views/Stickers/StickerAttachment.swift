@@ -17,8 +17,7 @@ class StickerAttachment: NSTextAttachment {
     private let largeImageHeight = CGFloat(100)
     private var verticalOffset: CGFloat = 0.0
     private var isLargeImage = false
-    private lazy var imageView: GIFImageView = GIFImageView(frame: .zero)
-
+    private var imageView: GIFImageView?
     private var stickerURL: URL!
 
     // To vertically center the image, pass in the font descender as the vertical offset.
@@ -37,7 +36,9 @@ class StickerAttachment: NSTextAttachment {
         textContainer: NSTextContainer?,
         characterIndex charIndex: Int
     ) -> UIImage? {
-        imageView.frame = CGRect(x: imageBounds.origin.x, y: imageBounds.origin.y - imageBounds.size.height, width: imageBounds.size.width, height: imageBounds.size.height)
+        imageView = GIFImageView(frame: CGRect(x: imageBounds.origin.x, y: imageBounds.origin.y - imageBounds.size.height, width: imageBounds.size.width, height: imageBounds.size.height))
+        guard let imageView = imageView else { return nil}
+       
         containerView?.addSubview(imageView)
         imageView.setImage(url: stickerURL)
         imageView.startAnimating()
@@ -65,13 +66,13 @@ class StickerAttachment: NSTextAttachment {
 
     func prepareForReuse() {
         containerView = nil
-        imageView.prepareForReuse()
-        imageView.removeFromSuperview()
+        imageView?.prepareForReuse()
+        imageView?.removeFromSuperview()
         imageView = GIFImageView(frame: .zero)
     }
 
     deinit {
-        imageView.prepareForReuse()
-        imageView.removeFromSuperview()
+        imageView?.prepareForReuse()
+        imageView?.removeFromSuperview()
     }
 }

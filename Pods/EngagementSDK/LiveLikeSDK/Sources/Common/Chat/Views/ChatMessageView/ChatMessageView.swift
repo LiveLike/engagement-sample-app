@@ -91,16 +91,26 @@ class ChatMessageView: UIView {
             
             let xInset = theme.chatCornerRadius + 3
             
+            var reactionsVerticalAlignment: NSLayoutYAxisAnchor
+            switch theme.messageReactionsVerticalAlignment {
+            case .top:
+                reactionsVerticalAlignment = messageViewHolder.topAnchor
+            case .center:
+                reactionsVerticalAlignment = messageViewHolder.centerYAnchor
+            case .bottom:
+                reactionsVerticalAlignment = messageViewHolder.bottomAnchor
+            }
+            
             NSLayoutConstraint.activate([
                 reactionsDisplayView.centerYAnchor
-                    .constraint(equalTo: messageViewHolder.topAnchor, constant: theme.messageReactionsVerticalOffset),
+                    .constraint(equalTo: reactionsVerticalAlignment, constant: theme.messageReactionsVerticalOffset),
                 reactionsDisplayView.rightAnchor
                     .constraint(equalTo: messageViewHolder.rightAnchor, constant: -(xInset)),
                 reactionsDisplayView.leftAnchor
                     .constraint(greaterThanOrEqualTo: messageViewHolder.leftAnchor, constant: xInset),
 
                 reactionHintImageView.centerYAnchor
-                    .constraint(equalTo: messageViewHolder.topAnchor, constant: theme.messageReactionsVerticalOffset),
+                    .constraint(equalTo: reactionsVerticalAlignment, constant: theme.messageReactionsVerticalOffset),
                 reactionHintImageView.rightAnchor
                     .constraint(equalTo: messageViewHolder.rightAnchor, constant: -(xInset)),
                 reactionHintImageView.leftAnchor
@@ -178,12 +188,14 @@ class ChatMessageView: UIView {
         timestampLabel.textColor = theme.chatMessageTimestampTextColor
         alternateTimestampLabel.font = theme.chatMessageTimestampFont
         alternateTimestampLabel.textColor = theme.chatMessageTimestampTextColor
+        alternateTimestampLabel.text = theme.chatMessageTimestampUppercased ? alternateTimestampLabel.text?.uppercased() : alternateTimestampLabel.text
         messageViewHolder.layer.cornerRadius = theme.messageCornerRadius
         messageBackground.backgroundColor = theme.messageBackgroundColor
         messageBackground.layer.cornerRadius = theme.messageCornerRadius
         messageLabel.textColor = theme.messageTextColor
         usernameLabel.textColor = isLocalClientMessage ? theme.myUsernameTextColor : theme.usernameTextColor
-        usernameLabel.font = theme.fontSecondary
+        usernameLabel.font = theme.usernameTextFont
+        usernameLabel.text = theme.usernameTextUppercased ? usernameLabel.text?.uppercased() : usernameLabel.text
         timestampLabelTrailingPaddingConstraint?.constant = theme.messageMargins.right
         timestampLabelToBadgePaddingConstraint?.constant = theme.messagePadding - badgePadding
         alternateTimestampLeadingPaddingConstraint?.constant = theme.messagePadding

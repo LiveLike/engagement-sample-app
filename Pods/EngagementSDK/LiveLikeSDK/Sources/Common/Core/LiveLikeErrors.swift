@@ -22,6 +22,7 @@ enum PubNubChannelError: LocalizedError {
     case foundNoAction
     case noMessageCountResult
     case noMessageCountForChannel(channel: String)
+    case sendMessageFailedAccessDenied
 
     var errorDescription: String? {
         switch self {
@@ -49,6 +50,8 @@ enum PubNubChannelError: LocalizedError {
             return "Message count request returned nil result."
         case .noMessageCountForChannel(let channel):
             return "Message count for channel \(channel) not found in dictionary."
+        case .sendMessageFailedAccessDenied:
+            return "Sending Message Failed - Access Denied"
         }
     }
 }
@@ -272,6 +275,8 @@ enum AnalyticsError: LocalizedError {
 enum ContentSessionError: LocalizedError {
     case invalidChatRoomURLTemplate
     case invalidChatRoomURL
+    case invalidUserMutedStatusURLTemplate
+    case invalidUserMutedStatusURL
     case missingChatService
     case missingChatRoomResourceFields
     case failedSettingsChatSessionDelegate
@@ -303,6 +308,10 @@ enum ContentSessionError: LocalizedError {
             return "Failed loading initial history for chat"
         case .failedToCreateWidgetModelMismatchedProgramID(let widgetProgramID, let sessionProgramID):
             return "Failed to create the Widget Model because the program id of the widget (\(widgetProgramID)) doesn't match the Content Session (\(sessionProgramID))"
+        case .invalidUserMutedStatusURLTemplate:
+            return "The template provided to build user muted status url is invalid or incompatible. Expected replaceable string of '{profile_id}'."
+        case .invalidUserMutedStatusURL:
+            return "The user muted status resource url is not a valid URL."
         }
     }
 }

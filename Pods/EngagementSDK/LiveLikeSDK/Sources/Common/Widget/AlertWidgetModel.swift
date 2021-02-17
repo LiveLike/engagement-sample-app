@@ -80,6 +80,9 @@ public class AlertWidgetModel: AlertWidgetModelable {
     public func registerImpression(
         completion: @escaping (Result<Void, Error>) -> Void = { _ in }
     ) {
+        self.eventRecorder.record(
+            .widgetDisplayed(kind: kind.analyticsName, widgetId: id, widgetLink: linkURL)
+        )
         guard let impressionURL = data.impressionUrl else { return }
         firstly {
             livelikeAPI.createImpression(
