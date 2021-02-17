@@ -45,6 +45,7 @@ final public class MessageViewController: UIViewController {
     var tableTrailingConstraint: NSLayoutConstraint?
     var tableLeadingConstraint: NSLayoutConstraint?
     var chatMessageActionPanelViewTopAnchor: NSLayoutConstraint?
+    var reactionPopUpHorizontalAlignment: NSLayoutConstraint?
     var shouldShowIncomingMessages: Bool = true {
         didSet {
             chatAdapter?.shouldShowIncomingMessages = shouldShowIncomingMessages
@@ -192,6 +193,8 @@ final public class MessageViewController: UIViewController {
 
     private var snapToLiveButton = SnapToLiveButton()
     private var snapToLiveBottomConstraint: NSLayoutConstraint?
+    private var snapToLiveHorizontalAligntmentConstraint: NSLayoutConstraint?
+    private let snapToLiveDefaultHorizontalMargin: CGFloat = 20
 
     // MARK: - Initializers
 
@@ -213,7 +216,6 @@ final public class MessageViewController: UIViewController {
         setupSnapToLiveButton()
         chatMessageActionPanelView.chatMessageActionPanelDelegate = self
         setTheme(theme)
-        chatMessageActionPanelView.setTheme(theme: theme)
     }
 
     public override func viewDidAppear(_ animated: Bool) {
@@ -258,14 +260,18 @@ final public class MessageViewController: UIViewController {
         snapToLiveButton.translatesAutoresizingMaskIntoConstraints = false
         snapToLiveButton.alpha = 0.0
         view.addSubview(snapToLiveButton)
-        snapToLiveButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20).isActive = true
-        snapToLiveBottomConstraint = snapToLiveButton.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        snapToLiveBottomConstraint?.isActive = true
+        
         snapToLiveButton.addGestureRecognizer({
             let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(snapToLive))
             tapGestureRecognizer.numberOfTapsRequired = 1
             return tapGestureRecognizer
         }())
+        
+        snapToLiveButton.livelike_shadowColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+        snapToLiveButton.livelike_shadowOpacity = 0.3
+        snapToLiveButton.livelike_shadowRadius = 3
+        snapToLiveButton.livelike_shadowOffset = CGSize(width: 0, height: 0)
+        
         snapToLiveIsHidden(true)
     }
 
@@ -277,7 +283,7 @@ final public class MessageViewController: UIViewController {
     private func snapToLiveIsHidden(_ isHidden: Bool) {
         view.layoutIfNeeded()
         UIView.animate(withDuration: 0.3, delay: 0.0, options: .curveEaseInOut, animations: {
-            self.snapToLiveBottomConstraint?.constant = isHidden ? self.snapToLiveButton.bounds.height : -16
+            self.snapToLiveBottomConstraint?.constant = isHidden ? self.snapToLiveButton.bounds.height : self.theme.snapToLiveButtonVerticalOffset
             self.view.layoutIfNeeded()
             self.snapToLiveButton.alpha = isHidden ? 0 : 1
         }, completion: nil)
@@ -290,8 +296,9 @@ final public class MessageViewController: UIViewController {
 
         tableLeadingConstraint = tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: theme.chatLeadingMargin)
         tableTrailingConstraint = view.trailingAnchor.constraint(equalTo: tableView.trailingAnchor, constant: theme.chatTrailingMargin)
+        reactionPopUpHorizontalAlignment = chatMessageActionPanelView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: theme.reactionsPopupHorizontalOffset)
         chatMessageActionPanelViewTopAnchor = chatMessageActionPanelView.topAnchor.constraint(equalTo: view.topAnchor)
-        var constraints = [
+        let constraints = [
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             tableView.topAnchor.constraint(equalTo: view.topAnchor),
             tableLeadingConstraint!,
@@ -299,17 +306,9 @@ final public class MessageViewController: UIViewController {
             
             chatMessageActionPanelView.widthAnchor.constraint(greaterThanOrEqualToConstant: 46.0),
             chatMessageActionPanelView.heightAnchor.constraint(equalToConstant: 36.0),
-            chatMessageActionPanelViewTopAnchor!
+            chatMessageActionPanelViewTopAnchor!,
+            reactionPopUpHorizontalAlignment!
         ]
-
-        switch theme.reactionsPopupHorizontalAlignment {
-        case .left:
-            constraints.append(chatMessageActionPanelView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: theme.reactionsPopupHorizontalOffset))
-        case .center:
-            constraints.append(chatMessageActionPanelView.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: theme.reactionsPopupHorizontalOffset))
-        case .right:
-            constraints.append(chatMessageActionPanelView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: theme.reactionsPopupHorizontalOffset))
-        }
         
         NSLayoutConstraint.activate(constraints)
 
@@ -355,7 +354,46 @@ final public class MessageViewController: UIViewController {
             newEmptyChatCustomView.isHidden = self.emptyChatCustomView?.isHidden ?? true
         }
         self.emptyChatCustomView = theme.emptyChatCustomView
+        
+        // Snap To Live position setup
         self.snapToLiveButton.setTheme(theme)
+        snapToLiveHorizontalAligntmentConstraint?.isActive = false
+        snapToLiveBottomConstraint?.isActive = false
+        
+        switch theme.snapToLiveButtonHorizontalAlignment {
+        case .left:
+            snapToLiveHorizontalAligntmentConstraint = snapToLiveButton.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor,
+                constant: snapToLiveDefaultHorizontalMargin + theme.snapToLiveButtonHorizontalOffset
+            )
+        case .center:
+            snapToLiveHorizontalAligntmentConstraint = snapToLiveButton.centerXAnchor.constraint(
+                equalTo: view.centerXAnchor,
+                constant: theme.snapToLiveButtonHorizontalOffset
+            )
+        case .right:
+            snapToLiveHorizontalAligntmentConstraint = snapToLiveButton.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor,
+                constant: -snapToLiveDefaultHorizontalMargin - theme.snapToLiveButtonHorizontalOffset
+            )
+        }
+        snapToLiveHorizontalAligntmentConstraint?.isActive = true
+        snapToLiveBottomConstraint = snapToLiveButton.bottomAnchor.constraint(
+            equalTo: view.bottomAnchor,
+            constant: theme.snapToLiveButtonVerticalOffset
+        )
+        snapToLiveBottomConstraint?.isActive = true
+        
+        reactionPopUpHorizontalAlignment?.isActive = false
+        switch theme.reactionsPopupHorizontalAlignment {
+        case .left:
+            reactionPopUpHorizontalAlignment = chatMessageActionPanelView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: theme.reactionsPopupHorizontalOffset)
+        case .center:
+            reactionPopUpHorizontalAlignment = chatMessageActionPanelView.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: theme.reactionsPopupHorizontalOffset)
+        case .right:
+            reactionPopUpHorizontalAlignment = chatMessageActionPanelView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: theme.reactionsPopupHorizontalOffset)
+        }
+        reactionPopUpHorizontalAlignment?.isActive = true
     }
     
     private func updateNoMessagesCustomView(messageCount: Int){
@@ -412,7 +450,19 @@ extension MessageViewController: ChatActionsDelegate {
         
         UIView.animate(withDuration: 0.3) { [weak self] in
             guard let self = self else { return }
-            actionPanelTopAnchor.constant = direction == .up ? cellRect.origin.y - 44.0 - self.theme.reactionsPopupVerticalOffset : cellRect.origin.y + cellRect.size.height + self.theme.reactionsPopupVerticalOffset
+            
+            var topAnchorConstant: CGFloat = 0.0
+            switch self.theme.reactionsPopupVerticalAlignment {
+            case .top:
+                topAnchorConstant = cellRect.origin.y - 44.0 - self.theme.reactionsPopupVerticalOffset
+            case .center:
+                topAnchorConstant = (cellRect.origin.y + cellRect.height/2 + self.theme.reactionsPopupVerticalOffset) - 22
+            case .bottom:
+                topAnchorConstant = cellRect.origin.y + cellRect.height + self.theme.reactionsPopupVerticalOffset - 36
+            }
+            
+            actionPanelTopAnchor.constant = direction == .up ? topAnchorConstant : cellRect.origin.y + cellRect.size.height + self.theme.reactionsPopupVerticalOffset
+            
             self.chatMessageActionPanelView.alpha = 1.0
             self.view.layoutIfNeeded()
             self.chatAdapter?.recordChatReactionPanelOpened(for: messageViewModel)

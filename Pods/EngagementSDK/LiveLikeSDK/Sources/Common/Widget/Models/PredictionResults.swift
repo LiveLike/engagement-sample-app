@@ -8,7 +8,7 @@
 import Foundation
 
 struct PredictionResults: Decodable {
- 
+    let id: String
     let options: [Option]
     
     struct Option: Decodable {

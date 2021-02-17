@@ -10,6 +10,7 @@
 "EngagementSDK.chat.input.placeholder" = "Say something...";
 "EngagementSDK.chat.messageCell.msgDeleted" = "This message has been removed.";
 "EngagementSDK.chat.accessibility.messageWithImage" = "Image";
+"EngagementSDK.chat.error.sendMessageFailedAccessDenied" = "You cannot send a message";
 
 // MARK: Flag Menu
 "EngagementSDK.chat.flagMsgMenu.blockUser" = "Block this user";

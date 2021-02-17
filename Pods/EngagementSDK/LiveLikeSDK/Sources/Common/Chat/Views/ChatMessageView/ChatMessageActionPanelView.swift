@@ -132,14 +132,12 @@ extension ChatMessageActionPanelView {
     
     func setTheme(theme: Theme) {
         self.theme = theme
-        reactionsBackgroundView.backgroundColor = theme.reactionsPopupBackground
-        flagBackgroundView.backgroundColor = theme.reactionsPopupBackground
         flagBtn.tintColor = theme.chatDetailSecondaryColor
         reactionsBackgroundView = reactionsHolder.addBackground(
-            color: .clear,
+            color: theme.reactionsPopupBackground,
             cornerRadius: theme.reactionsPopupCornerRadius)
         flagBackgroundView = flagHolder.addBackground(
-            color: .clear,
+            color: theme.reactionsPopupBackground,
             cornerRadius: theme.reactionsPopupCornerRadius)
     }
     

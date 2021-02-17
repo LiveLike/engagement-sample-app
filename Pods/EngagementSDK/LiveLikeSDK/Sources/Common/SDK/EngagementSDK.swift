@@ -571,6 +571,23 @@ public extension EngagementSDK {
         }
     }
     
+    /// Find out whether the current user is muted for a `roomID`
+    func getChatUserMutedStatus(roomID: String,
+                                completion: @escaping (Result<ChatUserMuteStatus, Error>) -> Void) {
+        firstly {
+            self.whenUserProfile
+        }.then { userProfile -> Promise<ChatUserMuteStatusResource> in
+            self.livelikeRestAPIService.getChatUserMutedStatus(profileID: userProfile.userID.asString,
+                                                               roomID: roomID,
+                                                               accessToken: userProfile.accessToken)
+        }.then { chatUserMuteStatusResource in
+            completion(.success(ChatUserMuteStatus(isMuted: chatUserMuteStatusResource.isMuted)))
+        }.catch { error in
+            log.error("Error getting chat user muted status: \(error.localizedDescription)")
+            completion(.failure(error))
+        }
+    }
+    
     // MARK: Widgets
     
     /// Retrieve widget details of a widget by `id` and `kind`

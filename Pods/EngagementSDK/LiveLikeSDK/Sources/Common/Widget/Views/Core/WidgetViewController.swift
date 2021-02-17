@@ -61,7 +61,7 @@ public class WidgetViewController: UIViewController {
         return (session as? InternalContentSession)?.eventRecorder
     }
     
-    private var widgetsToDisplayQueue: Queue<Widget> = Queue()
+    private var widgetsToDisplayQueue: Queue<WidgetModel> = Queue()
     /// A container view for handling animations and swipe gesture
     private let widgetContainer: UIView = UIView()
     private var widgetContainerXConstraint: NSLayoutConstraint!
@@ -240,7 +240,8 @@ public class WidgetViewController: UIViewController {
             guard let self = self else { return }
             if
                 self.currentWidget == nil,
-                let nextWidget = self.widgetsToDisplayQueue.dequeue()
+                let nextWidgetModel = self.widgetsToDisplayQueue.dequeue(),
+                let nextWidget = self.makeWidget(from: nextWidgetModel)
             {
                 self.clearDisplayedWidget()
                 self.delegate?.widgetViewController(self, willDisplay: nextWidget)
@@ -254,20 +255,11 @@ public class WidgetViewController: UIViewController {
                 nextWidget.view.constraintsFill(to: self.widgetContainer)
                 nextWidget.theme = self.theme
                 
-                // Determine if a widget contains a link to be used for analytics
-                var widgetLink: URL?
-                if let internalWidgetLink = nextWidget.widgetLink {
-                    widgetLink = internalWidgetLink
-                }
-                
                 self.animateIn { [weak self] in
                     guard let self = self else { return }
                     nextWidget.delegate = self.widgetStateController
                     nextWidget.moveToNextState()
                     self.addSwipeToDismissGesture(to: nextWidget.dismissSwipeableView)
-                    self.eventRecorder?.record(
-                        .widgetDisplayed(kind: nextWidget.kind.analyticsName, widgetId: nextWidget.id, widgetLink: widgetLink)
-                    )
                     self.timeWidgetDisplayed = Date()
                     self.delegate?.widgetViewController(self, didDisplay: nextWidget)
                 }
@@ -374,16 +366,14 @@ extension WidgetViewController: ContentSessionDelegate {
                 guard let self = self else { return }
                 switch result {
                 case .success:
-                    guard let widget = self.makeWidget(from: widgetModel) else { return }
-                    self.widgetsToDisplayQueue.enqueue(element: widget)
+                    self.widgetsToDisplayQueue.enqueue(element: widgetModel)
                     self.showNextWidgetInQueue()
                 case .failure:
                     return
                 }
             }
         } else {
-            guard let widget = self.makeWidget(from: widgetModel) else { return }
-            self.widgetsToDisplayQueue.enqueue(element: widget)
+            self.widgetsToDisplayQueue.enqueue(element: widgetModel)
             self.showNextWidgetInQueue()
         }
     }

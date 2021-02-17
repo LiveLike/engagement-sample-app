@@ -34,6 +34,7 @@ extension AnalyticsEvent.Name {
     typealias Name = AnalyticsEvent.Name
     static let widgetDisplayed: Name = "Widget Displayed"
     static let widgetInteracted: Name = "Widget Interacted"
+    static let widgetEngaged: Name = "Widget Engaged"
     static let widgetUserDismissed: Name = "Widget Dismissed"
     static let chatScrollInitiated: Name = "Chat Scroll Initiated"
     static let chatScrollCompleted: Name = "Chat Scroll Completed"
@@ -56,6 +57,19 @@ extension AnalyticsEvent {
         }
         return AnalyticsEvent(name: .widgetDisplayed,
                               data: data)
+    }
+
+    static func widgetEngaged(kind: WidgetKind, id: String) -> AnalyticsEvent {
+        return AnalyticsEvent(
+            name: .widgetEngaged,
+            data: {
+                let props: [Attribute: Any] = [
+                    .widgetType: kind.analyticsName,
+                    .widgetId: id
+                ]
+                return props
+            }()
+        )
     }
 
     static func widgetInteracted(properties: WidgetInteractedProperties) -> AnalyticsEvent {

@@ -107,6 +107,7 @@ public class ImageSliderWidgetModel: ImageSliderWidgetModelable {
     /// Locks in a vote for the ImageSlider. A user can only have one vote so call this when the user has made their final decision.
     /// Magnitude must by within range [0,1]
     public func lockInVote(magnitude: Double, completion: @escaping (Result<Vote, Error>) -> Void = { _ in }) {
+        self.eventRecorder.record(.widgetEngaged(kind: self.kind, id: self.id))
         firstly {
             self.livelikeAPI.createImageSliderVote(
                 voteURL: self.voteURL,
@@ -131,6 +132,9 @@ public class ImageSliderWidgetModel: ImageSliderWidgetModelable {
     /// An `impression` is used to calculate user engagement on the Producer Site.
     /// Call this once when the widget is first displayed to the user.
     public func registerImpression(completion: @escaping (Result<Void, Error>) -> Void = { _ in }) {
+        self.eventRecorder.record(
+            .widgetDisplayed(kind: kind.analyticsName, widgetId: id, widgetLink: nil)
+        )
         guard let impressionURL = self.impressionURL else { return }
         firstly {
             livelikeAPI.createImpression(
@@ -171,6 +175,7 @@ extension ImageSliderWidgetModel: WidgetProxyInput {
     func publish(event: WidgetProxyPublishData) {
         switch event.clientEvent {
         case let .imageSliderResults(results):
+            guard results.id == self.id else { return }
             guard
                 let averageMagnitudeString = results.averageMagnitude,
                 let averageMagnitude = Double(averageMagnitudeString)

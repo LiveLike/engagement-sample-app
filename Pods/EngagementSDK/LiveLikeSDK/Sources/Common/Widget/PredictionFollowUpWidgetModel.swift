@@ -158,6 +158,9 @@ public class PredictionFollowUpWidgetModel: PredictionFollowUpWidgetModelable {
     /// An `impression` is used to calculate user engagement on the Producer Site.
     /// Call this once when the widget is first displayed to the user.
     public func registerImpression(completion: @escaping (Result<Void, Error>) -> Void = { _ in }) {
+        self.eventRecorder.record(
+            .widgetDisplayed(kind: kind.analyticsName, widgetId: id, widgetLink: nil)
+        )
         guard let impressionURL = impressionURL else { return }
         firstly {
             livelikeAPI.createImpression(
