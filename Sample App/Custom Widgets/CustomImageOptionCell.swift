@@ -169,14 +169,26 @@ class CustomImageOptionCell: UICollectionViewCell {
     }
 
     /// Change the progress bar of the cell
-    func setProgress(progress: CGFloat, color: UIColor = ProgressColors.gray.color) {
+    func setProgressAndColor(progress: CGFloat, color: UIColor = WidgetViewHelpers.colors.gray) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.progressViewWidth.isActive = false
             self.progressView.backgroundColor = color
             self.progressViewWidth = self.progressView.widthAnchor.constraint(equalTo: self.contentView.widthAnchor, multiplier: progress)
             self.progressViewWidth.isActive = true
-            self.choiceSecondaryLabel.text = "\(progress * 100)%"
+            self.choiceSecondaryLabel.text = "\(Int(progress * 100))%"
+            self.progressView.layoutIfNeeded()
+            self.progressView.setNeedsLayout()
+        }
+    }
+
+    func setProgress(progress: CGFloat) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.progressViewWidth.isActive = false
+            self.progressViewWidth = self.progressView.widthAnchor.constraint(equalTo: self.contentView.widthAnchor, multiplier: progress)
+            self.progressViewWidth.isActive = true
+            self.choiceSecondaryLabel.text = "\(Int(progress * 100))%"
             self.progressView.layoutIfNeeded()
             self.progressView.setNeedsLayout()
         }

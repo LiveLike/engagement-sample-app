@@ -142,13 +142,13 @@ class CustomImgPredictionFollowUpWidgetVC: Widget, UICollectionViewDelegate, UIC
                         cell.setMode(mode: .showResults)
 
                         if option.isCorrect {
-                            cell.setProgress(progress: votePercentage, color: CustomImageOptionCell.ProgressColors.green.color)
+                            cell.setProgressAndColor(progress: votePercentage, color: CustomImageOptionCell.ProgressColors.green.color)
                             self.playOverlayAnimation(animationFilepath: self.theme.lottieFilepaths.win.first!, completion: nil)
                         } else {
                             cell.setProgress(progress: votePercentage)
 
                             if option.id == vote.optionID {
-                                cell.setProgress(progress: votePercentage, color: CustomImageOptionCell.ProgressColors.red.color)
+                                cell.setProgressAndColor(progress: votePercentage, color: CustomImageOptionCell.ProgressColors.red.color)
                                 self.playOverlayAnimation(animationFilepath: self.theme.lottieFilepaths.lose.first!, completion: nil)
                             }
                         }

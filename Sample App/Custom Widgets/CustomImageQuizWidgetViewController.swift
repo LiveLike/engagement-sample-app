@@ -97,12 +97,12 @@ class CustomImageQuizWidgetViewController: Widget, UICollectionViewDelegate, UIC
             cell.setMode(mode: .showResults)
 
             if optionData.isCorrect {
-                cell.setProgress(progress: votePercentage, color: CustomImageOptionCell.ProgressColors.green.color)
+                cell.setProgressAndColor(progress: votePercentage, color: CustomImageOptionCell.ProgressColors.green.color)
             } else {
                 cell.setProgress(progress: votePercentage)
 
                 if cell.choiceID == selectedChoice?.id {
-                    cell.setProgress(progress: votePercentage, color: CustomImageOptionCell.ProgressColors.red.color)
+                    cell.setProgressAndColor(progress: votePercentage, color: CustomImageOptionCell.ProgressColors.red.color)
                 }
             }
         }
@@ -208,7 +208,7 @@ extension CustomImageQuizWidgetViewController: QuizWidgetModelDelegate {
 
             if optionView.choiceID == selectedChoice.id {
                 optionView.setMode(mode: .showResults)
-                optionView.setProgress(progress: CGFloat(answerCount) / CGFloat(model.totalAnswerCount),
+                optionView.setProgressAndColor(progress: CGFloat(answerCount) / CGFloat(model.totalAnswerCount),
                                        color: selectedChoice.isCorrect ? CustomImageOptionCell.ProgressColors.green.color : CustomImageOptionCell.ProgressColors.red.color)
             } else {
                 optionView.setMode(mode: .showResults)

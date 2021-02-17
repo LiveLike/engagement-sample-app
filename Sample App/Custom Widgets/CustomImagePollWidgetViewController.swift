@@ -145,7 +145,7 @@ extension CustomImagePollWidgetViewController: PollWidgetModelDelegate {
 
             if optionView.choiceID == self.selectedChoice?.id {
                 optionView.setMode(mode: .showResults)
-                optionView.setProgress(progress: CGFloat(answerCount) / CGFloat(model.totalVoteCount),
+                optionView.setProgressAndColor(progress: CGFloat(answerCount) / CGFloat(model.totalVoteCount),
                                        color: CustomImageOptionCell.ProgressColors.green.color)
             } else {
                 optionView.setMode(mode: .showResults)

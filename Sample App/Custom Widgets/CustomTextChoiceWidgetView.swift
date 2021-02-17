@@ -115,6 +115,13 @@ class CustomTextChoiceWidgetOptionView: UIButton {
         return label
     }()
 
+    var progress: CGFloat = 0 {
+        didSet {
+            progressViewWidthConstraint.constant = progress * bounds.width
+            layoutIfNeeded()
+        }
+    }
+
     let progressViewWidthConstraint: NSLayoutConstraint
 
     let progressView: UIView = {
@@ -156,5 +163,12 @@ class CustomTextChoiceWidgetOptionView: UIButton {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    override func draw(_ rect: CGRect) {
+        super.draw(rect)
+
+        progressViewWidthConstraint.constant = progress * rect.width
+        layoutIfNeeded()
     }
 }
