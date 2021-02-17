@@ -54,7 +54,7 @@ class CustomCheerMeterWidgetViewController: Widget {
         }
 
         cheerMeterView.addSubview(timer)
-        timer.bottomAnchor.constraint(equalTo: cheerMeterView.topAnchor).isActive = true
+        timer.topAnchor.constraint(equalTo: cheerMeterView.topAnchor).isActive = true
         timer.leadingAnchor.constraint(equalTo: cheerMeterView.leadingAnchor).isActive = true
         timer.trailingAnchor.constraint(equalTo: cheerMeterView.trailingAnchor).isActive = true
         timer.heightAnchor.constraint(equalToConstant: 5).isActive = true

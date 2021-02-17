@@ -33,7 +33,7 @@ class CustomAlertWidgetViewController: Widget {
         alertView.linkButton.addTarget(self, action: #selector(alertWidgetLinkButtonSelected), for: .touchUpInside)
 
         alertView.addSubview(timer)
-        timer.bottomAnchor.constraint(equalTo: alertView.topAnchor).isActive = true
+        timer.topAnchor.constraint(equalTo: alertView.topAnchor).isActive = true
         timer.leadingAnchor.constraint(equalTo: alertView.leadingAnchor).isActive = true
         timer.trailingAnchor.constraint(equalTo: alertView.trailingAnchor).isActive = true
         timer.heightAnchor.constraint(equalToConstant: 5).isActive = true

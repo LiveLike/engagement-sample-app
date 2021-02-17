@@ -65,7 +65,7 @@ class CustomImageSliderViewController: Widget {
         magnitudeIndicator.heightAnchor.constraint(equalToConstant: 40).isActive = true
 
         imageSliderView.addSubview(timer)
-        timer.bottomAnchor.constraint(equalTo: imageSliderView.topAnchor).isActive = true
+        timer.topAnchor.constraint(equalTo: imageSliderView.topAnchor).isActive = true
         timer.leadingAnchor.constraint(equalTo: imageSliderView.leadingAnchor).isActive = true
         timer.trailingAnchor.constraint(equalTo: imageSliderView.trailingAnchor).isActive = true
         timer.heightAnchor.constraint(equalToConstant: 5).isActive = true
