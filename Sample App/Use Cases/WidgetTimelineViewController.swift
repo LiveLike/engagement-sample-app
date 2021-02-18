@@ -85,8 +85,18 @@ public final class WidgetTimelineViewController: UIViewController {
         case let .cheerMeter(model):
             guard model.options.count == 2 else { return nil }
             return CustomCheerMeterWidgetViewController(model: model)
-        default:
-            return DefaultWidgetFactory.makeWidget(from: widgetModel)
+        case let .prediction(model):
+            if model.containsImages {
+                return CustomImagePredictionWidget(model: model)
+            } else {
+                return CustomTextPredictionWidgetViewController(model: model)
+            }
+        case let .predictionFollowUp(model):
+            if model.containsImages {
+                return CustomImgPredictionFollowUpWidgetVC(model: model)
+            } else {
+                return CustomTextPredictionFollowUpWidgetViewController(model: model)
+            }
         }
     }
 
@@ -111,8 +121,18 @@ public final class WidgetTimelineViewController: UIViewController {
         case let .cheerMeter(model):
             guard model.options.count == 2 else { return nil }
             return CheerMeterWidgetResultsViewController(model: model)
-        default:
-            return DefaultWidgetFactory.makeWidget(from: widgetModel)
+        case let .prediction(model):
+            if model.containsImages {
+                return ImagePredictionWidgetResultsViewController(model: model)
+            } else {
+                return TextPredictionWidgetResultsViewController(model: model)
+            }
+        case let .predictionFollowUp(model):
+            if model.containsImages {
+                return ImagePredictionFollowUpResultsViewController(model: model)
+            } else {
+                return TextPredictionFollowUpResultsViewController(model: model)
+            }
         }
     }
 }
