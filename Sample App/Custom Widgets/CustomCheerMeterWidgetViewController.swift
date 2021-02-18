@@ -36,22 +36,12 @@ class CustomCheerMeterWidgetViewController: Widget {
         cheerMeterView.optionLabelA.text = model.options[0].text
         cheerMeterView.optionViewA.button.addTarget(self, action: #selector(optionViewASelected), for: .touchUpInside)
         cheerMeterView.optionViewA.progressBar.backgroundColor = UIColor(red: 0/255, green: 150/255, blue: 255/255, alpha: 1.0)
-        do {
-            let imageData = try Data(contentsOf: model.options[0].imageURL)
-            cheerMeterView.optionViewA.imageView.image = UIImage(data: imageData)
-        } catch {
-            print(error)
-        }
+        WidgetViewHelpers.setImage(model.options[0].imageURL, on: cheerMeterView.optionViewA.imageView)
 
         cheerMeterView.optionLabelB.text = model.options[1].text
         cheerMeterView.optionViewB.button.addTarget(self, action: #selector(optionViewBSelected), for: .touchUpInside)
         cheerMeterView.optionViewB.progressBar.backgroundColor = UIColor(red: 237/255, green: 23/255, blue: 75/255, alpha: 1.0)
-        do {
-            let imageData = try Data(contentsOf: model.options[1].imageURL)
-            cheerMeterView.optionViewB.imageView.image = UIImage(data: imageData)
-        } catch {
-            print(error)
-        }
+        WidgetViewHelpers.setImage(model.options[1].imageURL, on: cheerMeterView.optionViewB.imageView)
 
         cheerMeterView.addSubview(timer)
         timer.topAnchor.constraint(equalTo: cheerMeterView.topAnchor).isActive = true

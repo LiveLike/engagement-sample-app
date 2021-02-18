@@ -117,25 +117,16 @@ class CustomImageOptionCell: UICollectionViewCell {
 
     /// Configure the way the cell looks
     func configure(choice: QuizWidgetModel.Choice) {
-        do {
-            guard let imageURL = choice.imageURL else { return }
-            let data = try Data(contentsOf: imageURL)
-            imageView.image = UIImage(data: data)
-        } catch {
-            print(error)
+        if let imageURL = choice.imageURL {
+            WidgetViewHelpers.setImage(imageURL, on: self.imageView)
         }
-
         choiceID = choice.id
         choiceMainLabel.text = choice.text
     }
 
     func configure(option: PollWidgetModel.Option) {
-        do {
-            guard let imageURL = option.imageURL else { return }
-            let data = try Data(contentsOf: imageURL)
-            imageView.image = UIImage(data: data)
-        } catch {
-            print(error)
+        if let imageURL = option.imageURL {
+            WidgetViewHelpers.setImage(imageURL, on: self.imageView)
         }
 
         choiceID = option.id
@@ -143,12 +134,8 @@ class CustomImageOptionCell: UICollectionViewCell {
     }
 
     func configure(option: PredictionWidgetModel.Option) {
-        do {
-            guard let imageURL = option.imageURL else { return }
-            let data = try Data(contentsOf: imageURL)
-            imageView.image = UIImage(data: data)
-        } catch {
-            print(error)
+        if let imageURL = option.imageURL {
+            WidgetViewHelpers.setImage(imageURL, on: self.imageView)
         }
 
         choiceID = option.id
@@ -156,12 +143,8 @@ class CustomImageOptionCell: UICollectionViewCell {
     }
 
     func configure(option: PredictionFollowUpWidgetModel.Option) {
-        do {
-            guard let imageURL = option.imageURL else { return }
-            let data = try Data(contentsOf: imageURL)
-            imageView.image = UIImage(data: data)
-        } catch {
-            print(error)
+        if let imageURL = option.imageURL {
+            WidgetViewHelpers.setImage(imageURL, on: self.imageView)
         }
 
         choiceID = option.id
