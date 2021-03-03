@@ -34,19 +34,19 @@
 		76FE3E992437990E003F179B /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E972437990E003F179B /* Main.storyboard */; };
 		76FE3E9B24379912003F179B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E9A24379912003F179B /* Assets.xcassets */; };
 		76FE3E9E24379912003F179B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E9C24379912003F179B /* LaunchScreen.storyboard */; };
-		927187A874ACB239948F404D /* Pods_Sample_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D72A29E25C3EF64C05686EF /* Pods_Sample_App.framework */; };
+<<<<<<< HEAD
+		C6E66B74200EEDE0F933D84B /* Pods_Sample_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5854787E0CB69B05B3845C4D /* Pods_Sample_App.framework */; };
+=======
+		D0F08AFAE8A6FB59BFC17641 /* Pods_Sample_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9141840A08C79EA20A86BA4 /* Pods_Sample_App.framework */; };
 		D32167A425DDAA6C004076C3 /* ImagePollWidgetResultsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D321679E25DDAA6C004076C3 /* ImagePollWidgetResultsViewController.swift */; };
 		D32167A525DDAA6C004076C3 /* ImageQuizWidgetResultsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D321679F25DDAA6C004076C3 /* ImageQuizWidgetResultsViewController.swift */; };
 		D32167A625DDAA6C004076C3 /* CheerMeterWidgetResultsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32167A025DDAA6C004076C3 /* CheerMeterWidgetResultsViewController.swift */; };
 		D32167A725DDAA6C004076C3 /* ImageSliderWidgetResultsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32167A125DDAA6C004076C3 /* ImageSliderWidgetResultsViewController.swift */; };
 		D32167A825DDAA6C004076C3 /* TextPollWidgetResultsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32167A225DDAA6C004076C3 /* TextPollWidgetResultsViewController.swift */; };
 		D32167A925DDAA6C004076C3 /* TextQuizWidgetResultsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32167A325DDAA6C004076C3 /* TextQuizWidgetResultsViewController.swift */; };
+		D32167AC25DDAAC6004076C3 /* WidgetTimelineViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32167AB25DDAAC6004076C3 /* WidgetTimelineViewController.swift */; };
 		D32167AF25DDAACB004076C3 /* WidgetViewHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32167AE25DDAACB004076C3 /* WidgetViewHelpers.swift */; };
-		D3708E6025DF0396006F891A /* TextPredictionResultsWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3708E5F25DF0396006F891A /* TextPredictionResultsWidgetViewController.swift */; };
-		D3708E6325DF042C006F891A /* ImagePredictionResultsWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3708E6225DF042C006F891A /* ImagePredictionResultsWidgetViewController.swift */; };
-		D3708E6625DF0715006F891A /* TextPredictionFollowUpResultsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3708E6525DF0715006F891A /* TextPredictionFollowUpResultsViewController.swift */; };
-		D3708E6925DF0743006F891A /* ImagePredictionFollowUpResultsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3708E6825DF0743006F891A /* ImagePredictionFollowUpResultsViewController.swift */; };
-		D3A89CBB25F00D7E00CA7915 /* CustomWidgetTimelineViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A89CBA25F00D7E00CA7915 /* CustomWidgetTimelineViewController.swift */; };
+>>>>>>> progress
 		D3CB4DCE25B1ECB20042BE4D /* CustomCheerMeterWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DCB25B1ECB20042BE4D /* CustomCheerMeterWidgetView.swift */; };
 		D3CB4DCF25B1ECB20042BE4D /* CustomCheerMeterWinnerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DCC25B1ECB20042BE4D /* CustomCheerMeterWinnerView.swift */; };
 		D3CB4DD025B1ECB20042BE4D /* CustomCheerMeterWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CB4DCD25B1ECB20042BE4D /* CustomCheerMeterWidgetViewController.swift */; };
@@ -78,7 +78,9 @@
 		2772CEEF25AE800F00EA27CE /* CustomImageQuizWidgetViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomImageQuizWidgetViewController.swift; sourceTree = "<group>"; };
 		2772CEF625AE81B900EA27CE /* CustomImgPredictionFollowUpWidgetVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomImgPredictionFollowUpWidgetVC.swift; sourceTree = "<group>"; };
 		27C83D01243B8D44009F35DA /* WidgetsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetsUseCase.swift; sourceTree = "<group>"; };
-		6D72A29E25C3EF64C05686EF /* Pods_Sample_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Sample_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		2D24052763C1071BD5D05963 /* Pods-Sample App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.release.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.release.xcconfig"; sourceTree = "<group>"; };
+		3D77139D246629976A02E041 /* Pods-Sample App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.debug.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.debug.xcconfig"; sourceTree = "<group>"; };
+		5854787E0CB69B05B3845C4D /* Pods_Sample_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Sample_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		767AFD56243B8B2600F85E8A /* ChatUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatUseCase.swift; sourceTree = "<group>"; };
 		76FE3E8E2437990E003F179B /* Sample App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Sample App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		76FE3E912437990E003F179B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -88,19 +90,19 @@
 		76FE3E9A24379912003F179B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		76FE3E9D24379912003F179B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		76FE3E9F24379912003F179B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A78F4A2F7222EE0F3F043AF4 /* Pods-Sample App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.release.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.release.xcconfig"; sourceTree = "<group>"; };
+<<<<<<< HEAD
+=======
+		842A1B4B833DABFEBA36D5AF /* Pods-Sample App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.debug.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.debug.xcconfig"; sourceTree = "<group>"; };
+		B9141840A08C79EA20A86BA4 /* Pods_Sample_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Sample_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D321679E25DDAA6C004076C3 /* ImagePollWidgetResultsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImagePollWidgetResultsViewController.swift; sourceTree = "<group>"; };
 		D321679F25DDAA6C004076C3 /* ImageQuizWidgetResultsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageQuizWidgetResultsViewController.swift; sourceTree = "<group>"; };
 		D32167A025DDAA6C004076C3 /* CheerMeterWidgetResultsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CheerMeterWidgetResultsViewController.swift; sourceTree = "<group>"; };
 		D32167A125DDAA6C004076C3 /* ImageSliderWidgetResultsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageSliderWidgetResultsViewController.swift; sourceTree = "<group>"; };
 		D32167A225DDAA6C004076C3 /* TextPollWidgetResultsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextPollWidgetResultsViewController.swift; sourceTree = "<group>"; };
 		D32167A325DDAA6C004076C3 /* TextQuizWidgetResultsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextQuizWidgetResultsViewController.swift; sourceTree = "<group>"; };
+		D32167AB25DDAAC6004076C3 /* WidgetTimelineViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WidgetTimelineViewController.swift; sourceTree = "<group>"; };
 		D32167AE25DDAACB004076C3 /* WidgetViewHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WidgetViewHelpers.swift; sourceTree = "<group>"; };
-		D3708E5F25DF0396006F891A /* TextPredictionResultsWidgetViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPredictionResultsWidgetViewController.swift; sourceTree = "<group>"; };
-		D3708E6225DF042C006F891A /* ImagePredictionResultsWidgetViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePredictionResultsWidgetViewController.swift; sourceTree = "<group>"; };
-		D3708E6525DF0715006F891A /* TextPredictionFollowUpResultsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPredictionFollowUpResultsViewController.swift; sourceTree = "<group>"; };
-		D3708E6825DF0743006F891A /* ImagePredictionFollowUpResultsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePredictionFollowUpResultsViewController.swift; sourceTree = "<group>"; };
-		D3A89CBA25F00D7E00CA7915 /* CustomWidgetTimelineViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWidgetTimelineViewController.swift; sourceTree = "<group>"; };
+>>>>>>> progress
 		D3CB4DCB25B1ECB20042BE4D /* CustomCheerMeterWidgetView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomCheerMeterWidgetView.swift; sourceTree = "<group>"; };
 		D3CB4DCC25B1ECB20042BE4D /* CustomCheerMeterWinnerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomCheerMeterWinnerView.swift; sourceTree = "<group>"; };
 		D3CB4DCD25B1ECB20042BE4D /* CustomCheerMeterWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomCheerMeterWidgetViewController.swift; sourceTree = "<group>"; };
@@ -109,7 +111,6 @@
 		D3F9FC1925A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWidgetsUseCase.swift; sourceTree = "<group>"; };
 		D3F9FC2125A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomAlertWidgetViewController.swift; sourceTree = "<group>"; };
 		D3F9FC2225A4E0E000ECBAA5 /* CustomAlertWidgetView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomAlertWidgetView.swift; sourceTree = "<group>"; };
-		ED641F232119CF95AF980A06 /* Pods-Sample App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.debug.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -117,7 +118,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				927187A874ACB239948F404D /* Pods_Sample_App.framework in Frameworks */,
+				C6E66B74200EEDE0F933D84B /* Pods_Sample_App.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -127,8 +128,8 @@
 		044B0B2B23A14386AE38E6F3 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				ED641F232119CF95AF980A06 /* Pods-Sample App.debug.xcconfig */,
-				A78F4A2F7222EE0F3F043AF4 /* Pods-Sample App.release.xcconfig */,
+				3D77139D246629976A02E041 /* Pods-Sample App.debug.xcconfig */,
+				2D24052763C1071BD5D05963 /* Pods-Sample App.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -136,20 +137,20 @@
 		276401B4243BB5170016C2FC /* Use Cases */ = {
 			isa = PBXGroup;
 			children = (
+				D32167AB25DDAAC6004076C3 /* WidgetTimelineViewController.swift */,
 				767AFD56243B8B2600F85E8A /* ChatUseCase.swift */,
 				27C83D01243B8D44009F35DA /* WidgetsUseCase.swift */,
 				276401B5243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift */,
 				2757FD30249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift */,
 				D3F9FC1925A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift */,
-				D3A89CBA25F00D7E00CA7915 /* CustomWidgetTimelineViewController.swift */,
 			);
 			path = "Use Cases";
 			sourceTree = "<group>";
 		};
-		5A266E07205F4BC33511C62A /* Frameworks */ = {
+		528998D59C843958CB585D55 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				6D72A29E25C3EF64C05686EF /* Pods_Sample_App.framework */,
+				5854787E0CB69B05B3845C4D /* Pods_Sample_App.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -160,7 +161,7 @@
 				76FE3E902437990E003F179B /* Sample App */,
 				76FE3E8F2437990E003F179B /* Products */,
 				044B0B2B23A14386AE38E6F3 /* Pods */,
-				5A266E07205F4BC33511C62A /* Frameworks */,
+				528998D59C843958CB585D55 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -198,10 +199,6 @@
 				D32167A125DDAA6C004076C3 /* ImageSliderWidgetResultsViewController.swift */,
 				D32167A225DDAA6C004076C3 /* TextPollWidgetResultsViewController.swift */,
 				D32167A325DDAA6C004076C3 /* TextQuizWidgetResultsViewController.swift */,
-				D3708E5F25DF0396006F891A /* TextPredictionResultsWidgetViewController.swift */,
-				D3708E6225DF042C006F891A /* ImagePredictionResultsWidgetViewController.swift */,
-				D3708E6525DF0715006F891A /* TextPredictionFollowUpResultsViewController.swift */,
-				D3708E6825DF0743006F891A /* ImagePredictionFollowUpResultsViewController.swift */,
 			);
 			path = "Results View Controllers";
 			sourceTree = "<group>";
@@ -245,11 +242,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 76FE3EA224379912003F179B /* Build configuration list for PBXNativeTarget "Sample App" */;
 			buildPhases = (
-				E9556F2731440CAB55F81FA7 /* [CP] Check Pods Manifest.lock */,
+				32C773B9BEAE1EF27D82E624 /* [CP] Check Pods Manifest.lock */,
 				76FE3E8A2437990E003F179B /* Sources */,
 				76FE3E8B2437990E003F179B /* Frameworks */,
 				76FE3E8C2437990E003F179B /* Resources */,
-				C637686882A553DA85193523 /* [CP] Embed Pods Frameworks */,
+				F07C39F96292DF4533F37458 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -309,24 +306,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		C637686882A553DA85193523 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Sample App/Pods-Sample App-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Sample App/Pods-Sample App-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Sample App/Pods-Sample App-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		E9556F2731440CAB55F81FA7 /* [CP] Check Pods Manifest.lock */ = {
+		32C773B9BEAE1EF27D82E624 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -348,6 +328,23 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		F07C39F96292DF4533F37458 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Sample App/Pods-Sample App-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Sample App/Pods-Sample App-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Sample App/Pods-Sample App-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -356,7 +353,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				2772CEBA25AE7A8E00EA27CE /* CustomWidgetBarTimer.swift in Sources */,
-				D3708E6625DF0715006F891A /* TextPredictionFollowUpResultsViewController.swift in Sources */,
 				2772CEE725AE7E7C00EA27CE /* CustomWidgetOptionsView.swift in Sources */,
 				D32167A725DDAA6C004076C3 /* ImageSliderWidgetResultsViewController.swift in Sources */,
 				2772CED425AE7B7500EA27CE /* CustomTextPredictionFollowUpViewController.swift in Sources */,
@@ -368,7 +364,6 @@
 				D3CB4DCE25B1ECB20042BE4D /* CustomCheerMeterWidgetView.swift in Sources */,
 				2772CEC925AE7B5800EA27CE /* CustomImageSliderView.swift in Sources */,
 				2706E66C25AE5AC900996A8B /* CustomImageOptionCell.swift in Sources */,
-				D3708E6325DF042C006F891A /* ImagePredictionResultsWidgetViewController.swift in Sources */,
 				2772CEF025AE800F00EA27CE /* CustomImageQuizWidgetViewController.swift in Sources */,
 				2772CECA25AE7B5800EA27CE /* CustomImageSliderViewController.swift in Sources */,
 				276401B6243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift in Sources */,
@@ -384,18 +379,16 @@
 				2772CEF725AE81B900EA27CE /* CustomImgPredictionFollowUpWidgetVC.swift in Sources */,
 				76FE3E922437990E003F179B /* AppDelegate.swift in Sources */,
 				D3F9FC1A25A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift in Sources */,
-				D3A89CBB25F00D7E00CA7915 /* CustomWidgetTimelineViewController.swift in Sources */,
 				2772CED325AE7B7500EA27CE /* CustomTextPredictionWidgetViewController.swift in Sources */,
 				2772CEBF25AE7AA800EA27CE /* CustomImageOptionCell.swift in Sources */,
 				2757FD31249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift in Sources */,
 				2772CED825AE7C5300EA27CE /* CustomImagePredictionWidget.swift in Sources */,
 				2772CED225AE7B7500EA27CE /* CustomTextChoiceWidgetView.swift in Sources */,
+				D32167AC25DDAAC6004076C3 /* WidgetTimelineViewController.swift in Sources */,
 				D3CB4DD025B1ECB20042BE4D /* CustomCheerMeterWidgetViewController.swift in Sources */,
 				D32167AF25DDAACB004076C3 /* WidgetViewHelpers.swift in Sources */,
 				76FE3E942437990E003F179B /* SceneDelegate.swift in Sources */,
 				D3CB4DCF25B1ECB20042BE4D /* CustomCheerMeterWinnerView.swift in Sources */,
-				D3708E6025DF0396006F891A /* TextPredictionResultsWidgetViewController.swift in Sources */,
-				D3708E6925DF0743006F891A /* ImagePredictionFollowUpResultsViewController.swift in Sources */,
 				D32167A825DDAA6C004076C3 /* TextPollWidgetResultsViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -538,7 +531,7 @@
 		};
 		76FE3EA324379912003F179B /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = ED641F232119CF95AF980A06 /* Pods-Sample App.debug.xcconfig */;
+			baseConfigurationReference = 3D77139D246629976A02E041 /* Pods-Sample App.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
@@ -559,7 +552,7 @@
 		};
 		76FE3EA424379912003F179B /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A78F4A2F7222EE0F3F043AF4 /* Pods-Sample App.release.xcconfig */;
+			baseConfigurationReference = 2D24052763C1071BD5D05963 /* Pods-Sample App.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;

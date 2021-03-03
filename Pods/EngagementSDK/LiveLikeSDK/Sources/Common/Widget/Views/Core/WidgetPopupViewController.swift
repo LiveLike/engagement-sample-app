@@ -1,5 +1,5 @@
 //
-//  WidgetViewController.swift
+//  WidgetPopupViewController.swift
 //  EngagementSDK
 //
 //  Created by Cory Sullivan on 2019-01-11.
@@ -9,39 +9,45 @@
 import PubNub
 import UIKit
 
-/// Delegate methods to the WidgetViewController
-public protocol WidgetViewControllerDelegate: AnyObject {
+@available(*, deprecated, renamed: "WidgetPopupViewController")
+public typealias WidgetViewController = WidgetPopupViewController
+
+@available(*, deprecated, renamed: "WidgetPopupViewControllerDelegate")
+public typealias WidgetViewControllerDelegate = WidgetPopupViewControllerDelegate
+
+/// Delegate methods to the WidgetPopupViewController
+public protocol WidgetPopupViewControllerDelegate: AnyObject {
     /// Called when a Widget is about to animate into the view
-    func widgetViewController(_ widgetViewController: WidgetViewController, willDisplay widget: Widget)
+    func widgetViewController(_ widgetViewController: WidgetPopupViewController, willDisplay widget: Widget)
     /// Called immediately after a Widget has finished animating into the view
-    func widgetViewController(_ widgetViewController: WidgetViewController, didDisplay widget: Widget)
+    func widgetViewController(_ widgetViewController: WidgetPopupViewController, didDisplay widget: Widget)
     /// Called when a Widget is about to animate out of the view
-    func widgetViewController(_ widgetViewController: WidgetViewController, willDismiss widget: Widget)
+    func widgetViewController(_ widgetViewController: WidgetPopupViewController, willDismiss widget: Widget)
     /// Called immediately after a Widget has finished animating out of the view
-    func widgetViewController(_ widgetViewController: WidgetViewController, didDismiss widget: Widget)
-    /// Called when the WidgetViewController receives a widget and will enqueue it to be displayed
+    func widgetViewController(_ widgetViewController: WidgetPopupViewController, didDismiss widget: Widget)
+    /// Called when the WidgetPopupViewController receives a widget and will enqueue it to be displayed
     /// Return nil to not display the Widget
-    func widgetViewController(_ widgetViewController: WidgetViewController, willEnqueueWidget widgetModel: WidgetModel) -> Widget?
+    func widgetViewController(_ widgetViewController: WidgetPopupViewController, willEnqueueWidget widgetModel: WidgetModel) -> Widget?
 }
 
-public extension WidgetViewControllerDelegate {
-    func widgetViewController(_ widgetViewController: WidgetViewController, willEnqueueWidget widgetModel: WidgetModel) -> Widget? {
+public extension WidgetPopupViewControllerDelegate {
+    func widgetViewController(_ widgetViewController: WidgetPopupViewController, willEnqueueWidget widgetModel: WidgetModel) -> Widget? {
         return DefaultWidgetFactory.makeWidget(from: widgetModel)
     }
 }
 
 /**
- A `WidgetViewController` instance represents a view controller that handles widgets for the `EngagementSDK`.
+ A `WidgetPopupViewController` instance represents a view controller that handles widgets for the `EngagementSDK`.
 
-  Once an instance of `WidgetViewController` has been created, a `ContentSession` object needs to be set to link the `WidgetViewController` with the program/CMS. The 'ContentSession' can be changed at any time.
+  Once an instance of `WidgetPopupViewController` has been created, a `ContentSession` object needs to be set to link the `WidgetPopupViewController` with the program/CMS. The 'ContentSession' can be changed at any time.
 
- The `WidgetViewController` can be presented as-is or placed inside a `UIView` as a child UIViewController. See [Apple Documentation](https://developer.apple.com/library/archive/featuredarticles/ViewControllerPGforiPhoneOS/ImplementingaContainerViewController.html#//apple_ref/doc/uid/TP40007457-CH11-SW1) for more information.
+ The `WidgetPopupViewController` can be presented as-is or placed inside a `UIView` as a child UIViewController. See [Apple Documentation](https://developer.apple.com/library/archive/featuredarticles/ViewControllerPGforiPhoneOS/ImplementingaContainerViewController.html#//apple_ref/doc/uid/TP40007457-CH11-SW1) for more information.
 
- If the `WidgetViewController` is placed inside another view, please take note of the [minimum size restrictions](https://livelike.com). This restriction can be ignored by setting `ignoreSizeRestrictions`.
+ If the `WidgetPopupViewController` is placed inside another view, please take note of the [minimum size restrictions](https://livelike.com). This restriction can be ignored by setting `ignoreSizeRestrictions`.
 
   Also, an extension was included for convenience to help add a view controller inside of a specificied view. Please see `UIViewController.addChild(viewController:view:)` for more information
  */
-public class WidgetViewController: UIViewController {
+public class WidgetPopupViewController: UIViewController {
     // MARK: Properties
 
     /// A `ContentSession` used by the WidgetController to link with the program on the CMS.
@@ -55,7 +61,7 @@ public class WidgetViewController: UIViewController {
     /// The `Widget` currently displayed in the view (if any)
     public internal(set) var currentWidget: Widget?
 
-    public weak var delegate: WidgetViewControllerDelegate?
+    public weak var delegate: WidgetPopupViewControllerDelegate?
 
     private var eventRecorder: EventRecorder? {
         return (session as? InternalContentSession)?.eventRecorder
@@ -126,7 +132,7 @@ public class WidgetViewController: UIViewController {
     // MARK: Customization
 
     /**
-     Set the `Theme` for the `WidgetViewController`
+     Set the `Theme` for the `WidgetPopupViewController`
 
      - parameter theme: A `Theme` object with values set to suit your product design.
 
@@ -135,13 +141,13 @@ public class WidgetViewController: UIViewController {
     public func setTheme(_ theme: Theme) {
         self.theme = theme
         self.currentWidget?.theme = theme
-        log.info("Theme was applied to the WidgetViewController")
+        log.info("Theme was applied to the WidgetPopupViewController")
     }
 
     // MARK: Public Methods
 
     /**
-     Pauses the WidgetViewController.
+     Pauses the WidgetPopupViewController.
      All future widgets will be discared until resume() is called.
      Any currently displayed widgets will be immediately dismissed.
      */
@@ -155,7 +161,7 @@ public class WidgetViewController: UIViewController {
     }
 
     /**
-     Resumes the WidgetViewController.
+     Resumes the WidgetPopupViewController.
      All future widgets will be received and rendered normally.
      */
     public func resume() {
@@ -212,7 +218,8 @@ public class WidgetViewController: UIViewController {
         guard
             let eventRecorder = self.eventRecorder,
             let displayedWidget = self.currentWidget,
-            let timeWidgetDisplayed = self.timeWidgetDisplayed
+            let timeWidgetDisplayed = self.timeWidgetDisplayed,
+            let session = self.session
         else {
             return
         }
@@ -229,7 +236,7 @@ public class WidgetViewController: UIViewController {
                 properties.dismissSecondsSinceLastTap = Date().timeIntervalSince(lastTapTime)
             }
             properties.interactableState = displayedWidget.interactableState
-            eventRecorder.record(.widgetUserDismissed(properties: properties))
+            eventRecorder.record(.widgetUserDismissed(programID: session.programID, properties: properties))
         }
     }
     
@@ -338,7 +345,7 @@ public class WidgetViewController: UIViewController {
 
 // MARK: - Content Session Delelgate
 
-extension WidgetViewController: ContentSessionDelegate {
+extension WidgetPopupViewController: ContentSessionDelegate {
     public func playheadTimeSource(_ session: ContentSession) -> Date? {
         return nil
     }
@@ -381,7 +388,7 @@ extension WidgetViewController: ContentSessionDelegate {
 
 // MARK: - UIGestureRecognizerDelegate
 
-extension WidgetViewController: UIGestureRecognizerDelegate {
+extension WidgetPopupViewController: UIGestureRecognizerDelegate {
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }

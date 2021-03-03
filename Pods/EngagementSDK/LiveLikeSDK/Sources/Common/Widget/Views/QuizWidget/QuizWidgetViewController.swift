@@ -244,6 +244,7 @@ private extension QuizWidgetViewController {
         if let firstTapTime = self.firstTapTime, let lastTapTime = self.timeOfLastInteraction {
             self.model.eventRecorder.record(
                 .widgetInteracted(
+                    programID: model.programID,
                     properties: WidgetInteractedProperties(
                         widgetId: self.id,
                         widgetKind: self.kind.analyticsName,

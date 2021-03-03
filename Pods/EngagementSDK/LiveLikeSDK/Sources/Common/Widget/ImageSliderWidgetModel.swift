@@ -41,6 +41,7 @@ public class ImageSliderWidgetModel: ImageSliderWidgetModelable {
     public let createdAt: Date
     public let publishedAt: Date?
     public let interactionTimeInterval: TimeInterval
+    public let programID: String
 
     // MARK: Private Properties
 
@@ -74,6 +75,7 @@ public class ImageSliderWidgetModel: ImageSliderWidgetModelable {
         self.createdAt = data.createdAt
         self.publishedAt = data.publishedAt
         self.interactionTimeInterval = data.timeout.timeInterval
+        self.programID = data.programId
         self.options = data.options.map {
             Option(id: $0.id, imageURL: $0.imageUrl)
         }
@@ -107,7 +109,9 @@ public class ImageSliderWidgetModel: ImageSliderWidgetModelable {
     /// Locks in a vote for the ImageSlider. A user can only have one vote so call this when the user has made their final decision.
     /// Magnitude must by within range [0,1]
     public func lockInVote(magnitude: Double, completion: @escaping (Result<Vote, Error>) -> Void = { _ in }) {
-        self.eventRecorder.record(.widgetEngaged(kind: self.kind, id: self.id))
+        self.eventRecorder.record(
+            .widgetEngaged(programID: self.programID, kind: self.kind, id: self.id)
+        )
         firstly {
             self.livelikeAPI.createImageSliderVote(
                 voteURL: self.voteURL,
@@ -133,7 +137,7 @@ public class ImageSliderWidgetModel: ImageSliderWidgetModelable {
     /// Call this once when the widget is first displayed to the user.
     public func registerImpression(completion: @escaping (Result<Void, Error>) -> Void = { _ in }) {
         self.eventRecorder.record(
-            .widgetDisplayed(kind: kind.analyticsName, widgetId: id, widgetLink: nil)
+            .widgetDisplayed(programID: self.programID, kind: kind.analyticsName, widgetId: id, widgetLink: nil)
         )
         guard let impressionURL = self.impressionURL else { return }
         firstly {

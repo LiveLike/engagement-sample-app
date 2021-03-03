@@ -30,4 +30,5 @@ enum EventName: String, Codable {
     case imageSliderResults = "emoji-slider-results"
     case cheerMeterCreated = "cheer-meter-created"
     case cheerMeterResults = "cheer-meter-results"
+    case socialEmbedCreated = "social-embed-created"
 }

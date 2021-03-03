@@ -275,7 +275,7 @@ class HomeViewController: UIViewController {
         let sdk = EngagementSDK(config: EngagementSDKConfig(clientID: clientID))
         let session = sdk.contentSession(config: SessionConfiguration(programID: programID))
 
-        let createEnterChatRoomUseCase = WidgetTimelineViewController(session: session)
+        let createEnterChatRoomUseCase = CustomWidgetTimelineViewController(contentSession: session)
 
         createEnterChatRoomUseCase.modalPresentationStyle = .fullScreen
         self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)

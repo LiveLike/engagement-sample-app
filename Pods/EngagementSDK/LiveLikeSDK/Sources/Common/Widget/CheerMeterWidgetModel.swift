@@ -50,6 +50,7 @@ public class CheerMeterWidgetModel: CheerMeterWidgetModelable {
     public let createdAt: Date
     /// The date this Cheer Meter was published by a Producer
     public let publishedAt: Date?
+    public let programID: String
 
     // MARK: Internal Properties
 
@@ -87,6 +88,7 @@ public class CheerMeterWidgetModel: CheerMeterWidgetModelable {
         
         self.id = data.id
         self.kind = data.kind
+        self.programID = data.programId
         self.title = data.question
         self.interactionTimeInterval = data.timeout.timeInterval
         self.customData = data.customData
@@ -120,7 +122,9 @@ public class CheerMeterWidgetModel: CheerMeterWidgetModelable {
     /// - Parameter optionID: The id of the `Option` to submit a vote
     public func submitVote(optionID: String) {
         batchedVoteCounterByID[optionID] = (batchedVoteCounterByID[optionID] ?? 0) + 1
-        self.eventRecorder.record(.widgetEngaged(kind: self.kind, id: self.id))
+        self.eventRecorder.record(
+            .widgetEngaged(programID: self.programID, kind: self.kind, id: self.id)
+        )
         // Create timer on first vote
         if throttleTimer == nil {
             Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
@@ -177,7 +181,7 @@ public class CheerMeterWidgetModel: CheerMeterWidgetModelable {
     /// Call this once when the widget is first displayed to the user.
     public func registerImpression(completion: @escaping ((Result<Void, Error>) -> Void) = { _ in }) {
         self.eventRecorder.record(
-            .widgetDisplayed(kind: kind.analyticsName, widgetId: id, widgetLink: nil)
+            .widgetDisplayed(programID: programID, kind: kind.analyticsName, widgetId: id, widgetLink: nil)
         )
         guard let impressionURL = self.impressionURL else { return }
         firstly {
