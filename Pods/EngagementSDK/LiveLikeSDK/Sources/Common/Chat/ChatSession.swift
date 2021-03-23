@@ -18,6 +18,17 @@ protocol InternalChatSessionDelegate: ChatSessionDelegate {
     func chatSession(_ chatSession: ChatSession, didRecieveError error: Error)
 }
 
+public enum ChatSessionError: LocalizedError {
+    case concurrentLoadHistoryCalls
+    
+    public var errorDescription: String? {
+        switch self {
+        case .concurrentLoadHistoryCalls:
+            return "Cannot make concurrent calls to `loadNextHistory`. Wait until `loadNextHistory` completes before calling again."
+        }
+    }
+}
+
 /// A connection to a chat room
 public protocol ChatSession: AnyObject {
     var title: String? { get }
@@ -54,6 +65,11 @@ public protocol ChatSession: AnyObject {
     
     @available(*, deprecated, message: "Please set property `avatarURL` to update user chat room avatar")
     func updateUserChatRoomImage(url: URL, completion: @escaping (Result<Void, Error>) -> Void)
+    
+    /// Loads older chat messages from history.
+    /// The loaded messages are inserted into `messages` at index 0.
+    /// - Parameter completion: Returns the messages that were loaded.
+    func loadNextHistory(completion: @escaping (Result<[ChatMessage], Error>) -> Void)
 }
 
 protocol InternalChatSessionProtocol: ChatSession {
@@ -95,10 +111,6 @@ protocol InternalChatSessionProtocol: ChatSession {
         reaction: ReactionVote.ID,
         fromMessageWithID messageID: ChatMessageID
     ) -> Promise<Void>
-
-    /// Loads previous messages from history.
-    /// Subsequent calls to this will continue to load from the oldest message loaded.
-    func loadPreviousMessagesFromHistory() -> Promise<Void>
 
     func loadInitialHistory(completion: @escaping (Result<Void, Error>) -> Void)
     

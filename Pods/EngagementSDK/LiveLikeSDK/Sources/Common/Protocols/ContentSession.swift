@@ -20,7 +20,7 @@ public enum WidgetPagination {
 /**
  A `ContentSession` instance represents a program item, usually related to a live feed.
 
- `ContentSession` instance needs to be set in both `ChatViewController` and `WidgetViewController` to receive chat/widgets.
+ `ContentSession` instance needs to be set in both `ChatViewController` and `WidgetPopupViewController` to receive chat/widgets.
 
  */
 public protocol ContentSession: AnyObject {

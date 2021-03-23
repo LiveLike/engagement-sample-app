@@ -125,9 +125,9 @@ class SpoilerFreeChatSession: InternalChatSessionProtocol {
     func removeMessageReactions(reaction: ReactionVote.ID, fromMessageWithID messageID: ChatMessageID) -> Promise<Void> {
         return realChatRoom.removeMessageReactions(reaction: reaction, fromMessageWithID: messageID)
     }
-
-    func loadPreviousMessagesFromHistory() -> Promise<Void> {
-        return realChatRoom.loadPreviousMessagesFromHistory()
+    
+    func loadNextHistory(completion: @escaping (Result<[ChatMessage], Error>) -> Void) {
+        realChatRoom.loadNextHistory(completion: completion)
     }
 
     func loadInitialHistory(completion: @escaping (Result<Void, Error>) -> Void) {

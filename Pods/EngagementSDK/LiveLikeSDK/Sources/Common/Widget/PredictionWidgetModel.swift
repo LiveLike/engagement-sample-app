@@ -44,6 +44,7 @@ public class PredictionWidgetModel: PredictionWidgetModelable {
     public let publishedAt: Date?
     public let interactionTimeInterval: TimeInterval
     public let customData: String?
+    public let programID: String
 
     // MARK: Internal Properties
 
@@ -77,6 +78,7 @@ public class PredictionWidgetModel: PredictionWidgetModelable {
         self.totalVoteCount = resource.options.map { $0.voteCount }.reduce(0, +)
         self.id = resource.id
         self.kind = resource.kind
+        self.programID = resource.programId
         self.createdAt = resource.createdAt
         self.publishedAt = resource.publishedAt
         self.interactionTimeInterval = resource.timeout
@@ -111,6 +113,7 @@ public class PredictionWidgetModel: PredictionWidgetModelable {
         self.totalVoteCount = resource.options.map { $0.voteCount }.reduce(0, +)
         self.id = resource.id
         self.kind = resource.kind
+        self.programID = resource.programId
         self.createdAt = resource.createdAt
         self.publishedAt = resource.publishedAt
         self.interactionTimeInterval = resource.timeout
@@ -136,7 +139,9 @@ public class PredictionWidgetModel: PredictionWidgetModelable {
 
     /// Locks in a vote for the Prediction. Call this when the user has made their final decision. Only one vote is allowed per user.
     public func lockInVote(optionID: String, completion: @escaping ((Result<PredictionVote, Error>) -> Void) = { _ in }) {
-        self.eventRecorder.record(.widgetEngaged(kind: self.kind, id: self.id))
+        self.eventRecorder.record(
+            .widgetEngaged(programID: programID, kind: self.kind, id: self.id)
+        )
         
         guard let voteURL = self.options.first(where: { $0.id == optionID })?.voteURL else { return }
         // Send vote
@@ -172,7 +177,7 @@ public class PredictionWidgetModel: PredictionWidgetModelable {
     /// Call this once when the widget is first displayed to the user.
     public func registerImpression(completion: @escaping (Result<Void, Error>) -> Void = { _ in }) {
         self.eventRecorder.record(
-            .widgetDisplayed(kind: kind.analyticsName, widgetId: id, widgetLink: nil)
+            .widgetDisplayed(programID: programID, kind: kind.analyticsName, widgetId: id, widgetLink: nil)
         )
         guard let impressionURL = self.impressionURL else { return }
         firstly {

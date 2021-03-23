@@ -319,12 +319,14 @@ final public class MessageViewController: UIViewController {
         guard let chatSession = chatSession else { return }
         isLoading(true)
 
-        firstly {
-            chatSession.loadPreviousMessagesFromHistory()
-        }.always {
-            self.isLoading(false)
-        }.catch { error in
-            log.error("Failed to load history: \(error.localizedDescription)")
+        chatSession.loadNextHistory { [weak self] result in
+            guard let self = self else { return }
+            if case let .failure(error) = result {
+                log.error("Failed to load history: \(error.localizedDescription)")
+            }
+            DispatchQueue.main.async {
+                self.isLoading(false)
+            }
         }
     }
 

@@ -50,8 +50,12 @@ extension AnalyticsEvent.Name {
 }
 
 extension AnalyticsEvent {
-    static func widgetDisplayed(kind: String, widgetId: String, widgetLink: URL?) -> AnalyticsEvent {
-        var data: [Attribute: Any] = [.widgetType: kind, .widgetId: widgetId]
+    static func widgetDisplayed(programID: String, kind: String, widgetId: String, widgetLink: URL?) -> AnalyticsEvent {
+        var data: [Attribute: Any] = [
+            .programId: programID,
+            .widgetType: kind,
+            .widgetId: widgetId
+        ]
         if let widgetLink = widgetLink {
             data[.widgetLinkUrl] = widgetLink.absoluteString
         }
@@ -59,11 +63,12 @@ extension AnalyticsEvent {
                               data: data)
     }
 
-    static func widgetEngaged(kind: WidgetKind, id: String) -> AnalyticsEvent {
+    static func widgetEngaged(programID: String, kind: WidgetKind, id: String) -> AnalyticsEvent {
         return AnalyticsEvent(
             name: .widgetEngaged,
             data: {
                 let props: [Attribute: Any] = [
+                    .programId: programID,
                     .widgetType: kind.analyticsName,
                     .widgetId: id
                 ]
@@ -72,11 +77,12 @@ extension AnalyticsEvent {
         )
     }
 
-    static func widgetInteracted(properties: WidgetInteractedProperties) -> AnalyticsEvent {
+    static func widgetInteracted(programID: String, properties: WidgetInteractedProperties) -> AnalyticsEvent {
         return AnalyticsEvent(
             name: .widgetInteracted,
             data: {
                 let props: [Attribute: Any?] = [
+                    .programId: programID,
                     .widgetType: properties.widgetKind,
                     .widgetId: properties.widgetId,
                     .firstTapTime: properties.firstTapTime,
@@ -88,8 +94,9 @@ extension AnalyticsEvent {
         )
     }
 
-    static func widgetUserDismissed(properties: WidgetDismissedProperties) -> AnalyticsEvent {
+    static func widgetUserDismissed(programID: String, properties: WidgetDismissedProperties) -> AnalyticsEvent {
         var data: [Attribute: Any] = [
+            .programId: programID,
             .widgetType: properties.widgetKind,
             .widgetId: properties.widgetId,
             .dismissAction: properties.dismissAction.rawValue,

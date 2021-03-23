@@ -44,6 +44,7 @@ class PubSubChatRoom: NSObject, InternalChatSessionProtocol {
     private let mediaRepository: MediaRepository = EngagementSDK.mediaRepository
     private var publicDelegates: Listener<ChatSessionDelegate> = Listener()
     private var delegates: Listener<InternalChatSessionDelegate> = Listener()
+    private var isLoadingHistory: Bool = false
 
     private let decoder: JSONDecoder = {
         let decoder = JSONDecoder()
@@ -142,7 +143,6 @@ private extension PubSubChatRoom {
                 let mockMessage = ChatMessage(
                     id: chatMessageID,
                     roomID: self.roomID,
-                    channelName: self.chatChannel.name,
                     message: "",
                     sender: chatUser,
                     videoTimestamp: clientMessage.timeStamp,
@@ -157,7 +157,7 @@ private extension PubSubChatRoom {
                     filteredMessage: nil,
                     filteredReasons: Set()
                 )
-                self.mockedMessageIDs.insert(mockMessage.id)
+                self.mockedMessageIDs.insert(mockMessage.messageID)
                 self.messages.append(mockMessage)
                 self.publicDelegates.publish { $0.chatSession(self, didRecieveNewMessage: mockMessage )}
                 self.delegates.publish { $0.chatSession(self, didRecieveNewMessage: mockMessage) }
@@ -199,7 +199,7 @@ private extension PubSubChatRoom {
                                     switch result {
                                     case .success(let pubsubID):
                                         self.chatMessageIDsToPubSubIDs[chatMessageID] = pubsubID
-                                        mockMessage.id = ChatMessageID(pubsubID)
+                                        mockMessage.messageID = ChatMessageID(pubsubID)
                                         self.chatMessages[pubsubID] = mockMessage
                                         fulfill(chatMessageID)
                                     case .failure(let error):
@@ -268,7 +268,7 @@ private extension PubSubChatRoom {
                         actions: message.messageActions,
                         userID: self.userID
                     )
-                    self.chatMessageIDsToPubSubIDs[chatMessageType.id] = message.pubsubID
+                    self.chatMessageIDsToPubSubIDs[chatMessageType.messageID] = message.pubsubID
                     return chatMessageType
                 case .messageDeleted(let payload):
                     let id = ChatMessageID(payload.id)
@@ -284,7 +284,7 @@ private extension PubSubChatRoom {
                         userID: self.userID
                     )
 
-                    self.chatMessageIDsToPubSubIDs[chatMessageType.id] = message.pubsubID
+                    self.chatMessageIDsToPubSubIDs[chatMessageType.messageID] = message.pubsubID
                     return chatMessageType
                 case .imageDeleted(let payload):
                     let id = ChatMessageID(payload.id)
@@ -297,7 +297,7 @@ private extension PubSubChatRoom {
             }
         }
 
-        let messagesToBeShown = unfilteredMessages.filter { !deletedMessageIDs.contains($0.id) }
+        let messagesToBeShown = unfilteredMessages.filter { !deletedMessageIDs.contains($0.messageID) }
         return messagesToBeShown
     }
 }
@@ -327,7 +327,7 @@ extension PubSubChatRoom: PubSubChannelDelegate {
             self.publicDelegates.publish { $0.chatSession(self, didRecieveNewMessage: chatMessage)}
             self.delegates.publish { $0.chatSession(self, didRecieveNewMessage: chatMessage)}
             chatMessages[message.pubsubID] = chatMessage
-            self.chatMessageIDsToPubSubIDs[chatMessage.id] = message.pubsubID
+            self.chatMessageIDsToPubSubIDs[chatMessage.messageID] = message.pubsubID
         case .messageDeleted(let payload):
             let chatMessageID = ChatMessageID(payload.id)
             self.delegates.publish { $0.chatSession(self, didRecieveMessageDeleted: chatMessageID)}
@@ -346,10 +346,10 @@ extension PubSubChatRoom: PubSubChannelDelegate {
             // always update the mock image `ChatMessage` with the real one from Pubnub
             chatMessages[message.pubsubID] = chatMessage
 
-            if self.chatMessageIDsToPubSubIDs[chatMessage.id] == nil {
+            if self.chatMessageIDsToPubSubIDs[chatMessage.messageID] == nil {
                 // only publish downstream here if pubsub id doesn't exist yet
                 // if pubsub id already exists then this message was mocked and published earlier
-                self.chatMessageIDsToPubSubIDs[chatMessage.id] = message.pubsubID
+                self.chatMessageIDsToPubSubIDs[chatMessage.messageID] = message.pubsubID
                 self.messages.append(chatMessage)
                 self.publicDelegates.publish { $0.chatSession(self, didRecieveNewMessage: chatMessage)}
                 self.delegates.publish { $0.chatSession(self, didRecieveNewMessage: chatMessage)}
@@ -465,7 +465,7 @@ extension PubSubChatRoom {
                     }
                 }
 
-                let messagesToBeShown = processedHistory.filter { !deletedMessageIDs.contains($0.id) }
+                let messagesToBeShown = processedHistory.filter { !deletedMessageIDs.contains($0.messageID) }
                 completion(.success(messagesToBeShown))
             case let .failure(error):
                 completion(.failure(error))
@@ -530,7 +530,7 @@ extension PubSubChatRoom {
             }
         }
 
-        let messagesToBeShown = processedHistory.filter { !deletedMessageIDs.contains($0.id) }
+        let messagesToBeShown = processedHistory.filter { !deletedMessageIDs.contains($0.messageID) }
         return messagesToBeShown
     }
     
@@ -572,7 +572,7 @@ extension PubSubChatRoom {
     }
     
     func reportMessage(withID id: ChatMessageID, completion: @escaping (Result<Void, Error>) -> Void) {
-        guard let message = self.messages.first(where: { $0.id == id}) else {
+        guard let message = self.messages.first(where: { $0.messageID == id}) else {
             return completion(.failure(PubSubChatRoomError.failedToFindReportedChatMessage(messageId: id.asString)))
         }
         guard let messageReporter = self.messageReporter else {
@@ -580,7 +580,7 @@ extension PubSubChatRoom {
         }
         
         var messageBody = ""
-        if let messageImageUrlString = message.bodyImageUrl?.absoluteString {
+        if let messageImageUrlString = message.imageURL?.absoluteString {
             messageBody = messageImageUrlString
         } else {
             messageBody = message.message
@@ -702,7 +702,7 @@ extension PubSubChatRoom {
                 let messagesToBeShown = self.processMessagesFromChatHistory(historyResult: historyResult)
                 self.delegates.publish{ $0.chatSession(self, didRecieveMessageHistory: messagesToBeShown) }
                 messagesToBeShown.forEach { message in
-                    guard let pubsubID = self.chatMessageIDsToPubSubIDs[message.id] else {
+                    guard let pubsubID = self.chatMessageIDsToPubSubIDs[message.messageID] else {
                         log.error("Failed to find pubsubID for message \(message.id)")
                         return
                     }
@@ -721,39 +721,44 @@ extension PubSubChatRoom {
         }
     }
 
-    func loadPreviousMessagesFromHistory() -> Promise<Void> {
-        return Promise(work: { fulfill, reject in
-            self.chatChannel.fetchHistory(
-                oldestMessageDate: self.oldestChatMessageTimetoken,
-                newestMessageDate: nil,
-                limit: 100
-            ) { [weak self] result in
-                guard let self = self else { return }
-                switch result {
-                case let .success(historyResult):
-                    self.oldestChatMessageTimetoken = historyResult.oldestMessageTimetoken
-                    let messagesToBeShown = self.processMessagesFromChatHistory(historyResult: historyResult)
-                    self.delegates.publish{ $0.chatSession(self, didRecieveMessageHistory: messagesToBeShown) }
-                    messagesToBeShown.forEach { message in
-                        guard let pubsubID = self.chatMessageIDsToPubSubIDs[message.id] else {
-                            log.error("Failed to find pubsubID for message \(message.id)")
-                            return
-                        }
-                        self.chatMessages[pubsubID] = message
+    func loadNextHistory(completion: @escaping (Result<[ChatMessage], Error>) -> Void) {
+        guard !isLoadingHistory else {
+            return completion(.failure(ChatSessionError.concurrentLoadHistoryCalls))
+        }
+        self.isLoadingHistory = true
+        self.chatChannel.fetchHistory(
+            oldestMessageDate: self.oldestChatMessageTimetoken,
+            newestMessageDate: nil,
+            limit: 100
+        ) { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case let .success(historyResult):
+                self.oldestChatMessageTimetoken = historyResult.oldestMessageTimetoken
+                let messagesToBeShown = self.processMessagesFromChatHistory(historyResult: historyResult)
+                self.delegates.publish{ $0.chatSession(self, didRecieveMessageHistory: messagesToBeShown) }
+                messagesToBeShown.forEach { message in
+                    guard let pubsubID = self.chatMessageIDsToPubSubIDs[message.messageID] else {
+                        log.error("Failed to find pubsubID for message \(message.id)")
+                        return
                     }
-                    self.messages.insert(contentsOf: messagesToBeShown, at: 0)
-                    fulfill(())
-                case let .failure(error):
-                    if case PubNubChannelError.foundNoResultsForChannel = error {
-                        log.info("Reached the end of the chat room history.")
-                        self.delegates.publish { $0.chatSession(self, didRecieveMessageHistory: [])}
-                        fulfill(())
-                    } else {
-                        reject(error)
-                    }
+                    self.chatMessages[pubsubID] = message
+                }
+                self.messages.insert(contentsOf: messagesToBeShown, at: 0)
+                self.isLoadingHistory = false
+                completion(.success(messagesToBeShown))
+            case let .failure(error):
+                if case PubNubChannelError.foundNoResultsForChannel = error {
+                    log.info("Reached the end of the chat room history.")
+                    self.delegates.publish { $0.chatSession(self, didRecieveMessageHistory: [])}
+                    self.isLoadingHistory = false
+                    completion(.success([]))
+                } else {
+                    self.isLoadingHistory = false
+                    completion(.failure(error))
                 }
             }
-        })
+        }
     }
 
     func unsubscribeFromAllChannels() {

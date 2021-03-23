@@ -230,7 +230,7 @@ private extension CheerMeterWidgetViewController {
                 lastTapTime: lastTapTime,
                 numberOfTaps: interactionCount
             )
-            eventRecorder.record(.widgetInteracted(properties: props))
+            eventRecorder.record(.widgetInteracted(programID: model.programID, properties: props))
         }
 
         // If the user did not interact, display stale results from backend

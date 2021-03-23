@@ -1,32 +1,41 @@
 PODS:
-  - EngagementSDK (2.18):
+  - EngagementSDK (2.20):
     - lottie-ios (~> 3.0)
     - Mixpanel-swift (~> 2.7)
     - PubNub (~> 4.12.0)
   - lottie-ios (3.2.1)
-  - Mixpanel-swift (2.8.3):
-    - Mixpanel-swift/Complete (= 2.8.3)
-  - Mixpanel-swift/Complete (2.8.3)
+  - Mixpanel-swift (2.9.0):
+    - Mixpanel-swift/Complete (= 2.9.0)
+  - Mixpanel-swift/Complete (2.9.0)
   - PubNub (4.12.0):
     - PubNub/Core (= 4.12.0)
   - PubNub/Core (4.12.0)
 
 DEPENDENCIES:
-  - EngagementSDK
+  - "EngagementSDK (from `git@bitbucket.org:livelike/livelike-ios-sdk.git`, branch `feature/ES-1582-load-history-api`)"
 
 SPEC REPOS:
   trunk:
-    - EngagementSDK
     - lottie-ios
     - Mixpanel-swift
     - PubNub
 
+EXTERNAL SOURCES:
+  EngagementSDK:
+    :branch: feature/ES-1582-load-history-api
+    :git: "git@bitbucket.org:livelike/livelike-ios-sdk.git"
+
+CHECKOUT OPTIONS:
+  EngagementSDK:
+    :commit: e5ddb1f29978fd54344f992d2d767b9770cd5f9c
+    :git: "git@bitbucket.org:livelike/livelike-ios-sdk.git"
+
 SPEC CHECKSUMS:
-  EngagementSDK: cabcd906b5af45cebaeb33795def27856ca2979e
+  EngagementSDK: 8d20b3d6af2558943272e7b36004a88b0a5e55e1
   lottie-ios: 106e92eaf11fbed0a76590b4cdb9b5ec26123ff7
-  Mixpanel-swift: 947354668bf7dcaff5aaf9c64232fb5bea6ff0c7
+  Mixpanel-swift: a6832b31ddd3880aebe803ae783708d35f28c256
   PubNub: 44e2eb39746e7231b98b978a8e3b9726b11dca9c
 
-PODFILE CHECKSUM: ebd3afff3ce63b7f9d0766cef8ea1e586de6e96a
+PODFILE CHECKSUM: 98938abbd4dc0e431ee223997db1fe94c8c543f2
 
-COCOAPODS: 1.10.1
+COCOAPODS: 1.9.1

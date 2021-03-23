@@ -37,7 +37,6 @@ class ImageSliderViewController: Widget {
     private let averageAnimationSeconds: CGFloat = 2
     private let additionalResultsSeconds: Double = 5
 
-    private var whenVotingLocked = Promise<Float>()
     private var latestAverageMagnitude: Float?
     private var closeButtonAction: (() -> Void)?
     private let model: ImageSliderWidgetModel
@@ -67,31 +66,6 @@ class ImageSliderViewController: Widget {
     override init(model: ImageSliderWidgetModel) {
         self.model = model
         super.init(model: model)
-
-        /*
-         Waits for voting to be locked and results to be received
-         Then reveals the results and auto dismisses the widget
-         **/
-
-        whenVotingLocked.then { [weak self] myMagnitude in
-            guard let self = self else { return }
-
-            // if user didn't recieve latest average magnitude from server then use their magnitude as average
-            // this will likely be the case for the first user to receive this widget
-            let avgMagnitude = self.latestAverageMagnitude ?? myMagnitude
-            self.imageSliderView.averageVote = avgMagnitude
-
-            self.playAverageAnimation {
-                self.imageSliderView.showResultsTrack()
-                delay(self.additionalResultsSeconds) { [weak self] in
-                    guard let self = self else { return }
-                    self.delegate?.widgetStateCanComplete(widget: self, state: .results)
-                }
-            }
-        }.catch {
-            log.error($0.localizedDescription)
-        }
-
         NotificationCenter.default.addObserver(self, selector: #selector(didMoveToForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
     }
 
@@ -250,7 +224,7 @@ class ImageSliderViewController: Widget {
                 lastTapTime: lastTimeSliderChanged,
                 numberOfTaps: self.sliderChangedCount
             )
-            self.model.eventRecorder.record(.widgetInteracted(properties: props))
+            self.model.eventRecorder.record(.widgetInteracted(programID: model.programID, properties: props))
         }
 
         let magnitude = self.imageSliderView.sliderView.value
@@ -279,7 +253,19 @@ class ImageSliderViewController: Widget {
             delay(2.0) { [weak self] in
                 guard let self = self else { return }
                 let magnitude = self.imageSliderView.sliderView.value
-                self.whenVotingLocked.fulfill(magnitude)
+                // if user didn't recieve latest average magnitude from server then use their magnitude as average
+                // this will likely be the case for the first user to receive this widget
+                let avgMagnitude = self.latestAverageMagnitude ?? magnitude
+                self.imageSliderView.averageVote = avgMagnitude
+
+                self.playAverageAnimation { [weak self] in
+                    guard let self = self else { return }
+                    self.imageSliderView.showResultsTrack()
+                    delay(self.additionalResultsSeconds) { [weak self] in
+                        guard let self = self else { return }
+                        self.delegate?.widgetStateCanComplete(widget: self, state: .results)
+                    }
+                }
             }
         }
     }
@@ -306,7 +292,8 @@ class ImageSliderViewController: Widget {
         let avgMagnitudeFloat = Float(model.averageMagnitude)
         self.imageSliderView.averageVote = avgMagnitudeFloat
 
-        self.playAverageAnimation {
+        self.playAverageAnimation { [weak self] in
+            guard let self = self else { return }
             self.imageSliderView.moveSliderThumb(to: avgMagnitudeFloat)
         }
    }

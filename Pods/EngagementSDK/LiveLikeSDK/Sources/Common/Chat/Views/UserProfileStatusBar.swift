@@ -63,7 +63,6 @@ class UserProfileStatusBar: UIView {
 // MARK: - Setters
 
 extension UserProfileStatusBar {
-    // swiftlint:disable implicit_getter
     var displayName: String {
         get { return nameLabel.text ?? "" }
         set { nameLabel.text = newValue }

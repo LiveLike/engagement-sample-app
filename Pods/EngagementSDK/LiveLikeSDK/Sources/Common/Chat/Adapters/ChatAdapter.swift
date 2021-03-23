@@ -214,7 +214,7 @@ extension ChatAdapter {
         newestMessages messages: [ChatMessage]
     ) {
         let newMessages = messages.filter({ messageViewModel -> Bool in
-            self.messagesDisplayed.contains(where: { $0.id == messageViewModel.id }) == false &&
+            self.messagesDisplayed.contains(where: { $0.id == messageViewModel.messageID }) == false &&
             self.messagesToAppend.contains(messageViewModel) == false &&
             self.blockList.contains(user: messageViewModel.sender) == false
         })
@@ -234,7 +234,7 @@ extension ChatAdapter {
     
     func publish(newMessage message: ChatMessage) {
         guard
-            self.messagesDisplayed.contains(where: { $0.id == message.id }) == false,
+            self.messagesDisplayed.contains(where: { $0.id == message.messageID }) == false,
             self.messagesToAppend.contains(message) == false,
             self.blockList.contains(user: message.sender) == false
         else {

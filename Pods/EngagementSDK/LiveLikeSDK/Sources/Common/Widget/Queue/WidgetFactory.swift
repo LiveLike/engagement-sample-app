@@ -36,6 +36,8 @@ public class DefaultWidgetFactory {
             return PollWidgetViewController(model: model)
         case .imageSlider(let model):
             return ImageSliderViewController(model: model)
+        case .socialEmbed(let model):
+            return SocialEmbedWidgetViewController(model: model)
         }
     }
 }

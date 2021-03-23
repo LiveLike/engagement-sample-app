@@ -129,3 +129,10 @@ protocol ImageSliderWidgetModelable: WidgetModelable {
 
     func lockInVote(magnitude: Double, completion: @escaping (Result<ImageSliderWidgetModel.Vote, Error>) -> Void)
 }
+
+protocol SocialEmbedWidgetModelable: WidgetModelable {
+
+    var comment: String? { get }
+    
+    var items: [SocialEmbedWidgetModel.Item] { get }
+}

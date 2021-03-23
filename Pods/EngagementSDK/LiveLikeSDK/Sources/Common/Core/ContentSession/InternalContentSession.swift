@@ -205,7 +205,6 @@ class InternalContentSession: ContentSession {
 
         initializeWidgetProxy()
         initializeDelegatePlayheadTimeSource()
-        initializeMixpanelProperties()
         startSession()
         
         whenMessagingClients.then { [weak self] in
@@ -236,17 +235,6 @@ class InternalContentSession: ContentSession {
         }
     }
     
-    private func initializeMixpanelProperties() {
-        superPropertyRecorder.register([
-            .chatStatus(status: .enabled),
-            .widgetStatus(status: .enabled)
-        ])
-        peoplePropertyRecorder.record([
-            .lastChatStatus(status: .enabled),
-            .lastWidgetStatus(status: .enabled),
-        ])
-    }
-
     deinit {
         teardownSession()
         log.info("Content Session closed for program \(programID)")
@@ -261,8 +249,6 @@ class InternalContentSession: ContentSession {
             log.info("Content Session started for program \(self.programID)")
             
             // analytics
-            self.superPropertyRecorder.register([.programId(id: program.id),
-                                                 .programName(name: program.title)])
             self.peoplePropertyRecorder.record([.lastProgramID(programID: program.id),
                                                 .lastProgramName(name: program.title)])
             
@@ -342,11 +328,6 @@ class InternalContentSession: ContentSession {
     }
     
     private func teardownSession() {
-        // clear the client detail super properties
-        superPropertyRecorder.register([.programId(id: ""),
-                                        .programName(name: ""),
-                                        .league(leagueName: ""),
-                                        .sport(sportName: "")])
         sessionDidEnd?()
         if let widgetChannel = self.widgetChannel, let baseProxy = baseWidgetProxy {
             messagingClients?.widgetMessagingClient?.removeListener(baseProxy, fromChannel: widgetChannel)

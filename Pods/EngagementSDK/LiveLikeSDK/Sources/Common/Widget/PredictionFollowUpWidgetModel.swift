@@ -31,6 +31,7 @@ public class PredictionFollowUpWidgetModel: PredictionFollowUpWidgetModelable {
     public let associatedPredictionID: String
     /// The kind of the associated Prediction widget
     public let associatedPredictionKind: WidgetKind
+    public let programID: String
 
     // MARK: Internal Properties
 
@@ -61,6 +62,7 @@ public class PredictionFollowUpWidgetModel: PredictionFollowUpWidgetModelable {
         self.containsImages = false
         self.id = resource.id
         self.kind = resource.kind
+        self.programID = resource.programId
         self.createdAt = resource.createdAt
         self.publishedAt = resource.publishedAt
         self.interactionTimeInterval = resource.timeout
@@ -91,6 +93,7 @@ public class PredictionFollowUpWidgetModel: PredictionFollowUpWidgetModelable {
         self.containsImages = true
         self.id = resource.id
         self.kind = resource.kind
+        self.programID = resource.programId
         self.createdAt = resource.createdAt
         self.publishedAt = resource.publishedAt
         self.interactionTimeInterval = resource.timeout
@@ -159,7 +162,7 @@ public class PredictionFollowUpWidgetModel: PredictionFollowUpWidgetModelable {
     /// Call this once when the widget is first displayed to the user.
     public func registerImpression(completion: @escaping (Result<Void, Error>) -> Void = { _ in }) {
         self.eventRecorder.record(
-            .widgetDisplayed(kind: kind.analyticsName, widgetId: id, widgetLink: nil)
+            .widgetDisplayed(programID: self.programID, kind: kind.analyticsName, widgetId: id, widgetLink: nil)
         )
         guard let impressionURL = impressionURL else { return }
         firstly {

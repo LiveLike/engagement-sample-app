@@ -222,6 +222,7 @@ class PollWidgetViewController: Widget {
         if let firstTapTime = self.firstTapTime, let lastTapTime = self.timeOfLastInteraction {
             self.model.eventRecorder.record(
                 .widgetInteracted(
+                    programID: model.programID,
                     properties: WidgetInteractedProperties(
                         widgetId: self.model.id,
                         widgetKind: self.model.kind.analyticsName,

@@ -18,9 +18,7 @@ enum PeopleProperty {
     case timeOfLastWidgetReceipt(time: Date)
     case timeOfLastWidgetInteraction(time: Date)
     case officialAppName(officialAppName: String)
-    case lastChatStatus(status: ChatStatus)
     case timeOfLastChatMessage(time: Date)
-    case lastWidgetStatus(status: WidgetStatus)
     case lastProgramID(programID: String)
     case lastProgramName(name: String)
     case userMuteState(UserMuteState)
@@ -47,12 +45,8 @@ enum PeopleProperty {
             return "Time Of Last Widget Interaction"
         case .officialAppName:
             return "Official App Name"
-        case .lastChatStatus:
-            return "Last Chat Status"
         case .timeOfLastChatMessage:
             return "Time Of Last Chat Message"
-        case .lastWidgetStatus:
-            return "Last Widget Status"
         case .lastProgramID:
             return "Last Program ID"
         case .lastProgramName:
@@ -84,12 +78,8 @@ enum PeopleProperty {
             return time
         case let .officialAppName(officialAppName):
             return officialAppName
-        case let .lastChatStatus(status):
-            return status.analyticsName
         case let .timeOfLastChatMessage(time):
             return time
-        case let .lastWidgetStatus(status):
-            return status.analyticsName
         case let .lastProgramID(programID):
             return programID
         case let .lastProgramName(name):

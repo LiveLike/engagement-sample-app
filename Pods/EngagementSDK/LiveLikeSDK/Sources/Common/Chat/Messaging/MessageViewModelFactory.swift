@@ -38,8 +38,8 @@ class MessageViewModelFactory {
                 reactionsFactory.getReactions(),
                 prepareMessage(
                     message: chatMessage.message,
-                    bodyImageURL: chatMessage.bodyImageUrl,
-                    bodyImageSize: chatMessage.bodyImageSize,
+                    bodyImageURL: chatMessage.imageURL,
+                    bodyImageSize: chatMessage.imageSize,
                     username: chatMessage.nickname,
                     theme: theme
                 )
@@ -49,27 +49,26 @@ class MessageViewModelFactory {
                 self.mediaRepository.prefetchMedia(url: profileImageURL)
             }
             
-            if let bodyImageURL = chatMessage.bodyImageUrl {
+            if let bodyImageURL = chatMessage.imageURL {
                 self.mediaRepository.prefetchMedia(url: bodyImageURL)
             }
             
             let messageViewModel = MessageViewModel(
-                id: chatMessage.id,
+                id: chatMessage.messageID,
                 message: preparedMessage.0,
                 sender: sender,
                 username: sender.nickName,
                 isLocalClient: isLocalClient,
                 syncPublishTimecode: chatMessage.videoTimestamp?.description,
                 chatRoomId: chatMessage.roomID,
-                channel: chatMessage.channelName,
                 chatReactions: .init(
                     reactionAssets: reactionsViewModel,
                     reactionVotes: chatMessage.reactions
                 ),
                 profileImageUrl: chatMessage.profileImageUrl,
                 createdAt: chatMessage.timestamp,
-                bodyImageUrl: chatMessage.bodyImageUrl,
-                bodyImageSize: chatMessage.bodyImageSize,
+                bodyImageUrl: chatMessage.imageURL,
+                bodyImageSize: chatMessage.imageSize,
                 accessibilityLabel: preparedMessage.1,
                 stickerShortcodesInMessage: preparedMessage.2
             )

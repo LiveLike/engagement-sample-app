@@ -8,7 +8,7 @@
 import Foundation
 
 /**
- Direction used for animating widgets in and out of the `WidgetViewController`.
+ Direction used for animating widgets in and out of the `WidgetPopupViewController`.
  */
 @objc
 public enum Direction: Int {

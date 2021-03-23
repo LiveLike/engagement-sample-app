@@ -23,7 +23,6 @@ public extension ChatViewController {
         let chatMessageType = ChatMessage(
             id: ChatMessageID(UUID().uuidString),
             roomID: "room-id",
-            channelName: "channel-name",
             message: message,
             sender: user,
             videoTimestamp: nil,
@@ -50,7 +49,7 @@ public extension ChatViewController {
         }.then { reactions -> Promise<Void> in
             guard let reactionID = reactions[safe: index]?.id else { return Promise(error: NilError() )}
             return chatSession.sendMessageReaction(
-                message.id,
+                message.messageID,
                 reaction: reactionID,
                 reactionsToRemove: currentReactionView
             )

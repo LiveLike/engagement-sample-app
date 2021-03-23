@@ -48,10 +48,6 @@ class Analytics: AnalyticsProtocol, EventRecorder {
     private func initializeClientDetailSuperProperties(appConfig: ApplicationConfiguration) {
         register({
             var superProperties: [SuperProperty] = [
-                .league(leagueName: ""),
-                .programId(id: ""),
-                .programName(name: ""),
-                .sport(sportName: ""),
                 .sdkVersion(version: EngagementSDK.version)
             ]
 
