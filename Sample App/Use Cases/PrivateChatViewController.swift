@@ -23,10 +23,13 @@ class PrivateChatViewController: UIViewController {
         return tableView
     }()
     
-    private let chatInputView: ChatInputView = {
-        let chatInputView = ChatInputView.instanceFromNib()
-        chatInputView.translatesAutoresizingMaskIntoConstraints = false
-        return chatInputView
+    private let quickMessageButton: UIButton = {
+        let button = UIButton()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle("Quick Replies", for: .normal)
+        button.backgroundColor = .systemBlue
+        button.layer.cornerRadius = 10
+        return button
     }()
     
     init(chatSession: ChatSession) {
@@ -41,18 +44,20 @@ class PrivateChatViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        view.backgroundColor = .systemBackground
         view.addSubview(tableView)
-        view.addSubview(chatInputView)
+        view.addSubview(quickMessageButton)
+        
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.safeTopAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.heightAnchor.constraint(equalTo: view.safeAreaLayoutGuide.heightAnchor, multiplier: 0.90),
             
-            chatInputView.topAnchor.constraint(equalTo: tableView.bottomAnchor),
-            chatInputView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            chatInputView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            chatInputView.bottomAnchor.constraint(equalTo: view.safeBottomAnchor)
+            quickMessageButton.topAnchor.constraint(equalTo: tableView.bottomAnchor, constant: 10),
+            quickMessageButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
+            quickMessageButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
+            quickMessageButton.bottomAnchor.constraint(equalTo: view.safeBottomAnchor, constant: -10)
         ])
         
         chatSession.addDelegate(self)
@@ -60,7 +65,7 @@ class PrivateChatViewController: UIViewController {
         tableView.delegate = self
         tableView.register(MyChatMessageCell.self, forCellReuseIdentifier: "myChatCell")
         tableView.register(UserChatMessageCell.self, forCellReuseIdentifier: "userChatCell")
-        chatInputView.setChatSession(chatSession)
+        quickMessageButton.addTarget(self, action: #selector(sendCustomMessage), for: .touchUpInside)
         
         // Starts table at bottom
         DispatchQueue.main.async { [weak self] in
@@ -72,6 +77,46 @@ class PrivateChatViewController: UIViewController {
                 animated: false
             )
         }
+    }
+    
+    @objc func sendCustomMessage() {
+        let alert = UIAlertController(
+            title: "Pick a Quick Message!",
+            message: "",
+            preferredStyle: .actionSheet
+        )
+
+        alert.addAction(UIAlertAction(title: "\"Cool!\"", style: .default, handler: { _ in
+            let chatMessage = NewChatMessage(text: "Cool!")
+            self.chatSession.sendMessage(chatMessage) { _ in }
+        }))
+        
+        alert.addAction(UIAlertAction(title: "\"Boooooooo!\"", style: .default, handler: { _ in
+            let chatMessage = NewChatMessage(text: "Boooooooo!")
+            self.chatSession.sendMessage(chatMessage) { _ in }
+        }))
+        
+        alert.addAction(UIAlertAction(title: "\"Wow!\"", style: .default, handler: { _ in
+            let chatMessage = NewChatMessage(text: "Wow!")
+            self.chatSession.sendMessage(chatMessage) { _ in }
+        }))
+        
+        alert.addAction(UIAlertAction(title: "\"Really?\"", style: .default, handler: { _ in
+            let chatMessage = NewChatMessage(text: "Really?")
+            self.chatSession.sendMessage(chatMessage) { _ in }
+        }))
+
+        alert.addAction(UIAlertAction(title: "Chimpanzee", style: .default, handler: { _ in
+            guard let imageURL = URL(string: "https://media.giphy.com/media/l1KVboXQeiaX7FHgI/giphy.gif") else { return }
+            let chatMessage = NewChatMessage(
+                imageURL: imageURL,
+                imageSize: CGSize(width: 100, height: 100)
+            )
+            self.chatSession.sendMessage(chatMessage) { _ in }
+        }))
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        present(alert, animated: true, completion: nil)
     }
 }
 
