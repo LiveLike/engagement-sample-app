@@ -59,6 +59,9 @@ public class ChatMessage: Equatable {
 
     public let createdAt: TimeToken
     
+    /// True if the current user is the message's sender
+    public let isMine: Bool
+    
     // MARK: - Internal Properties
     
     /// Unique message ID.
@@ -108,6 +111,7 @@ public class ChatMessage: Equatable {
         self.filteredReasons = filteredReasons
         self.senderID = sender.id.asString
         self.senderNickname = sender.nickName
+        self.isMine = sender.isLocalUser
     }
     
     // MARK: - Equatable

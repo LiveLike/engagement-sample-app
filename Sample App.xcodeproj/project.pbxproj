@@ -28,6 +28,7 @@
 		2772CEF725AE81B900EA27CE /* CustomImgPredictionFollowUpWidgetVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CEF625AE81B900EA27CE /* CustomImgPredictionFollowUpWidgetVC.swift */; };
 		27C83D02243B8D44009F35DA /* WidgetsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27C83D01243B8D44009F35DA /* WidgetsUseCase.swift */; };
 		767AFD57243B8B2600F85E8A /* ChatUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767AFD56243B8B2600F85E8A /* ChatUseCase.swift */; };
+		7695A97E260987FB00C1C46E /* PrivateChatViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7695A97D260987FB00C1C46E /* PrivateChatViewController.swift */; };
 		76FE3E922437990E003F179B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE3E912437990E003F179B /* AppDelegate.swift */; };
 		76FE3E942437990E003F179B /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE3E932437990E003F179B /* SceneDelegate.swift */; };
 		76FE3E962437990E003F179B /* HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE3E952437990E003F179B /* HomeViewController.swift */; };
@@ -70,6 +71,7 @@
 		3D77139D246629976A02E041 /* Pods-Sample App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.debug.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.debug.xcconfig"; sourceTree = "<group>"; };
 		5854787E0CB69B05B3845C4D /* Pods_Sample_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Sample_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		767AFD56243B8B2600F85E8A /* ChatUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatUseCase.swift; sourceTree = "<group>"; };
+		7695A97D260987FB00C1C46E /* PrivateChatViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateChatViewController.swift; sourceTree = "<group>"; };
 		76FE3E8E2437990E003F179B /* Sample App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Sample App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		76FE3E912437990E003F179B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		76FE3E932437990E003F179B /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -117,6 +119,7 @@
 				276401B5243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift */,
 				2757FD30249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift */,
 				D3F9FC1925A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift */,
+				7695A97D260987FB00C1C46E /* PrivateChatViewController.swift */,
 			);
 			path = "Use Cases";
 			sourceTree = "<group>";
@@ -314,6 +317,7 @@
 				2772CEBA25AE7A8E00EA27CE /* CustomWidgetBarTimer.swift in Sources */,
 				2772CEE725AE7E7C00EA27CE /* CustomWidgetOptionsView.swift in Sources */,
 				2772CED425AE7B7500EA27CE /* CustomTextPredictionFollowUpViewController.swift in Sources */,
+				7695A97E260987FB00C1C46E /* PrivateChatViewController.swift in Sources */,
 				2772CED125AE7B7500EA27CE /* CustomTextPollWidgetViewController.swift in Sources */,
 				2772CED525AE7B7500EA27CE /* CustomTextQuizWidgetViewController.swift in Sources */,
 				D3F9FC2425A4E0E000ECBAA5 /* CustomAlertWidgetView.swift in Sources */,
