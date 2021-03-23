@@ -32,6 +32,8 @@ class PrivateChatViewController: UIViewController {
         return button
     }()
     
+    private var isLoading: Bool = true
+    
     init(chatSession: ChatSession) {
         self.chatSession = chatSession
         super.init(nibName: nil, bundle: nil)
@@ -78,6 +80,7 @@ class PrivateChatViewController: UIViewController {
                 at: .bottom,
                 animated: false
             )
+            self.isLoading = false
         }
     }
     
@@ -177,7 +180,59 @@ extension PrivateChatViewController: UITableViewDataSource {
 }
 
 @available(iOS 13.0, *)
-extension PrivateChatViewController: UITableViewDelegate { }
+extension PrivateChatViewController: UITableViewDelegate {
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let offsetY = scrollView.contentOffset.y
+        
+        if offsetY < 0, !isLoading {
+            self.isLoading = true
+            self.tableView.tableHeaderView = createLoadingFooterView()
+            // Show loading spinner for at least 1 second for smooth user experience
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+                guard let self = self else { return }
+                self.chatSession.loadNextHistory { result in
+                    DispatchQueue.main.async {
+                        switch result {
+                        case let .success(messages):
+                            // Inserting rows in place by insertRows from 0 to messages.count
+                            // Then scrolling back to first visible message before the insertRows happened.
+                            
+                            let indexPaths = messages.enumerated().map { index, _ in
+                                return IndexPath(row: index, section: 0)
+                            }
+                            UIView.setAnimationsEnabled(false)
+                            self.tableView.insertRows(at: indexPaths, with: .none)
+                            UIView.setAnimationsEnabled(true)
+                            
+                            let currentRowAfterInsert = messages.count - 1
+                            if currentRowAfterInsert < self.tableView.numberOfRows(inSection: 0) && currentRowAfterInsert >= 0 {
+                                // scroll back to the position we were in before insertion
+                                self.tableView.scrollToRow(
+                                    at: IndexPath(row: currentRowAfterInsert, section: 0),
+                                    at: .top,
+                                    animated: false
+                                )
+                            }
+                        case let .failure(error):
+                            print(error)
+                        }
+                        self.isLoading = false
+                    }
+                }
+            }
+        }
+    }
+    
+    private func createLoadingFooterView() -> UIView {
+        let loadingView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.size.width, height: 44))
+        let spinner = UIActivityIndicatorView()
+        spinner.center = loadingView.center
+        loadingView.addSubview(spinner)
+        spinner.startAnimating()
+        
+        return loadingView
+    }
+}
 
 @available(iOS 13.0, *)
 class MyTextMessageCell: UITableViewCell {
@@ -251,8 +306,7 @@ class MyImageMessageCell: UITableViewCell {
         return imageView
     }()
     
-    private var imageHeightConstraint: NSLayoutConstraint!
-    private var imageWidthConstraint: NSLayoutConstraint!
+    private var imageDataTask: URLSessionDataTask?
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -287,18 +341,21 @@ class MyImageMessageCell: UITableViewCell {
             messageImageView.widthAnchor.constraint(equalToConstant: imageSize.width)
         ])
         
-        URLSession.shared.dataTask(with: imageURL) { [weak self] data, _, _ in
+        self.imageDataTask = URLSession.shared.dataTask(with: imageURL) { [weak self] data, _, _ in
             guard let self = self else { return }
             guard let data = data else { return }
             DispatchQueue.main.async {
                 self.messageImageView.image = UIImage(data: data)
             }
-        }.resume()
+        }
+        self.imageDataTask?.resume()
 
     }
     
     override func prepareForReuse() {
         super.prepareForReuse()
+        imageDataTask?.cancel()
+        imageDataTask = nil
         messageImageView.image = nil
     }
 }
@@ -366,7 +423,6 @@ class UserTextMessageCell: UITableViewCell {
     
     override func prepareForReuse() {
         super.prepareForReuse()
-        
         nicknameLabel.text = nil
         label.text = nil
     }
@@ -397,8 +453,7 @@ class UserImageMessageCell: UITableViewCell {
         return imageView
     }()
     
-    private var imageHeightConstraint: NSLayoutConstraint!
-    private var imageWidthConstraint: NSLayoutConstraint!
+    private var imageDataTask: URLSessionDataTask?
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -439,18 +494,22 @@ class UserImageMessageCell: UITableViewCell {
             messageImageView.widthAnchor.constraint(equalToConstant: imageSize.width)
         ])
         
-        URLSession.shared.dataTask(with: imageURL) { [weak self] data, _, _ in
+        self.imageDataTask = URLSession.shared.dataTask(with: imageURL) { [weak self] data, _, _ in
             guard let self = self else { return }
             guard let data = data else { return }
             DispatchQueue.main.async {
                 self.messageImageView.image = UIImage(data: data)
             }
-        }.resume()
+        }
+        self.imageDataTask?.resume()
 
     }
     
     override func prepareForReuse() {
         super.prepareForReuse()
+        imageDataTask?.cancel()
+        imageDataTask = nil
+        nicknameLabel.text = nil
         messageImageView.image = nil
     }
 }
