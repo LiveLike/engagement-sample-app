@@ -12,7 +12,7 @@ PODS:
   - PubNub/Core (4.12.0)
 
 DEPENDENCIES:
-  - "EngagementSDK (from `git@bitbucket.org:livelike/livelike-ios-sdk.git`, branch `feature/ES-1582-load-history-api`)"
+  - "EngagementSDK (from `git@bitbucket.org:livelike/livelike-ios-sdk.git`, branch `feature/ES-1580-chat-session-updates`)"
 
 SPEC REPOS:
   trunk:
@@ -22,12 +22,12 @@ SPEC REPOS:
 
 EXTERNAL SOURCES:
   EngagementSDK:
-    :branch: feature/ES-1582-load-history-api
+    :branch: feature/ES-1580-chat-session-updates
     :git: "git@bitbucket.org:livelike/livelike-ios-sdk.git"
 
 CHECKOUT OPTIONS:
   EngagementSDK:
-    :commit: 3352e130f286621bab0556ff6b8059494542d787
+    :commit: 21b3b1d22a119d557a27eb1835944dcc6d5b09ae
     :git: "git@bitbucket.org:livelike/livelike-ios-sdk.git"
 
 SPEC CHECKSUMS:
@@ -36,6 +36,6 @@ SPEC CHECKSUMS:
   Mixpanel-swift: a6832b31ddd3880aebe803ae783708d35f28c256
   PubNub: 44e2eb39746e7231b98b978a8e3b9726b11dca9c
 
-PODFILE CHECKSUM: 98938abbd4dc0e431ee223997db1fe94c8c543f2
+PODFILE CHECKSUM: e7b6912eceb8069df32fb462ab5c78249a7a80a2
 
 COCOAPODS: 1.9.1

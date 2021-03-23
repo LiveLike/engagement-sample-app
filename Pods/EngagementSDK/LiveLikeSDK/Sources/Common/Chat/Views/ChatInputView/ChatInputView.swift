@@ -310,50 +310,62 @@ public class ChatInputView: UIView {
         guard let chatSession = chatSession else {
             return
         }
-
-        let clientMessage = ClientMessage(
-            message: message.message,
-            imageURL: message.imageURL,
-            imageSize: message.imageSize
-        )
-        chatSession.sendMessage(clientMessage).then { [weak self] chatMessageID in
-
-            guard let self = self else { return }
-            guard let messageText = message.message else { return }
-
-            let stickerIDs = messageText.stickerShortcodes
-            let indices = ChatSentMessageProperties.calculateStickerIndices(stickerIDs: stickerIDs, stickers: self.stickerPacks)
-            let sentProperties = ChatSentMessageProperties(
-                characterCount: messageText.count,
-                messageId: chatMessageID.asString,
-                chatRoomId: chatSession.roomID,
-                stickerShortcodes: stickerIDs.map({ ":\($0):"}),
-                stickerCount: stickerIDs.count,
-                stickerIndices: indices,
-                hasExternalImage: message.imageURL != nil
-            )
-            chatSession.eventRecorder.record(.chatMessageSent(properties: sentProperties))
-
-            var superProps = [SuperProperty]()
-            let now = Date()
-            superProps.append(.timeOfLastChatMessage(time: now))
-            if messageText.containsEmoji {
-                superProps.append(.timeOfLastEmoji(time: now))
+       
+        var chatUserMessage: NewChatMessage
+        if let message = message.message {
+            chatUserMessage = NewChatMessage(text: message)
+        } else {
+            if let imageURL = message.imageURL {
+                chatUserMessage = NewChatMessage(
+                    imageURL: imageURL,
+                    imageSize: message.imageSize ?? CGSize(width: 100, height: 100)
+                )
+            } else {
+                return
             }
-            chatSession.superPropertyRecorder.register(superProps)
+        }
+        
+        chatSession.sendMessage(chatUserMessage) { [weak self] result in
+            guard let self = self else { return }
+            
+            switch result {
+            case .success(let chatMessageID):
+                guard let messageText = message.message else { return }
 
-            chatSession.peoplePropertyRecorder.record([.timeOfLastChatMessage(time: now)])
+                let stickerIDs = messageText.stickerShortcodes
+                let indices = ChatSentMessageProperties.calculateStickerIndices(stickerIDs: stickerIDs, stickers: self.stickerPacks)
+                let sentProperties = ChatSentMessageProperties(
+                    characterCount: messageText.count,
+                    messageId: chatMessageID.asString,
+                    chatRoomId: chatSession.roomID,
+                    stickerShortcodes: stickerIDs.map({ ":\($0):"}),
+                    stickerCount: stickerIDs.count,
+                    stickerIndices: indices,
+                    hasExternalImage: message.imageURL != nil
+                )
+                chatSession.eventRecorder.record(.chatMessageSent(properties: sentProperties))
 
-            let keyboardProperties = KeyboardHiddenProperties(keyboardType: self.keyboardType, keyboardHideMethod: .messageSent, messageID: chatMessageID.asString)
-            chatSession.eventRecorder.record(.keyboardHidden(properties: keyboardProperties))
-        }.catch {
-            log.error($0.localizedDescription)
-            if $0.localizedDescription == PubNubChannelError.sendMessageFailedAccessDenied.errorDescription {
-                self.delegate?.chatInputError(title: "", message: "EngagementSDK.chat.error.sendMessageFailedAccessDenied".localized())
+                var superProps = [SuperProperty]()
+                let now = Date()
+                superProps.append(.timeOfLastChatMessage(time: now))
+                if messageText.containsEmoji {
+                    superProps.append(.timeOfLastEmoji(time: now))
+                }
+                chatSession.superPropertyRecorder.register(superProps)
+
+                chatSession.peoplePropertyRecorder.record([.timeOfLastChatMessage(time: now)])
+
+                let keyboardProperties = KeyboardHiddenProperties(keyboardType: self.keyboardType, keyboardHideMethod: .messageSent, messageID: chatMessageID.asString)
+                chatSession.eventRecorder.record(.keyboardHidden(properties: keyboardProperties))
+                
+            case .failure(let error):
+                log.error(error.localizedDescription)
+                if error.localizedDescription == PubNubChannelError.sendMessageFailedAccessDenied.errorDescription {
+                    self.delegate?.chatInputError(title: "", message: "EngagementSDK.chat.error.sendMessageFailedAccessDenied".localized())
+                }
             }
         }
     }
-
 }
 
 extension ChatInputView: UITextFieldDelegate {

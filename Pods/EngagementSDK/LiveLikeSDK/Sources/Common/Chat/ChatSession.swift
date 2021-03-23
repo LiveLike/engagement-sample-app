@@ -63,6 +63,13 @@ public protocol ChatSession: AnyObject {
     func getMessages(since timestamp: TimeToken, completion: @escaping (Result<[ChatMessage], Error>) -> Void)
     func getMessageCount(since timestamp: TimeToken, completion: @escaping (Result<Int, Error>) -> Void)
     
+    /// Sends a user message.
+    ///
+    /// - Parameters:
+    ///   - chatMessage: An object representing the contents of a chat message
+    ///   - completion: A callback indicating whether the message was sent or failed
+    func sendMessage(_ chatMessage: NewChatMessage, completion: @escaping (Result<ChatMessageID, Error>) -> Void)
+    
     @available(*, deprecated, message: "Please set property `avatarURL` to update user chat room avatar")
     func updateUserChatRoomImage(url: URL, completion: @escaping (Result<Void, Error>) -> Void)
     
@@ -87,13 +94,6 @@ protocol InternalChatSessionProtocol: ChatSession {
     /// Disconnects from messaging client. If this method is invoked,
     /// the current user will be invalidated.
     func disconnect()
-
-    /// Sends a user message.
-    ///
-    /// - Parameters:
-    ///   - clientMessage: The message text.
-    ///   - completion: callback indicating the message was sent
-    func sendMessage(_ clientMessage: ClientMessage) -> Promise<ChatMessageID>
     
     /// Deletes an already posted message
     @discardableResult

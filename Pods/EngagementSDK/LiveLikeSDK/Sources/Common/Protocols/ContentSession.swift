@@ -9,7 +9,7 @@ import AVFoundation
 import Foundation
 
 /// Unix epoch. The number of seconds that have elapsed since January 1, 1970 (midnight UTC/GMT), not counting leap seconds
-typealias EpochTime = TimeInterval
+public typealias EpochTime = TimeInterval
 
 /// Represents the different  pagination types that can be passed down to `getPostedWidgets`
 public enum WidgetPagination {

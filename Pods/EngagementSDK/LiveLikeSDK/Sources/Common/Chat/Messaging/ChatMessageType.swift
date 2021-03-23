@@ -18,7 +18,7 @@ public class ChatMessage: Equatable {
         return messageID.asString
     }
     
-    @available(*, renamed: "text")
+    @available(*, deprecated, renamed: "text")
     public var message: String {
         return text ?? ""
     }
@@ -29,7 +29,7 @@ public class ChatMessage: Equatable {
     /// The nickname of the message's sender
     public let senderNickname: String
     
-    @available(*, renamed: "senderNickname")
+    @available(*, deprecated, renamed: "senderNickname")
     public var nickname: String {
         return sender.nickName
     }
@@ -57,6 +57,8 @@ public class ChatMessage: Equatable {
     /// The timestamp of when this message was created
     public let timestamp: Date
 
+    /// The TimeToken of when this message was created.
+    /// Used for `getMessages` and `getMessageCount` methods of `ContentSession`
     public let createdAt: TimeToken
     
     /// True if the current user is the message's sender

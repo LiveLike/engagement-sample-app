@@ -37,10 +37,10 @@ class MessageViewModelFactory {
             Promises.zip(
                 reactionsFactory.getReactions(),
                 prepareMessage(
-                    message: chatMessage.message,
+                    message: chatMessage.text ?? "",
                     bodyImageURL: chatMessage.imageURL,
                     bodyImageSize: chatMessage.imageSize,
-                    username: chatMessage.nickname,
+                    username: chatMessage.senderNickname,
                     theme: theme
                 )
             )

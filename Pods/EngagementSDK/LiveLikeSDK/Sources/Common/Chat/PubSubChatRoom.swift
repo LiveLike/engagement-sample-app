@@ -38,7 +38,6 @@ class PubSubChatRoom: NSObject, InternalChatSessionProtocol {
     private var chatMessages: [PubSubID: ChatMessage] = [:]
     // maps ChatMessageIDs to PubSubIDs
     private var chatMessageIDsToPubSubIDs: [ChatMessageID: PubSubID] = [:]
-    private var mockedMessageIDs: Set<ChatMessageID> = Set()
     private let messageReporter: MessageReporter?
     private let chatFilters: Set<ChatFilter>
     private let mediaRepository: MediaRepository = EngagementSDK.mediaRepository
@@ -104,6 +103,164 @@ class PubSubChatRoom: NSObject, InternalChatSessionProtocol {
 // MARK: - Private methods
 
 private extension PubSubChatRoom {
+    
+    private func sendMessage(
+        chatMessage: NewChatMessage,
+        messageID: String,
+        messageEvent: PubSubChatEvent,
+        completion: @escaping (Result<ChatMessageID, Error>) -> Void
+    ){
+        guard let nickname = nickname.currentNickname else {
+            return completion(.failure(PubSubChatRoomError.sendMessageFailedNoNickname))
+        }
+
+        let pdt: Date? = {
+            if let timeStamp = chatMessage.timeStamp {
+                return Date.init(timeIntervalSince1970: timeStamp)
+            }
+            return nil
+        }()
+        
+        // Build a Mock Message
+        let chatUser = ChatUser(
+            userId: self.userID,
+            isActive: false,
+            isLocalUser: true,
+            nickName: nickname,
+            friendDiscoveryKey: nil,
+            friendName: nil
+        )
+        let chatMessageID = ChatMessageID(messageID)
+        var mockMessage: ChatMessage {
+            if let imageURL = chatMessage.imageURL, let imageSize = chatMessage.imageSize {
+                return ChatMessage(
+                    id: chatMessageID,
+                    roomID: self.roomID,
+                    message: "",
+                    sender: chatUser,
+                    videoTimestamp: chatMessage.timeStamp,
+                    reactions: ReactionVotes(allVotes: []),
+                    timestamp: Date(),
+                    profileImageUrl: self.avatarURL,
+                    createdAt: TimeToken(pubnubTimetoken: 0),
+                    bodyImageUrl: imageURL,
+                    bodyImageSize: CGSize(
+                        width: Int(imageSize.width),
+                        height: Int(imageSize.width)),
+                    filteredMessage: nil,
+                    filteredReasons: Set()
+                )
+            } else  {
+                return ChatMessage(
+                    id: chatMessageID,
+                    roomID: self.roomID,
+                    message: chatMessage.text ?? "",
+                    sender: chatUser,
+                    videoTimestamp: chatMessage.timeStamp,
+                    reactions: ReactionVotes(allVotes: []),
+                    timestamp: Date(),
+                    profileImageUrl: self.avatarURL,
+                    createdAt: TimeToken(pubnubTimetoken: 0),
+                    bodyImageUrl: nil,
+                    bodyImageSize: nil,
+                    filteredMessage: nil,
+                    filteredReasons: Set()
+                )
+            }
+        }
+        
+        self.messages.append(mockMessage)
+        self.publicDelegates.publish { $0.chatSession(self, didRecieveNewMessage: mockMessage )}
+        self.delegates.publish { $0.chatSession(self, didRecieveNewMessage: mockMessage) }
+        
+        // Build and Send a real message payload
+        if let imageURL = chatMessage.imageURL, let imageSize = chatMessage.imageSize {
+            self.mediaRepository.getImage(url: imageURL) { [weak self] result in
+                guard let self = self else { return }
+                switch result {
+                case .success(let success):
+                    // upload image
+                    self.imageUploader.upload(success.imageData) { [weak self] result in
+                        switch result {
+                        case .success(let imageResource):
+                            guard let self = self else { return }
+                            let payload = PubSubImagePayload(
+                                id: messageID,
+                                imageUrl: imageResource.imageUrl,
+                                imageHeight: Int(imageSize.height),
+                                imageWidth: Int(imageSize.width),
+                                senderId: self.userID.asString,
+                                senderNickname: nickname,
+                                senderImageUrl: self.avatarURL,
+                                programDateTime: pdt
+                            )
+                            let message = PubSubChatImage(
+                                event: .imageCreated,
+                                payload: payload
+                            )
+                            
+                            self.sendMessageToChatChannel(payloadMessage: message,
+                                                          mockMessage: mockMessage,
+                                                          completion: completion)
+                            
+                        case .failure(let error):
+                            completion(.failure(error))
+                        }
+                    }
+                case .failure(let error):
+                    completion(.failure(error))
+                }
+            }
+            
+        } else if let message = chatMessage.text {
+            let payload = PubSubChatPayload(
+                id: messageID,
+                message: message,
+                senderId: userID.asString,
+                senderNickname: nickname,
+                senderImageUrl: avatarURL,
+                programDateTime: pdt,
+                filteredMessage: nil,
+                contentFilter: nil
+            )
+
+            let pubnubChatMessage = PubSubChatMessage(event: messageEvent, payload: payload)
+            sendMessageToChatChannel(payloadMessage: pubnubChatMessage,
+                                     mockMessage: mockMessage,
+                                     completion: completion)
+        }
+    }
+    
+    private func sendMessageToChatChannel<T: Encodable>(
+        payloadMessage: T,
+        mockMessage: ChatMessage,
+        completion: @escaping (Result<ChatMessageID, Error>) -> Void
+    ) {
+        
+        guard let encodedMessage = try? self.encoder.encode(payloadMessage) else {
+            completion(.failure(PubSubChatRoomError.failedToEncodeChatMessage))
+            return
+        }
+        guard let encodedMessageString = String(data: encodedMessage, encoding: .utf8) else {
+            completion(.failure(PubSubChatRoomError.failedToEncodeChatMessage))
+            return
+        }
+
+        self.chatChannel.send(encodedMessageString) { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .success(let pubsubID):
+                self.chatMessageIDsToPubSubIDs[mockMessage.messageID] = pubsubID
+                mockMessage.messageID = ChatMessageID(pubsubID)
+                self.chatMessages[pubsubID] = mockMessage
+                
+                completion(.success(ChatMessageID(pubsubID)))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+    
     /// The main function from which PubNub messages are sent out
     /// - Parameters:
     ///   - clientMessage: chat message
@@ -157,7 +314,6 @@ private extension PubSubChatRoom {
                     filteredMessage: nil,
                     filteredReasons: Set()
                 )
-                self.mockedMessageIDs.insert(mockMessage.messageID)
                 self.messages.append(mockMessage)
                 self.publicDelegates.publish { $0.chatSession(self, didRecieveNewMessage: mockMessage )}
                 self.delegates.publish { $0.chatSession(self, didRecieveNewMessage: mockMessage) }
@@ -562,10 +718,6 @@ extension PubSubChatRoom {
     func exitChannel(_ channel: String, sessionId: String) {
         self.exitChannel(channel)
     }
-
-    func sendMessage(_ clientMessage: ClientMessage) -> Promise<ChatMessageID> {
-        return sendMessage(clientMessage, messageID: UUID().uuidString.lowercased(), messageEvent: .messageCreated)
-    }
     
     func deleteMessage(_ clientMessage: ClientMessage, messageID: String) -> Promise<ChatMessageID> {
         return sendMessage(clientMessage, messageID: messageID, messageEvent: .messageDeleted)
@@ -583,7 +735,7 @@ extension PubSubChatRoom {
         if let messageImageUrlString = message.imageURL?.absoluteString {
             messageBody = messageImageUrlString
         } else {
-            messageBody = message.message
+            messageBody = message.text ?? ""
         }
         
         let reportBody = ReportBody(
@@ -770,6 +922,10 @@ extension PubSubChatRoom {
             self.avatarURL = url
             completion(.success(()))
         }
+    }
+    
+    func sendMessage(_ chatMessage: NewChatMessage, completion: @escaping (Result<ChatMessageID, Error>) -> Void) {
+        sendMessage(chatMessage: chatMessage, messageID: chatMessage.messageID, messageEvent: .messageCreated, completion: completion)
     }
 }
 

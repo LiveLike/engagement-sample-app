@@ -61,14 +61,32 @@ class PrivateChatViewController: UIViewController {
         tableView.register(MyChatMessageCell.self, forCellReuseIdentifier: "myChatCell")
         tableView.register(UserChatMessageCell.self, forCellReuseIdentifier: "userChatCell")
         chatInputView.setChatSession(chatSession)
+        
+        // Starts table at bottom
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.tableView.reloadData()
+            self.tableView.scrollToRow(
+                at: IndexPath(row: self.chatSession.messages.count - 1, section: 0),
+                at: .bottom,
+                animated: false
+            )
+        }
     }
-    
 }
 
 @available(iOS 13.0, *)
 extension PrivateChatViewController: ChatSessionDelegate {
     func chatSession(_ chatSession: ChatSession, didRecieveNewMessage message: ChatMessage) {
-        self.tableView.reloadData()
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.tableView.reloadData()
+            self.tableView.scrollToRow(
+                at: IndexPath(row: chatSession.messages.count - 1, section: 0),
+                at: .bottom,
+                animated: true
+            )
+        }   
     }
 }
 
@@ -79,7 +97,6 @@ extension PrivateChatViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
         let chatMessage = self.chatSession.messages[indexPath.row]
         if chatMessage.isMine {
             let cell = tableView.dequeueReusableCell(withIdentifier: "myChatCell") as! MyChatMessageCell

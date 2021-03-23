@@ -102,12 +102,6 @@ class SpoilerFreeChatSession: InternalChatSessionProtocol {
         realChatRoom.disconnect()
     }
 
-    func sendMessage(_ clientMessage: ClientMessage) -> Promise<ChatMessageID> {
-        var clientMessage = clientMessage
-        clientMessage.timeStamp = self.playerTimeSource?()
-        return realChatRoom.sendMessage(clientMessage)
-    }
-
     func deleteMessage(_ clientMessage: ClientMessage, messageID: String) -> Promise<ChatMessageID> {
         var clientMessage = clientMessage
         clientMessage.timeStamp = self.playerTimeSource?()
@@ -155,6 +149,9 @@ class SpoilerFreeChatSession: InternalChatSessionProtocol {
         completion(.success(()))
     }
 
+    func sendMessage(_ chatMessage: NewChatMessage, completion: @escaping (Result<ChatMessageID, Error>) -> Void) {
+        realChatRoom.sendMessage(chatMessage, completion: completion)
+    }
 }
 
 extension SpoilerFreeChatSession: InternalChatSessionDelegate {

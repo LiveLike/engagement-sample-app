@@ -222,16 +222,13 @@ class InternalContentSession: ContentSession {
             playerTimeSource = { [weak self] in
                 self?.config.syncTimeSource?()
             }
-        } else {
+        } else if let delegate = self.delegate {
             playerTimeSource = { [weak self] in
-                if
-                    let self = self,
-                    let delegate = self.delegate
-                {
-                    return delegate.playheadTimeSource(self)?.timeIntervalSince1970
-                }
-                return nil
+                guard let self = self else { return nil }
+                return delegate.playheadTimeSource(self)?.timeIntervalSince1970
             }
+        } else {
+            playerTimeSource = nil
         }
     }
     
