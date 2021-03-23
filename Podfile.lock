@@ -27,7 +27,7 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   EngagementSDK:
-    :commit: 21b3b1d22a119d557a27eb1835944dcc6d5b09ae
+    :commit: 7d5c18daafe0afb466b991122e2a4c32a8bba2ad
     :git: "git@bitbucket.org:livelike/livelike-ios-sdk.git"
 
 SPEC CHECKSUMS:

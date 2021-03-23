@@ -478,12 +478,15 @@ extension PubSubChatRoom: PubSubChannelDelegate {
                 actions: message.messageActions,
                 userID: userID
             )
-            
-            self.messages.append(chatMessage)
-            self.publicDelegates.publish { $0.chatSession(self, didRecieveNewMessage: chatMessage)}
-            self.delegates.publish { $0.chatSession(self, didRecieveNewMessage: chatMessage)}
             chatMessages[message.pubsubID] = chatMessage
-            self.chatMessageIDsToPubSubIDs[chatMessage.messageID] = message.pubsubID
+            if self.chatMessageIDsToPubSubIDs[chatMessage.messageID] == nil {
+                // only publish downstream here if pubsub id doesn't exist yet
+                // if pubsub id already exists then this message was mocked and published earlier
+                self.chatMessageIDsToPubSubIDs[chatMessage.messageID] = message.pubsubID
+                self.messages.append(chatMessage)
+                self.publicDelegates.publish { $0.chatSession(self, didRecieveNewMessage: chatMessage)}
+                self.delegates.publish { $0.chatSession(self, didRecieveNewMessage: chatMessage)}
+            }
         case .messageDeleted(let payload):
             let chatMessageID = ChatMessageID(payload.id)
             self.delegates.publish { $0.chatSession(self, didRecieveMessageDeleted: chatMessageID)}
