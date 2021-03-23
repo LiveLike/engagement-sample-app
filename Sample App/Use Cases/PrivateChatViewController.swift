@@ -12,7 +12,9 @@ import EngagementSDK
 @available(iOS 13.0, *)
 class PrivateChatViewController: UIViewController {
     
-    private let chatSession: ChatSession
+    private var chatSession: ChatSession!
+    private let sdk: EngagementSDK
+    private let contentSession: ContentSession
     
     private let tableView: UITableView = {
         let tableView = UITableView()
@@ -34,8 +36,9 @@ class PrivateChatViewController: UIViewController {
     
     private var isLoading: Bool = true
     
-    init(chatSession: ChatSession) {
-        self.chatSession = chatSession
+    init(clientID: String, programID: String) {
+        self.sdk = EngagementSDK(config: EngagementSDKConfig(clientID: clientID))
+        self.contentSession = sdk.contentSession(config: SessionConfiguration(programID: programID))
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -62,25 +65,33 @@ class PrivateChatViewController: UIViewController {
             quickMessageButton.bottomAnchor.constraint(equalTo: view.safeBottomAnchor, constant: -10)
         ])
         
-        chatSession.addDelegate(self)
-        tableView.dataSource = self
-        tableView.delegate = self
         tableView.register(MyTextMessageCell.self, forCellReuseIdentifier: "myTextCell")
         tableView.register(MyImageMessageCell.self, forCellReuseIdentifier: "myImageCell")
         tableView.register(UserTextMessageCell.self, forCellReuseIdentifier: "userTextCell")
         tableView.register(UserImageMessageCell.self, forCellReuseIdentifier: "userImageCell")
         quickMessageButton.addTarget(self, action: #selector(sendCustomMessage), for: .touchUpInside)
-        
-        // Starts table at bottom
-        DispatchQueue.main.async { [weak self] in
+        self.contentSession.getChatSession { [weak self] result in
             guard let self = self else { return }
-            self.tableView.reloadData()
-            self.tableView.scrollToRow(
-                at: IndexPath(row: self.chatSession.messages.count - 1, section: 0),
-                at: .bottom,
-                animated: false
-            )
-            self.isLoading = false
+            switch result {
+            case .success(let chatSession):
+                self.chatSession = chatSession
+                chatSession.addDelegate(self)
+                self.tableView.dataSource = self
+                self.tableView.delegate = self
+                
+                // Starts table at bottom
+                DispatchQueue.main.async {
+                    self.tableView.reloadData()
+                    self.tableView.scrollToRow(
+                        at: IndexPath(row: self.chatSession.messages.count - 1, section: 0),
+                        at: .bottom,
+                        animated: false
+                    )
+                    self.isLoading = false
+                }
+            case .failure(let error):
+                print(error)
+            }
         }
     }
     

@@ -277,21 +277,10 @@ class HomeViewController: UIViewController {
             return
         }
         
-        let sdk: EngagementSDK = EngagementSDK(config: EngagementSDKConfig(clientID: clientID))
-        let session: ContentSession = sdk.contentSession(config: SessionConfiguration(programID: programID))
-        session.getChatSession { result in
-            switch result {
-            case .success(let chatSession):
-                let createEnterChatRoomUseCase = PrivateChatViewController(chatSession: chatSession)
+        let createEnterChatRoomUseCase = PrivateChatViewController(clientID: clientID, programID: programID)
 
-                createEnterChatRoomUseCase.modalPresentationStyle = .fullScreen
-                self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)
-            case .failure(let error):
-                print(error)
-            }
-            
-        }
-
+        createEnterChatRoomUseCase.modalPresentationStyle = .fullScreen
+        self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)
         
     }
     
