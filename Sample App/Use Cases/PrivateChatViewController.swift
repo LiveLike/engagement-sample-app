@@ -63,8 +63,10 @@ class PrivateChatViewController: UIViewController {
         chatSession.addDelegate(self)
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.register(MyChatMessageCell.self, forCellReuseIdentifier: "myChatCell")
-        tableView.register(UserChatMessageCell.self, forCellReuseIdentifier: "userChatCell")
+        tableView.register(MyTextMessageCell.self, forCellReuseIdentifier: "myTextCell")
+        tableView.register(MyImageMessageCell.self, forCellReuseIdentifier: "myImageCell")
+        tableView.register(UserTextMessageCell.self, forCellReuseIdentifier: "userTextCell")
+        tableView.register(UserImageMessageCell.self, forCellReuseIdentifier: "userImageCell")
         quickMessageButton.addTarget(self, action: #selector(sendCustomMessage), for: .touchUpInside)
         
         // Starts table at bottom
@@ -125,12 +127,18 @@ extension PrivateChatViewController: ChatSessionDelegate {
     func chatSession(_ chatSession: ChatSession, didRecieveNewMessage message: ChatMessage) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.tableView.reloadData()
-            self.tableView.scrollToRow(
-                at: IndexPath(row: chatSession.messages.count - 1, section: 0),
-                at: .bottom,
-                animated: true
+            self.tableView.insertRows(
+                at: [IndexPath(row: chatSession.messages.count - 1, section: 0)],
+                with: .none
             )
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.tableView.scrollToRow(
+                    at: IndexPath(row: chatSession.messages.count - 1, section: 0),
+                    at: .bottom,
+                    animated: true
+                )
+            }
+            
         }   
     }
 }
@@ -144,14 +152,27 @@ extension PrivateChatViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let chatMessage = self.chatSession.messages[indexPath.row]
         if chatMessage.isMine {
-            let cell = tableView.dequeueReusableCell(withIdentifier: "myChatCell") as! MyChatMessageCell
-            cell.configure(chatMessage)
-            return cell
+            if chatMessage.imageURL != nil {
+                let cell = tableView.dequeueReusableCell(withIdentifier: "myImageCell") as! MyImageMessageCell
+                cell.configure(chatMessage)
+                return cell
+            } else {
+                let cell = tableView.dequeueReusableCell(withIdentifier: "myTextCell") as! MyTextMessageCell
+                cell.configure(chatMessage)
+                return cell
+            }
         } else {
-            let cell = tableView.dequeueReusableCell(withIdentifier: "userChatCell") as! UserChatMessageCell
-            cell.configure(chatMessage)
-            return cell
+            if chatMessage.imageURL != nil {
+                let cell = tableView.dequeueReusableCell(withIdentifier: "userImageCell") as! UserImageMessageCell
+                cell.configure(chatMessage)
+                return cell
+            } else {
+                let cell = tableView.dequeueReusableCell(withIdentifier: "userTextCell") as! UserTextMessageCell
+                cell.configure(chatMessage)
+                return cell
+            }
         }
+            
     }
 }
 
@@ -159,7 +180,7 @@ extension PrivateChatViewController: UITableViewDataSource {
 extension PrivateChatViewController: UITableViewDelegate { }
 
 @available(iOS 13.0, *)
-class MyChatMessageCell: UITableViewCell {
+class MyTextMessageCell: UITableViewCell {
     
     private let containerView: UIView = {
         let view = UIView()
@@ -213,13 +234,83 @@ class MyChatMessageCell: UITableViewCell {
 }
 
 @available(iOS 13.0, *)
-class UserChatMessageCell: UITableViewCell {
+class MyImageMessageCell: UITableViewCell {
+    
+    private let containerView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.backgroundColor = .systemBlue
+        view.layer.cornerRadius = 10
+        return view
+    }()
+    
+    private let messageImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.contentMode = .scaleAspectFit
+        return imageView
+    }()
+    
+    private var imageHeightConstraint: NSLayoutConstraint!
+    private var imageWidthConstraint: NSLayoutConstraint!
+    
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        
+        backgroundColor = .clear
+        contentView.addSubview(containerView)
+        containerView.addSubview(messageImageView)
+        NSLayoutConstraint.activate([
+            containerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 2),
+            containerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            containerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -2),
+            containerView.widthAnchor.constraint(lessThanOrEqualTo: contentView.widthAnchor, multiplier: 0.6),
+            
+            messageImageView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 10),
+            messageImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 10),
+            messageImageView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -10),
+            messageImageView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -10),
+            
+        ])
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func configure(_ chatMessage: ChatMessage) {
+        guard let imageURL = chatMessage.imageURL else { return }
+        let imageSize = chatMessage.imageSize ?? CGSize(width: 200, height: 200)
+        
+        NSLayoutConstraint.activate([
+            messageImageView.heightAnchor.constraint(equalToConstant: imageSize.height),
+            messageImageView.widthAnchor.constraint(equalToConstant: imageSize.width)
+        ])
+        
+        URLSession.shared.dataTask(with: imageURL) { [weak self] data, _, _ in
+            guard let self = self else { return }
+            guard let data = data else { return }
+            DispatchQueue.main.async {
+                self.messageImageView.image = UIImage(data: data)
+            }
+        }.resume()
+
+    }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        messageImageView.image = nil
+    }
+}
+
+@available(iOS 13.0, *)
+class UserTextMessageCell: UITableViewCell {
     
     private let containerView: UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
         view.backgroundColor = .secondarySystemBackground
-        view.layer.cornerRadius = 6
+        view.layer.cornerRadius = 10
         return view
     }()
     
@@ -278,5 +369,88 @@ class UserChatMessageCell: UITableViewCell {
         
         nicknameLabel.text = nil
         label.text = nil
+    }
+}
+
+@available(iOS 13.0, *)
+class UserImageMessageCell: UITableViewCell {
+    
+    private let containerView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.backgroundColor = .secondarySystemBackground
+        view.layer.cornerRadius = 10
+        return view
+    }()
+    
+    private let nicknameLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 12)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private let messageImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.contentMode = .scaleAspectFit
+        return imageView
+    }()
+    
+    private var imageHeightConstraint: NSLayoutConstraint!
+    private var imageWidthConstraint: NSLayoutConstraint!
+    
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        
+        backgroundColor = .clear
+        contentView.addSubview(containerView)
+        containerView.addSubview(nicknameLabel)
+        containerView.addSubview(messageImageView)
+        NSLayoutConstraint.activate([
+            containerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 2),
+            containerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            containerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -2),
+            containerView.widthAnchor.constraint(lessThanOrEqualTo: contentView.widthAnchor, multiplier: 0.6),
+            
+            nicknameLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 10),
+            nicknameLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 10),
+            nicknameLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -10),
+            nicknameLabel.bottomAnchor.constraint(equalTo: messageImageView.topAnchor),
+            
+            messageImageView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 10),
+            messageImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 10),
+            messageImageView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -10),
+            messageImageView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -10),
+            
+        ])
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func configure(_ chatMessage: ChatMessage) {
+        guard let imageURL = chatMessage.imageURL else { return }
+        let imageSize = chatMessage.imageSize ?? CGSize(width: 200, height: 200)
+        
+        NSLayoutConstraint.activate([
+            messageImageView.heightAnchor.constraint(equalToConstant: imageSize.height),
+            messageImageView.widthAnchor.constraint(equalToConstant: imageSize.width)
+        ])
+        
+        URLSession.shared.dataTask(with: imageURL) { [weak self] data, _, _ in
+            guard let self = self else { return }
+            guard let data = data else { return }
+            DispatchQueue.main.async {
+                self.messageImageView.image = UIImage(data: data)
+            }
+        }.resume()
+
+    }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        messageImageView.image = nil
     }
 }
