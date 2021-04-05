@@ -206,6 +206,7 @@ class PollWidgetViewController: Widget {
     private func enterInteractingState() {
         widgetView.isUserInteractionEnabled = true
         self.interactableState = .openToInteraction
+        self.model.markAsInteractive()
         self.widgetView.options.forEach {
             $0.isUserInteractionEnabled = true
         }

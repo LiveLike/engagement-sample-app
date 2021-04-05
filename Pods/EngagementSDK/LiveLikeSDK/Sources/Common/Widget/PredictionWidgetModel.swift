@@ -192,6 +192,12 @@ public class PredictionWidgetModel: PredictionWidgetModelable {
             completion(.failure(error))
         }
     }
+    
+    public func markAsInteractive() {
+        self.eventRecorder.record(
+            .widgetBecameInteractive(programID: programID, kind: kind, widgetID: id)
+        )
+    }
 
     // MARK: Types
 

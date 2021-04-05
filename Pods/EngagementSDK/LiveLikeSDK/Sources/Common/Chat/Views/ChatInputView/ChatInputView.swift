@@ -287,16 +287,21 @@ public class ChatInputView: UIView {
 
     @IBAction func sendButtonPressed() {
         textField.accessibilityLabel = ""
-        delegate?.chatInputSendPressed(message: ChatInputMessage(
-            message: textField.text,
-            image: textField.imageAttachmentData))
-
-        let message = ChatInputMessage(
-            message: textField.text,
-            image: textField.imageAttachmentData
-        )
-        if !message.isEmpty {
-            sendMessage(message)
+        
+        let newChatMessage: NewChatMessage? = {
+            if let inputFieldText = textField.text, !inputFieldText.isEmpty {
+                return NewChatMessage(text: inputFieldText)
+            } else if let imageData = textField.imageAttachmentData {
+                let imageSize = UIImage.decode(imageData)?.size ?? CGSize(width: 100, height: 100)
+                return NewChatMessage(imageData: imageData, imageSize: imageSize)
+            } else {
+                return nil
+            }
+        }()
+        
+        if let newChatMessage = newChatMessage {
+            delegate?.chatInputSendPressed(message: newChatMessage)
+            sendMessage(newChatMessage)
         } else {
             if keyboardIsVisible {
                 let keyboardProperties = KeyboardHiddenProperties(keyboardType: keyboardType, keyboardHideMethod: .emptySend, messageID: nil)
@@ -306,58 +311,17 @@ public class ChatInputView: UIView {
         reset()
     }
 
-    func sendMessage(_ message: ChatInputMessage) {
+    func sendMessage(_ message: NewChatMessage) {
         guard let chatSession = chatSession else {
             return
         }
-       
-        var chatUserMessage: NewChatMessage
-        if let message = message.message {
-            chatUserMessage = NewChatMessage(text: message)
-        } else {
-            if let imageURL = message.imageURL {
-                chatUserMessage = NewChatMessage(
-                    imageURL: imageURL,
-                    imageSize: message.imageSize ?? CGSize(width: 100, height: 100)
-                )
-            } else {
-                return
-            }
-        }
         
-        chatSession.sendMessage(chatUserMessage) { [weak self] result in
+        let newMessage = chatSession.sendMessage(message) { [weak self] result in
             guard let self = self else { return }
             
             switch result {
-            case .success(let chatMessageID):
-                guard let messageText = message.message else { return }
-
-                let stickerIDs = messageText.stickerShortcodes
-                let indices = ChatSentMessageProperties.calculateStickerIndices(stickerIDs: stickerIDs, stickers: self.stickerPacks)
-                let sentProperties = ChatSentMessageProperties(
-                    characterCount: messageText.count,
-                    messageId: chatMessageID.asString,
-                    chatRoomId: chatSession.roomID,
-                    stickerShortcodes: stickerIDs.map({ ":\($0):"}),
-                    stickerCount: stickerIDs.count,
-                    stickerIndices: indices,
-                    hasExternalImage: message.imageURL != nil
-                )
-                chatSession.eventRecorder.record(.chatMessageSent(properties: sentProperties))
-
-                var superProps = [SuperProperty]()
-                let now = Date()
-                superProps.append(.timeOfLastChatMessage(time: now))
-                if messageText.containsEmoji {
-                    superProps.append(.timeOfLastEmoji(time: now))
-                }
-                chatSession.superPropertyRecorder.register(superProps)
-
-                chatSession.peoplePropertyRecorder.record([.timeOfLastChatMessage(time: now)])
-
-                let keyboardProperties = KeyboardHiddenProperties(keyboardType: self.keyboardType, keyboardHideMethod: .messageSent, messageID: chatMessageID.asString)
-                chatSession.eventRecorder.record(.keyboardHidden(properties: keyboardProperties))
-                
+            case .success(let chatMessage):
+                log.info("Chat Message ID: \(chatMessage.id) successfuly sent")
             case .failure(let error):
                 log.error(error.localizedDescription)
                 if error.localizedDescription == PubNubChannelError.sendMessageFailedAccessDenied.errorDescription {
@@ -365,6 +329,10 @@ public class ChatInputView: UIView {
                 }
             }
         }
+        
+        // Report Analytics
+        let keyboardProperties = KeyboardHiddenProperties(keyboardType: self.keyboardType, keyboardHideMethod: .messageSent, messageID: newMessage.id.asString)
+        chatSession.eventRecorder.record(.keyboardHidden(properties: keyboardProperties))
     }
 }
 
@@ -441,48 +409,8 @@ private extension UITextInput {
     }
 }
 
-struct ChatInputMessage {
-    let message: String?
-    let imageURL: URL?
-    
-    private var imageAttachmentSize: CGSize?
-    var imageSize: CGSize? {
-        return imageAttachmentSize
-    }
-
-    init(message: String?, image: Data?) {
-        self.message = message
-
-        if let image = image {
-            let imageName = "\(Int64(NSDate().timeIntervalSince1970 * 1000)).gif"
-            let fileURL = "mock:\(imageName)"
-            Cache.shared.set(object: image, key: fileURL, completion: nil)
-            self.imageURL = URL(string: fileURL)
-            
-            if let tempImage = UIImage.decode(image) {
-                self.imageAttachmentSize = tempImage.size
-            }
-            
-        } else {
-            self.imageURL = nil
-        }
-    }
-    
-    var isEmpty: Bool {
-        if let message = message?.trimmingCharacters(in: .whitespaces), !message.isEmpty {
-            return false
-        }
-
-        if imageURL != nil {
-            return false
-        }
-
-        return true
-    }
-}
-
 protocol ChatInputViewDelegate: AnyObject {
-    func chatInputSendPressed(message: ChatInputMessage)
+    func chatInputSendPressed(message: NewChatMessage)
     func chatInputKeyboardToggled()
     func chatInputBeginEditing(with textField: UITextField)
     func chatInputEndEditing(with textField: UITextField)

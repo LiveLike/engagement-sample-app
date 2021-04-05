@@ -69,6 +69,7 @@ class CustomTextPredictionWidgetViewController: Widget {
                 }
             }
         }
+        model.markAsInteractive()
         model.registerImpression()
     }
 

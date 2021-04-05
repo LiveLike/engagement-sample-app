@@ -235,6 +235,12 @@ public class PollWidgetModel: PollWidgetModelable {
             self.isVotingInProgress = false
         }
     }
+    
+    public func markAsInteractive() {
+        self.eventRecorder.record(
+            .widgetBecameInteractive(programID: programID, kind: kind, widgetID: id)
+        )
+    }
 
     // MARK: Types
     

@@ -14,9 +14,7 @@ public class ChatMessage: Equatable {
     // MARK: - Public Properties
     
     /// The unique identifer of the message
-    public var id: String {
-        return messageID.asString
-    }
+    public let id: ChatMessageID
     
     @available(*, deprecated, renamed: "text")
     public var message: String {
@@ -66,9 +64,6 @@ public class ChatMessage: Equatable {
     
     // MARK: - Internal Properties
     
-    /// Unique message ID.
-    var messageID: ChatMessageID
-    
     /// Chat Room ID
     let roomID: String
     
@@ -98,7 +93,7 @@ public class ChatMessage: Equatable {
         filteredMessage: String?,
         filteredReasons: Set<ChatFilter>
     ) {
-        self.messageID = id
+        self.id = id
         self.roomID = roomID
         self.text = message
         self.sender = sender
@@ -119,7 +114,7 @@ public class ChatMessage: Equatable {
     // MARK: - Equatable
     
     public static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
-        return lhs.messageID == rhs.messageID
+        return lhs.id == rhs.id
     }
 }
 

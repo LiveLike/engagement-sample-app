@@ -7,10 +7,12 @@
 
 import UIKit
 
+/// A type representing a unique ID of a `Chat Message`
 public struct ChatMessageID: Equatable, Hashable {
     private let internalId: AnyHashable
 
-    var asString: String {
+    /// The stringified id
+    public var asString: String {
         return internalId.description
     }
 

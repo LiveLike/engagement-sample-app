@@ -157,6 +157,7 @@ class PredictionWidgetViewController: Widget {
 
     private func enterInteractingState(){
         self.predictionWidgetView.isUserInteractionEnabled = true
+        self.model.markAsInteractive()
         self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
     }
     

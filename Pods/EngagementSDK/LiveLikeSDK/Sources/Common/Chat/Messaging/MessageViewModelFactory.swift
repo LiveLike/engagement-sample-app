@@ -54,7 +54,7 @@ class MessageViewModelFactory {
             }
             
             let messageViewModel = MessageViewModel(
-                id: chatMessage.messageID,
+                id: chatMessage.id,
                 message: preparedMessage.0,
                 sender: sender,
                 username: sender.nickName,

@@ -1,18 +1,18 @@
 PODS:
-  - EngagementSDK (2.20):
+  - EngagementSDK (2.21):
     - lottie-ios (~> 3.0)
     - Mixpanel-swift (~> 2.7)
     - PubNub (~> 4.12.0)
   - lottie-ios (3.2.1)
-  - Mixpanel-swift (2.9.0):
-    - Mixpanel-swift/Complete (= 2.9.0)
-  - Mixpanel-swift/Complete (2.9.0)
+  - Mixpanel-swift (2.9.1):
+    - Mixpanel-swift/Complete (= 2.9.1)
+  - Mixpanel-swift/Complete (2.9.1)
   - PubNub (4.12.0):
     - PubNub/Core (= 4.12.0)
   - PubNub/Core (4.12.0)
 
 DEPENDENCIES:
-  - "EngagementSDK (from `git@bitbucket.org:livelike/livelike-ios-sdk.git`, branch `feature/ES-1580-chat-session-updates`)"
+  - "EngagementSDK (from `git@bitbucket.org:livelike/livelike-ios-sdk.git`, branch `jelzon-test-release-2.21`)"
 
 SPEC REPOS:
   trunk:
@@ -22,20 +22,20 @@ SPEC REPOS:
 
 EXTERNAL SOURCES:
   EngagementSDK:
-    :branch: feature/ES-1580-chat-session-updates
+    :branch: jelzon-test-release-2.21
     :git: "git@bitbucket.org:livelike/livelike-ios-sdk.git"
 
 CHECKOUT OPTIONS:
   EngagementSDK:
-    :commit: 7d5c18daafe0afb466b991122e2a4c32a8bba2ad
+    :commit: 72c1f23ccd7aae22d3533c041cd82c887fdef0ca
     :git: "git@bitbucket.org:livelike/livelike-ios-sdk.git"
 
 SPEC CHECKSUMS:
-  EngagementSDK: 8d20b3d6af2558943272e7b36004a88b0a5e55e1
+  EngagementSDK: 48fb41430ef4783fb3ee01a3cecfb1b9b9d76579
   lottie-ios: 106e92eaf11fbed0a76590b4cdb9b5ec26123ff7
-  Mixpanel-swift: a6832b31ddd3880aebe803ae783708d35f28c256
+  Mixpanel-swift: f945f36adc3b76fc6517df98682211d3c0bf5bbe
   PubNub: 44e2eb39746e7231b98b978a8e3b9726b11dca9c
 
-PODFILE CHECKSUM: e7b6912eceb8069df32fb462ab5c78249a7a80a2
+PODFILE CHECKSUM: 58f92e226acebabc64e0c4f5c3dd896ecd46499c
 
 COCOAPODS: 1.9.1

@@ -237,6 +237,7 @@ private extension QuizWidgetViewController {
     func enterInteractingState() {
         quizWidget.isUserInteractionEnabled = true
         self.interactableState = .openToInteraction
+        self.model.markAsInteractive()
         self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
     }
     

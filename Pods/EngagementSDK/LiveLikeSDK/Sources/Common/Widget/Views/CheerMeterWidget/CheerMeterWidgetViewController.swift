@@ -213,6 +213,7 @@ private extension CheerMeterWidgetViewController {
     private func enterInteractionState() {
         cheerMeterView.playVersusAnimation()
         interactableState = .openToInteraction
+        self.model.markAsInteractive()
         userDidInteract = true
         cheerMeterView.showScores()
         self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)

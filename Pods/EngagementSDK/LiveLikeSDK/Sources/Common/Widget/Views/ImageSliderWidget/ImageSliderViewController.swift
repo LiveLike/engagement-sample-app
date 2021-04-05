@@ -209,6 +209,7 @@ class ImageSliderViewController: Widget {
     private func enterInteractingState() {
         imageSliderView.isUserInteractionEnabled = true
         self.interactableState = .openToInteraction
+        self.model.markAsInteractive()
         self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
     }
     

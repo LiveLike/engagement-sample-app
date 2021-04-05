@@ -35,6 +35,7 @@ extension AnalyticsEvent.Name {
     static let widgetDisplayed: Name = "Widget Displayed"
     static let widgetInteracted: Name = "Widget Interacted"
     static let widgetEngaged: Name = "Widget Engaged"
+    static let widgetBecameInteractive: Name = "Widget Became Interactive"
     static let widgetUserDismissed: Name = "Widget Dismissed"
     static let chatScrollInitiated: Name = "Chat Scroll Initiated"
     static let chatScrollCompleted: Name = "Chat Scroll Completed"
@@ -50,6 +51,18 @@ extension AnalyticsEvent.Name {
 }
 
 extension AnalyticsEvent {
+    
+    static func widgetBecameInteractive(programID: String, kind: WidgetKind, widgetID: String) -> AnalyticsEvent {
+        return AnalyticsEvent(
+            name: .widgetBecameInteractive,
+            data: [
+                .programId: programID,
+                .widgetType: kind.analyticsName,
+                .widgetId: widgetID
+            ]
+        )
+    }
+    
     static func widgetDisplayed(programID: String, kind: String, widgetId: String, widgetLink: URL?) -> AnalyticsEvent {
         var data: [Attribute: Any] = [
             .programId: programID,

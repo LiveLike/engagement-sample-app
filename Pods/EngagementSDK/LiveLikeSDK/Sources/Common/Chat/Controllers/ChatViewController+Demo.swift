@@ -49,7 +49,7 @@ public extension ChatViewController {
         }.then { reactions -> Promise<Void> in
             guard let reactionID = reactions[safe: index]?.id else { return Promise(error: NilError() )}
             return chatSession.sendMessageReaction(
-                message.messageID,
+                message.id,
                 reaction: reactionID,
                 reactionsToRemove: currentReactionView
             )

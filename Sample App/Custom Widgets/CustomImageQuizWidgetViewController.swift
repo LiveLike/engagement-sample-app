@@ -68,6 +68,7 @@ class CustomImageQuizWidgetViewController: Widget, UICollectionViewDelegate, UIC
                 self.delegate?.widgetDidEnterState(widget: self, state: .finished)
             }
         }
+        model.markAsInteractive()
         model.registerImpression()
         view = widgetView
     }

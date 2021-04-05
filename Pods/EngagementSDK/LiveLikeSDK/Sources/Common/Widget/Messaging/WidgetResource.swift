@@ -169,7 +169,7 @@ enum WidgetResource: CustomStringConvertible, Decodable {
         case let .cheerMeterCreated(payload):
             return "\(payload.kind.stringValue) Titled: \(payload.question)"
         case let .socialEmbed(payload):
-            return "\(payload.kind.stringValue) Titled: \(payload.comment)"
+            return "\(payload.kind.stringValue) Titled: \(String(describing: payload.comment))"
         }
     }
 }

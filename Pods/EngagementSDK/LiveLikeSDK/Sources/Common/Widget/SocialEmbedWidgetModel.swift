@@ -97,6 +97,11 @@ public class SocialEmbedWidgetModel: SocialEmbedWidgetModelable {
         }.catch { error in
             completion(.failure(error))
         }
-
+    }
+    
+    public func markAsInteractive() {
+        self.eventRecorder.record(
+            .widgetBecameInteractive(programID: programID, kind: kind, widgetID: id)
+        )
     }
 }

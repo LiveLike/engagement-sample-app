@@ -176,6 +176,9 @@ class AlertWidgetViewController: Widget {
     private func enterInteractingState() {
         alertWidget.isUserInteractionEnabled = true
         self.interactableState = .openToInteraction
+        if model.linkURL != nil {
+            self.model.markAsInteractive()
+        }
         self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
     }
     

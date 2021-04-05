@@ -28,6 +28,7 @@ struct SocialEmbedWidgetResource: Decodable {
         let url: URL
         let oembed: OEmbed
         
+        //swiftlint:disable nesting
         struct OEmbed: Decodable {
             let html: String
             let providerName: String
