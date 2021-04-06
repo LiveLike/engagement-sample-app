@@ -8,42 +8,70 @@ class CustomWidgetBarTimer: UIView {
         return view
     }()
 
-    var progressViewTrailingConstraintToSuperviewLeadingAnchor: NSLayoutConstraint!
-    var progressViewTrailingConstraintToSuperviewTrailingAnchor: NSLayoutConstraint!
+    var progressViewWidtchConstraint: NSLayoutConstraint!
+
+    private var totalDuration: TimeInterval?
+    private var endTime: Date?
 
     init() {
         super.init(frame: .zero)
-        backgroundColor = .white
+        backgroundColor = .clear
 
         addSubview(progressView)
-        progressViewTrailingConstraintToSuperviewLeadingAnchor = progressView.trailingAnchor.constraint(equalTo: leadingAnchor)
-        progressViewTrailingConstraintToSuperviewTrailingAnchor = progressView.trailingAnchor.constraint(equalTo: trailingAnchor)
+        self.progressViewWidtchConstraint = progressView.widthAnchor.constraint(equalToConstant: 0)
 
         NSLayoutConstraint.activate([
             progressView.topAnchor.constraint(equalTo: topAnchor),
             progressView.leadingAnchor.constraint(equalTo: leadingAnchor),
             progressView.bottomAnchor.constraint(equalTo: bottomAnchor),
-            progressViewTrailingConstraintToSuperviewLeadingAnchor
+            progressViewWidtchConstraint
         ])
+
+        NotificationCenter.default.addObserver(self, selector: #selector(didBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    @objc private func didBecomeActive() {
+        guard let totalDuration = totalDuration, let endTime = endTime else { return }
+        guard totalDuration > 0 else { return }
+        let remainingDuration: TimeInterval = endTime.timeIntervalSince1970 - Date().timeIntervalSince1970
+        let elapsedDurationPercent = (totalDuration - remainingDuration) / totalDuration
+
+        if remainingDuration > 0 {
+            self.progressViewWidtchConstraint.constant = CGFloat(elapsedDurationPercent) * self.bounds.width
+            self.layoutIfNeeded()
+            self.progressView.isHidden = false
+
+            UIView.animate(withDuration: remainingDuration, delay: 0, options: .curveLinear, animations: { [weak self] in
+                guard let self = self else { return }
+                self.progressViewWidtchConstraint.constant = self.bounds.width
+                self.layoutIfNeeded()
+            }, completion: { _ in
+                self.progressView.isHidden = true
+            })
+        }
+    }
+
     func play(duration: TimeInterval) {
+        self.totalDuration = duration
+        self.endTime = Date() + duration
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.progressViewTrailingConstraintToSuperviewTrailingAnchor.isActive = false
-            self.progressViewTrailingConstraintToSuperviewLeadingAnchor.isActive = true
-            self.layoutIfNeeded()
 
-            UIView.animate(withDuration: duration, delay: 0, options: .curveLinear) { [weak self] in
+            UIView.animate(withDuration: duration, delay: 0, options: .curveLinear, animations: { [weak self] in
                 guard let self = self else { return }
-                self.progressViewTrailingConstraintToSuperviewTrailingAnchor.isActive = true
-                self.progressViewTrailingConstraintToSuperviewLeadingAnchor.isActive = false
+                self.progressViewWidtchConstraint.constant = self.bounds.width
                 self.layoutIfNeeded()
-            }
+            }, completion: { _ in
+                self.progressView.isHidden = true
+            })
         }
     }
 }
