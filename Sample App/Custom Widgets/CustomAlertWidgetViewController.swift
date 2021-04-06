@@ -50,6 +50,9 @@ class CustomAlertWidgetViewController: Widget {
             self.delegate?.widgetDidEnterState(widget: self, state: .finished)
         }
         model.registerImpression()
+        if model.linkURL != nil {
+            model.markAsInteractive()
+        }
     }
 
     @objc private func alertWidgetLinkButtonSelected() {
