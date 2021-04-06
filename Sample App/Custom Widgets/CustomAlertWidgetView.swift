@@ -160,14 +160,8 @@ class CustomAlertWidgetView: UIView {
         textLabel.text = text
         linkButton.setTitle(linkDescription, for: .normal)
 
-        do {
-            if let mediaURL = mediaURL {
-                let mediaData = try Data(contentsOf: mediaURL)
-                let mediaImage = UIImage(data: mediaData)
-                mediaImageView.image = mediaImage
-            }
-        } catch {
-            print(error)
+        if let mediaURL = mediaURL {
+            WidgetViewHelpers.setImage(mediaURL, on: mediaImageView)
         }
     }
 

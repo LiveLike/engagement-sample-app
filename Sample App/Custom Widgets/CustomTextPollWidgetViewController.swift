@@ -44,7 +44,7 @@ class CustomTextPollWidgetViewController: Widget {
         }
 
         choiceView.addSubview(timer)
-        timer.bottomAnchor.constraint(equalTo: choiceView.topAnchor).isActive = true
+        timer.topAnchor.constraint(equalTo: choiceView.topAnchor).isActive = true
         timer.leadingAnchor.constraint(equalTo: choiceView.leadingAnchor).isActive = true
         timer.trailingAnchor.constraint(equalTo: choiceView.trailingAnchor).isActive = true
         timer.heightAnchor.constraint(equalToConstant: 5).isActive = true

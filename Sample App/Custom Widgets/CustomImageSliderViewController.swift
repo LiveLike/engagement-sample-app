@@ -27,14 +27,19 @@ class CustomImageSliderViewController: Widget {
         return animationView
     }()
 
-    private var thumbImages: [UIImage] = []
+    private var thumbImages: [UIImage?]
 
     private var imageSliderView: CustomImageSliderView {
         return view as! CustomImageSliderView
     }
 
+    override var dismissSwipeableView: UIView {
+        return imageSliderView.headerView
+    }
+
     override init(model: ImageSliderWidgetModel) {
         self.model = model
+        self.thumbImages = .init(repeating: nil, count: model.options.count)
         super.init(model: model)
     }
 
@@ -46,15 +51,27 @@ class CustomImageSliderViewController: Widget {
         let imageSliderView = CustomImageSliderView()
 
         imageSliderView.titleLabel.text = model.question
-        model.options.forEach { option in
-            guard let imageData = try? Data(contentsOf: option.imageURL) else { return }
-            let thumbSize = CGSize(width: 40, height: 40)
-            guard let image = UIImage(data: imageData) else { return }
-            UIGraphicsBeginImageContextWithOptions(thumbSize, false, 0.0)
-            image.draw(in: CGRect(x: 0, y: 0, width: thumbSize.width, height: thumbSize.height))
-            guard let scaledImage: UIImage = UIGraphicsGetImageFromCurrentImageContext() else { return }
-            UIGraphicsEndImageContext()
-            thumbImages.append(scaledImage)
+        model.options.enumerated().forEach { index, option in
+            URLSession.shared.dataTask(with: option.imageURL) { [weak self] data, _, error in
+                guard let self = self else { return }
+                if let error = error {
+                    print("Failed to load image from url: \(error)")
+                    return
+                }
+                DispatchQueue.main.async {
+                    if let data = data {
+                        if let image = UIImage(data: data) {
+                            let thumbSize = CGSize(width: 40, height: 40)
+                            UIGraphicsBeginImageContextWithOptions(thumbSize, false, 0.0)
+                            image.draw(in: CGRect(x: 0, y: 0, width: thumbSize.width, height: thumbSize.height))
+                            guard let scaledImage: UIImage = UIGraphicsGetImageFromCurrentImageContext() else { return }
+                            UIGraphicsEndImageContext()
+                            self.thumbImages[index] = scaledImage
+                            self.updateThumbImage()
+                        }
+                    }
+                }
+            }.resume()
         }
 
         imageSliderView.slider.addTarget(self, action: #selector(sliderValueChanged), for: .valueChanged)
@@ -65,7 +82,7 @@ class CustomImageSliderViewController: Widget {
         magnitudeIndicator.heightAnchor.constraint(equalToConstant: 40).isActive = true
 
         imageSliderView.addSubview(timer)
-        timer.bottomAnchor.constraint(equalTo: imageSliderView.topAnchor).isActive = true
+        timer.topAnchor.constraint(equalTo: imageSliderView.topAnchor).isActive = true
         timer.leadingAnchor.constraint(equalTo: imageSliderView.leadingAnchor).isActive = true
         timer.trailingAnchor.constraint(equalTo: imageSliderView.trailingAnchor).isActive = true
         timer.heightAnchor.constraint(equalToConstant: 5).isActive = true
@@ -107,11 +124,15 @@ class CustomImageSliderViewController: Widget {
     }
 
     @objc private func sliderValueChanged() {
+        updateThumbImage()
+    }
+
+    private func updateThumbImage() {
         let newThumbImage = getThumbImage()
         imageSliderView.slider.setThumbImage(newThumbImage, for: .normal)
     }
 
-    private func getThumbImage() -> UIImage {
+    private func getThumbImage() -> UIImage? {
         if thumbImages.count == 1 {
             return thumbImages[0]
         } else {

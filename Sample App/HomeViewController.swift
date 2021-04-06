@@ -115,6 +115,17 @@ class HomeViewController: UIViewController {
         button.addTarget(self, action: #selector(customWidgetUseCaseButtonSelected ), for: .touchUpInside)
         return button
     }()
+
+    private let customWidgetTimelineModuleButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle("Custom Widget Timeline", for: .normal)
+        button.backgroundColor = .lightGray
+        button.contentHorizontalAlignment = .left
+        button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
+        button.addTarget(self, action: #selector(customWidgetTimelineModuleButtonSelected ), for: .touchUpInside)
+        return button
+    }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -143,6 +154,7 @@ class HomeViewController: UIViewController {
         stackView.addArrangedSubview(widgetChatSpoilerPreventionModule)
         stackView.addArrangedSubview(createEnterChatRoomModule)
         stackView.addArrangedSubview(customWidgetModuleButton)
+        stackView.addArrangedSubview(customWidgetTimelineModuleButton)
         
         // Loads previous client id and program id from UserDefaults
         clientIDTextField.text = Defaults.activeClientID
@@ -244,6 +256,26 @@ class HomeViewController: UIViewController {
         }
 
         let createEnterChatRoomUseCase = CustomWidgetsUseCase(clientID: clientID, programID: programID)
+
+        createEnterChatRoomUseCase.modalPresentationStyle = .fullScreen
+        self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)
+    }
+
+    @objc func customWidgetTimelineModuleButtonSelected() {
+        guard let clientID = Defaults.activeClientID, !clientID.isEmpty else {
+            presentInvalidClientIDAlert()
+            return
+        }
+
+        guard let programID = Defaults.activeProgramID, !programID.isEmpty else {
+            presentInvalidProgramIDAlert()
+            return
+        }
+
+        let sdk = EngagementSDK(config: EngagementSDKConfig(clientID: clientID))
+        let session = sdk.contentSession(config: SessionConfiguration(programID: programID))
+
+        let createEnterChatRoomUseCase = WidgetTimelineViewController(session: session)
 
         createEnterChatRoomUseCase.modalPresentationStyle = .fullScreen
         self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)

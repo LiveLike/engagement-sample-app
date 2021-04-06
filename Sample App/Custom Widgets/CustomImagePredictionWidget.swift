@@ -95,7 +95,7 @@ class CustomImagePredictionWidget: Widget, UICollectionViewDelegate, UICollectio
             let votePercentage: CGFloat = totalVoteCount > 0 ? CGFloat(answerCount) / CGFloat(totalVoteCount) : 0
 
             cell.setMode(mode: .showResults)
-            cell.setProgress(progress: votePercentage, color: CustomImageOptionCell.ProgressColors.green.color)
+            cell.setProgressAndColor(progress: votePercentage, color: CustomImageOptionCell.ProgressColors.green.color)
         }
     }
 
@@ -186,7 +186,7 @@ extension CustomImagePredictionWidget: PredictionWidgetModelDelegate {
 
             if optionView.choiceID == selectedChoice.id {
                 optionView.setMode(mode: .showResults)
-                optionView.setProgress(progress: CGFloat(voteCount) / CGFloat(model.totalVoteCount),
+                optionView.setProgressAndColor(progress: CGFloat(voteCount) / CGFloat(model.totalVoteCount),
                                        color: CustomImageOptionCell.ProgressColors.green.color)
             } else {
                 optionView.setMode(mode: .showResults)
