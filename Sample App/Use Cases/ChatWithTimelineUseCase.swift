@@ -1,18 +1,21 @@
 //
-//  MMLUseCase2021.swift
-//  LiveLikeTestApp
+//  ChatWithTimelineUseCase.swift
+//  Sample App
 //
-//  Created by Mike Moloksher on 1/21/21.
+//  Created by Mike Moloksher on 4/20/21.
+//  Copyright © 2021 LiveLike. All rights reserved.
 //
 
 import EngagementSDK
 import UIKit
 
-class MMLUseCase2021: UIViewController {
-    // private var sdk: EngagementSDK!
-    // private var session: ContentSession!
-
-    // private let apiOrigin: URL
+class ChatWithTimelineUseCase: UIViewController {
+    
+    private let clientID: String
+    private let programID: String
+    private var sdk: EngagementSDK
+    private var session: ContentSession
+    
     private var tabs: UISegmentedControl = {
         let tabs = UISegmentedControl(items: ["Chat", "Widgets"])
         tabs.selectedSegmentIndex = 0
@@ -27,14 +30,16 @@ class MMLUseCase2021: UIViewController {
     }()
 
     private var chatController: ChatViewController = ChatViewController()
-    private var timelineViewController: LLCustomWidgetTimelineViewController!
-    private var liveLikeSDK: LiveLikeSDKBuilder
+    private var timelineViewController: WidgetTimelineViewController!
 
     init(clientID: String, programID: String) {
-        // self.apiOrigin = apiOrigin // TODO: come back
-        liveLikeSDK = LiveLikeSDKBuilder(clientID: clientID, programID: programID)
-        chatController = liveLikeSDK.getChatViewController()
-        timelineViewController = liveLikeSDK.makeTimelineViewController()
+        self.clientID = clientID
+        self.programID = programID
+
+        let config = EngagementSDKConfig(clientID: clientID)
+        sdk = EngagementSDK(config: config)
+        session = sdk.contentSession(config: SessionConfiguration(programID: programID))
+        
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -44,6 +49,10 @@ class MMLUseCase2021: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        chatController = self.getChatViewController()
+        timelineViewController = self.makeTimelineViewController()
+        
         view.backgroundColor = .white
         tabs.addTarget(self, action: #selector(tabPressed), for: .valueChanged)
         view.addSubview(tabs)
@@ -63,6 +72,17 @@ class MMLUseCase2021: UIViewController {
         ])
 
         addChild(viewController: chatController, into: tabContent)
+    }
+    
+    func getChatViewController() -> ChatViewController {
+        let chatVC = ChatViewController()
+        chatVC.session = session
+        return chatVC
+    }
+    
+    func makeTimelineViewController() -> WidgetTimelineViewController {
+        let timelineViewController = WidgetTimelineViewController(contentSession: session)
+        return timelineViewController
     }
 
     @objc func tabPressed(sender: UISegmentedControl) {
@@ -101,3 +121,4 @@ class MMLUseCase2021: UIViewController {
         }
     }
 }
+

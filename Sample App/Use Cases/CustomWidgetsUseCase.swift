@@ -16,7 +16,7 @@ class CustomWidgetsUseCase: UIViewController {
     private let clientID: String
     private let programID: String
 
-    private let widgetViewController = WidgetViewController()
+    private let widgetViewController = WidgetPopupViewController()
 
     private let widgetView: UIView = {
         let widgetView = UIView()
@@ -104,14 +104,14 @@ extension CustomWidgetsUseCase: EngagementSDKDelegate {
 }
 
 // MARK: - ContentSessionDelegate
-extension CustomWidgetsUseCase: WidgetViewControllerDelegate {
-    func widgetViewController(_ widgetViewController: WidgetViewController, willDisplay widget: Widget) { }
-    func widgetViewController(_ widgetViewController: WidgetViewController, didDisplay widget: Widget) { }
-    func widgetViewController(_ widgetViewController: WidgetViewController, willDismiss widget: Widget) { }
-    func widgetViewController(_ widgetViewController: WidgetViewController, didDismiss widget: Widget) { }
+extension CustomWidgetsUseCase: WidgetPopupViewControllerDelegate {
+    func widgetViewController(_ widgetViewController: WidgetPopupViewController, willDisplay widget: Widget) { }
+    func widgetViewController(_ widgetViewController: WidgetPopupViewController, didDisplay widget: Widget) { }
+    func widgetViewController(_ widgetViewController: WidgetPopupViewController, willDismiss widget: Widget) { }
+    func widgetViewController(_ widgetViewController: WidgetPopupViewController, didDismiss widget: Widget) { }
 
     func widgetViewController(
-        _ widgetViewController: WidgetViewController,
+        _ widgetViewController: WidgetPopupViewController,
         willEnqueueWidget widgetModel: WidgetModel
     ) -> Widget? {
         switch widgetModel {
@@ -145,6 +145,8 @@ extension CustomWidgetsUseCase: WidgetViewControllerDelegate {
                 return CustomCheerMeterWidgetViewController(model: model)
             }
             return nil
+        case .socialEmbed(_):
+            return DefaultWidgetFactory.makeWidget(from: widgetModel)
         }
     }
 }

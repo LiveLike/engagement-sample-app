@@ -116,14 +116,14 @@ class HomeViewController: UIViewController {
         return button
     }()
     
-    private let mml2021WidgetModuleButton: UIButton = {
+    private let chatWithTimelineModuleButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.setTitle("MML Use Case 2021", for: .normal)
+        button.setTitle("Chat with Widget Timeline", for: .normal)
         button.backgroundColor = .lightGray
         button.contentHorizontalAlignment = .left
         button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
-        button.addTarget(self, action: #selector(mml2021UseCaseButtonSelected), for: .touchUpInside)
+        button.addTarget(self, action: #selector(chatWithTimelineModuleButtonSelected), for: .touchUpInside)
         return button
     }()
     
@@ -154,7 +154,7 @@ class HomeViewController: UIViewController {
         stackView.addArrangedSubview(widgetChatSpoilerPreventionModule)
         stackView.addArrangedSubview(createEnterChatRoomModule)
         stackView.addArrangedSubview(customWidgetModuleButton)
-        stackView.addArrangedSubview(mml2021WidgetModuleButton)
+        stackView.addArrangedSubview(chatWithTimelineModuleButton)
         
         // Loads previous client id and program id from UserDefaults
         clientIDTextField.text = Defaults.activeClientID
@@ -261,7 +261,7 @@ class HomeViewController: UIViewController {
         self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)
     }
     
-    @objc func mml2021UseCaseButtonSelected() {
+    @objc func chatWithTimelineModuleButtonSelected() {
         guard let clientID = Defaults.activeClientID, !clientID.isEmpty else {
             presentInvalidClientIDAlert()
             return
@@ -272,7 +272,7 @@ class HomeViewController: UIViewController {
             return
         }
 
-        let createEnterChatRoomUseCase = MMLUseCase2021(clientID: clientID, programID: programID)
+        let createEnterChatRoomUseCase = ChatWithTimelineUseCase(clientID: clientID, programID: programID)
 
         createEnterChatRoomUseCase.modalPresentationStyle = .fullScreen
         self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)

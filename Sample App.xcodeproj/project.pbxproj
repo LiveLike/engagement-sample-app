@@ -9,9 +9,6 @@
 /* Begin PBXBuildFile section */
 		2706E66925AE5A4500996A8B /* CustomImagePollWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2706E66825AE5A4500996A8B /* CustomImagePollWidgetViewController.swift */; };
 		2706E66C25AE5AC900996A8B /* CustomImageOptionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2706E66B25AE5AC900996A8B /* CustomImageOptionCell.swift */; };
-		270F44C325BF824900A19ACE /* MMLUseCase2021.swift in Sources */ = {isa = PBXBuildFile; fileRef = 270F44C225BF824900A19ACE /* MMLUseCase2021.swift */; };
-		270F44C825BF829A00A19ACE /* LLCustomWidgetTimelineViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 270F44C725BF829A00A19ACE /* LLCustomWidgetTimelineViewController.swift */; };
-		270F44CB25BF82AA00A19ACE /* LiveLikeSDKBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 270F44CA25BF82AA00A19ACE /* LiveLikeSDKBuilder.swift */; };
 		2757FD31249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2757FD30249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift */; };
 		276401B3243BB0080016C2FC /* Utils+UserDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276401B2243BB0080016C2FC /* Utils+UserDefaults.swift */; };
 		276401B6243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276401B5243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift */; };
@@ -29,6 +26,7 @@
 		2772CEE725AE7E7C00EA27CE /* CustomWidgetOptionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CEE625AE7E7C00EA27CE /* CustomWidgetOptionsView.swift */; };
 		2772CEF025AE800F00EA27CE /* CustomImageQuizWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CEEF25AE800F00EA27CE /* CustomImageQuizWidgetViewController.swift */; };
 		2772CEF725AE81B900EA27CE /* CustomImgPredictionFollowUpWidgetVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2772CEF625AE81B900EA27CE /* CustomImgPredictionFollowUpWidgetVC.swift */; };
+		27C39CAE262F69BA00980A76 /* ChatWithTimelineUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27C39CAD262F69BA00980A76 /* ChatWithTimelineUseCase.swift */; };
 		27C83D02243B8D44009F35DA /* WidgetsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27C83D01243B8D44009F35DA /* WidgetsUseCase.swift */; };
 		767AFD57243B8B2600F85E8A /* ChatUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767AFD56243B8B2600F85E8A /* ChatUseCase.swift */; };
 		76FE3E922437990E003F179B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE3E912437990E003F179B /* AppDelegate.swift */; };
@@ -52,9 +50,6 @@
 		18CA8D5CBB21254E2489C76B /* Pods-Sample App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Sample App.release.xcconfig"; path = "Target Support Files/Pods-Sample App/Pods-Sample App.release.xcconfig"; sourceTree = "<group>"; };
 		2706E66825AE5A4500996A8B /* CustomImagePollWidgetViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomImagePollWidgetViewController.swift; sourceTree = "<group>"; };
 		2706E66B25AE5AC900996A8B /* CustomImageOptionCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomImageOptionCell.swift; sourceTree = "<group>"; };
-		270F44C225BF824900A19ACE /* MMLUseCase2021.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MMLUseCase2021.swift; sourceTree = "<group>"; };
-		270F44C725BF829A00A19ACE /* LLCustomWidgetTimelineViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LLCustomWidgetTimelineViewController.swift; sourceTree = "<group>"; };
-		270F44CA25BF82AA00A19ACE /* LiveLikeSDKBuilder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LiveLikeSDKBuilder.swift; sourceTree = "<group>"; };
 		2757FD30249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateEnterChatRoomUseCase.swift; sourceTree = "<group>"; };
 		276401B2243BB0080016C2FC /* Utils+UserDefaults.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Utils+UserDefaults.swift"; sourceTree = "<group>"; };
 		276401B5243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetChatSpoilerPreventionUseCase.swift; sourceTree = "<group>"; };
@@ -72,6 +67,7 @@
 		2772CEE625AE7E7C00EA27CE /* CustomWidgetOptionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWidgetOptionsView.swift; sourceTree = "<group>"; };
 		2772CEEF25AE800F00EA27CE /* CustomImageQuizWidgetViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomImageQuizWidgetViewController.swift; sourceTree = "<group>"; };
 		2772CEF625AE81B900EA27CE /* CustomImgPredictionFollowUpWidgetVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomImgPredictionFollowUpWidgetVC.swift; sourceTree = "<group>"; };
+		27C39CAD262F69BA00980A76 /* ChatWithTimelineUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatWithTimelineUseCase.swift; sourceTree = "<group>"; };
 		27C83D01243B8D44009F35DA /* WidgetsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetsUseCase.swift; sourceTree = "<group>"; };
 		767AFD56243B8B2600F85E8A /* ChatUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatUseCase.swift; sourceTree = "<group>"; };
 		76FE3E8E2437990E003F179B /* Sample App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Sample App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -115,16 +111,6 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
-		270F44C525BF826F00A19ACE /* MML Use Case 2021 */ = {
-			isa = PBXGroup;
-			children = (
-				270F44CA25BF82AA00A19ACE /* LiveLikeSDKBuilder.swift */,
-				270F44C725BF829A00A19ACE /* LLCustomWidgetTimelineViewController.swift */,
-				270F44C225BF824900A19ACE /* MMLUseCase2021.swift */,
-			);
-			path = "MML Use Case 2021";
-			sourceTree = "<group>";
-		};
 		276401B4243BB5170016C2FC /* Use Cases */ = {
 			isa = PBXGroup;
 			children = (
@@ -133,7 +119,7 @@
 				276401B5243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift */,
 				2757FD30249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift */,
 				D3F9FC1925A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift */,
-				270F44C525BF826F00A19ACE /* MML Use Case 2021 */,
+				27C39CAD262F69BA00980A76 /* ChatWithTimelineUseCase.swift */,
 			);
 			path = "Use Cases";
 			sourceTree = "<group>";
@@ -333,7 +319,6 @@
 				2772CED425AE7B7500EA27CE /* CustomTextPredictionFollowUpViewController.swift in Sources */,
 				2772CED125AE7B7500EA27CE /* CustomTextPollWidgetViewController.swift in Sources */,
 				2772CED525AE7B7500EA27CE /* CustomTextQuizWidgetViewController.swift in Sources */,
-				270F44CB25BF82AA00A19ACE /* LiveLikeSDKBuilder.swift in Sources */,
 				D3F9FC2425A4E0E000ECBAA5 /* CustomAlertWidgetView.swift in Sources */,
 				D3CB4DCE25B1ECB20042BE4D /* CustomCheerMeterWidgetView.swift in Sources */,
 				2772CEC925AE7B5800EA27CE /* CustomImageSliderView.swift in Sources */,
@@ -342,7 +327,6 @@
 				2772CECA25AE7B5800EA27CE /* CustomImageSliderViewController.swift in Sources */,
 				276401B6243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift in Sources */,
 				D3F9FC2325A4E0E000ECBAA5 /* CustomAlertWidgetViewController.swift in Sources */,
-				270F44C325BF824900A19ACE /* MMLUseCase2021.swift in Sources */,
 				2706E66925AE5A4500996A8B /* CustomImagePollWidgetViewController.swift in Sources */,
 				276401B3243BB0080016C2FC /* Utils+UserDefaults.swift in Sources */,
 				2772CEBE25AE7AA800EA27CE /* CustomImagePollWidgetViewController.swift in Sources */,
@@ -353,7 +337,6 @@
 				76FE3E922437990E003F179B /* AppDelegate.swift in Sources */,
 				D3F9FC1A25A4DEB400ECBAA5 /* CustomWidgetsUseCase.swift in Sources */,
 				2772CED325AE7B7500EA27CE /* CustomTextPredictionWidgetViewController.swift in Sources */,
-				270F44C825BF829A00A19ACE /* LLCustomWidgetTimelineViewController.swift in Sources */,
 				2772CEBF25AE7AA800EA27CE /* CustomImageOptionCell.swift in Sources */,
 				2757FD31249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift in Sources */,
 				2772CED825AE7C5300EA27CE /* CustomImagePredictionWidget.swift in Sources */,
@@ -361,6 +344,7 @@
 				D3CB4DD025B1ECB20042BE4D /* CustomCheerMeterWidgetViewController.swift in Sources */,
 				76FE3E942437990E003F179B /* SceneDelegate.swift in Sources */,
 				D3CB4DCF25B1ECB20042BE4D /* CustomCheerMeterWinnerView.swift in Sources */,
+				27C39CAE262F69BA00980A76 /* ChatWithTimelineUseCase.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
