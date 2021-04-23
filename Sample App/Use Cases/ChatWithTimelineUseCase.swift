@@ -57,7 +57,7 @@ class ChatWithTimelineUseCase: UIViewController {
         tabs.addTarget(self, action: #selector(tabPressed), for: .valueChanged)
         view.addSubview(tabs)
         NSLayoutConstraint.activate([
-            tabs.topAnchor.constraint(equalTo: view.topAnchor, constant: 60.0),
+            tabs.topAnchor.constraint(equalTo: view.safeTopAnchor, constant: 0.0),
             tabs.widthAnchor.constraint(equalTo: view.widthAnchor),
             tabs.heightAnchor.constraint(equalToConstant: 44),
             tabs.centerXAnchor.constraint(equalTo: view.centerXAnchor)
@@ -81,15 +81,10 @@ class ChatWithTimelineUseCase: UIViewController {
     }
     
     func makeTimelineViewController() -> WidgetTimelineViewController {
-        let timelineViewController = WidgetTimelineViewController(contentSession: session)
-        return timelineViewController
+        return WidgetTimelineViewController(contentSession: session)
     }
 
     @objc func tabPressed(sender: UISegmentedControl) {
-
-        tabContent.subviews.forEach { $0.removeFromSuperview() }
-        removeAllChildViewControllers()
-
         if sender.selectedSegmentIndex == 0 {
             addChild(viewController: chatController, into: tabContent)
         } else {
