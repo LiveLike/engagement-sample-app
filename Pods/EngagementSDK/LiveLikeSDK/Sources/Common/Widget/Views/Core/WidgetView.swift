@@ -262,6 +262,23 @@ open class Widget: UIViewController, WidgetViewModel {
         super.init(nibName: nil, bundle: nil)
     }
     
+    public init(model: SocialEmbedWidgetModel) {
+        self.id = model.id
+        self.kind = model.kind
+        self.widgetTitle = model.comment
+        self.createdAt = model.createdAt
+        self.publishedAt = model.publishedAt
+        self.interactionTimeInterval = model.interactionTimeInterval
+        self.currentState = .ready
+        self.userDidInteract = false
+        self.theme = Theme()
+        self.optionsArray = nil
+        self.options = nil
+        self.customData = model.customData
+        self.widgetLink = nil
+        super.init(nibName: nil, bundle: nil)
+    }
+    
     required public init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }

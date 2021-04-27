@@ -42,6 +42,7 @@ public class QuizWidgetModel: QuizWidgetModelable {
     public let createdAt: Date
     public let publishedAt: Date?
     public let interactionTimeInterval: TimeInterval
+    public let programID: String
 
     // MARK: Internal Properties
 
@@ -69,6 +70,7 @@ public class QuizWidgetModel: QuizWidgetModelable {
     ) {
         self.id = data.id
         self.kind = data.kind
+        self.programID = data.programId
         self.question = data.question
         self.choices = data.choices.map { Choice(data: $0) }
         self.totalAnswerCount = data.choices.map { $0.answerCount }.reduce(0, +)
@@ -100,6 +102,7 @@ public class QuizWidgetModel: QuizWidgetModelable {
     ) {
         self.id = data.id
         self.kind = data.kind
+        self.programID = data.programId
         self.question = data.question
         self.choices = data.choices.map { Choice(data: $0) }
         self.totalAnswerCount = data.choices.map { $0.answerCount }.reduce(0, +)
@@ -128,7 +131,9 @@ public class QuizWidgetModel: QuizWidgetModelable {
 
     /// Locks in an answer for the Quiz. Call this when the user has made their final decision. Once an answer is locked it cannot be changed.
     public func lockInAnswer(choiceID: String, completion: @escaping (Result<Answer, Error>) -> Void) {
-        self.eventRecorder.record(.widgetEngaged(kind: self.kind, id: self.id))
+        self.eventRecorder.record(
+            .widgetEngaged(programID: self.programID, kind: self.kind, id: self.id)
+        )
 
         guard !isLockInAnswerInProgress else {
             completion(.failure(QuizWidgetModelError.concurrentLockInAnswer))
@@ -163,7 +168,7 @@ public class QuizWidgetModel: QuizWidgetModelable {
     /// Call this once when the widget is first displayed to the user.
     public func registerImpression(completion: @escaping (Result<Void, Error>) -> Void = { _ in }) {
         self.eventRecorder.record(
-            .widgetDisplayed(kind: kind.analyticsName, widgetId: id, widgetLink: nil)
+            .widgetDisplayed(programID: programID, kind: kind.analyticsName, widgetId: id, widgetLink: nil)
         )
         guard let impressionURL = self.impressionURL else { return }
         firstly {
@@ -177,6 +182,12 @@ public class QuizWidgetModel: QuizWidgetModelable {
         }.catch { error in
             completion(.failure(error))
         }
+    }
+    
+    public func markAsInteractive() {
+        self.eventRecorder.record(
+            .widgetBecameInteractive(programID: programID, kind: kind, widgetID: id)
+        )
     }
 
     // MARK: Types

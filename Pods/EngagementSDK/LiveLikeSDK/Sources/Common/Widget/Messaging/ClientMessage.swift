@@ -28,7 +28,8 @@ enum ClientEvent: CustomStringConvertible, Decodable {
              .textQuizCreated,
              .imageQuizCreated,
              .imageSliderCreated,
-             .cheerMeterCreated:
+             .cheerMeterCreated,
+             .socialEmbedCreated:
             self = try .widget(container.decode(WidgetResource.self, forKey: .payload))
         case .textPredictionResults:
             self = try .textPredictionResults(container.decode(PredictionResults.self, forKey: .payload))

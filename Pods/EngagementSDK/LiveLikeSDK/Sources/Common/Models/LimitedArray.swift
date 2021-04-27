@@ -57,7 +57,6 @@ extension LimitedArray: MutableCollection {
     var startIndex: Int { return storage.startIndex }
     var endIndex: Int { return storage.endIndex }
     
-    // swiftlint:disable implicit_getter
     subscript(_ index: Int) -> T {
         get { return storage[index] }
         set { storage[index] = newValue }

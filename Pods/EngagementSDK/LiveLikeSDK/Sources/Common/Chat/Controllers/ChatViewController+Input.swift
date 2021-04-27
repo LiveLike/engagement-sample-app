@@ -16,6 +16,6 @@ extension ChatViewController: ChatInputViewDelegate {
     
     func chatInputBeginEditing(with textField: UITextField) { }
     func chatInputEndEditing(with textField: UITextField) {}
-    func chatInputSendPressed(message: ChatInputMessage) { }
+    func chatInputSendPressed(message: NewChatMessage) { }
     func chatInputKeyboardToggled() { }
 }

@@ -176,6 +176,9 @@ class AlertWidgetViewController: Widget {
     private func enterInteractingState() {
         alertWidget.isUserInteractionEnabled = true
         self.interactableState = .openToInteraction
+        if model.linkURL != nil {
+            self.model.markAsInteractive()
+        }
         self.delegate?.widgetStateCanComplete(widget: self, state: .interacting)
     }
     
@@ -183,6 +186,7 @@ class AlertWidgetViewController: Widget {
         if let firstTapTime = self.firstTapTime, let lastTapTime = self.timeOfLastInteraction {
             self.model.eventRecorder.record(
                 .widgetInteracted(
+                    programID: model.programID,
                     properties: WidgetInteractedProperties(
                         widgetId: self.model.id,
                         widgetKind: self.model.kind.analyticsName,

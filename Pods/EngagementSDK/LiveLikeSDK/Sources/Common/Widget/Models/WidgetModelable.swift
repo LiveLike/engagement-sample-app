@@ -8,7 +8,10 @@
 import Foundation
 
 protocol WidgetModelable {
+    /// The unique id of the Widget
     var id: String { get }
+    
+    /// The kind of Widget this model represents
     var kind: WidgetKind { get }
     
     /// The date and time the widget has been created
@@ -27,6 +30,9 @@ protocol WidgetModelable {
     /// Call this once when the widget is first displayed to the user.
     func registerImpression(completion: @escaping (Result<Void, Error>) -> Void)
     
+    /// Mark the widget as interactive to improve engagement rate calculations
+    /// This should be done as soon as the user is able to interact with your UI
+    func markAsInteractive()
 }
 
 protocol AlertWidgetModelable: WidgetModelable {
@@ -128,4 +134,11 @@ protocol ImageSliderWidgetModelable: WidgetModelable {
     var options: [ImageSliderWidgetModel.Option] { get }
 
     func lockInVote(magnitude: Double, completion: @escaping (Result<ImageSliderWidgetModel.Vote, Error>) -> Void)
+}
+
+protocol SocialEmbedWidgetModelable: WidgetModelable {
+
+    var comment: String? { get }
+    
+    var items: [SocialEmbedWidgetModel.Item] { get }
 }

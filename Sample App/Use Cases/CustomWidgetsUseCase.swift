@@ -145,6 +145,8 @@ extension CustomWidgetsUseCase: WidgetViewControllerDelegate {
                 return CustomCheerMeterWidgetViewController(model: model)
             }
             return nil
+        case .socialEmbed(_):
+            return nil
         }
     }
 }

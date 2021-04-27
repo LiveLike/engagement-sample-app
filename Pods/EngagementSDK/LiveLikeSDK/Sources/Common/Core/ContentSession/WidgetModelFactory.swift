@@ -158,6 +158,14 @@ class WidgetModelFactory {
                 widgetClient: self.widgetClient
             )
             return .imageSlider(model)
+        case .socialEmbed(let payload):
+            let model = SocialEmbedWidgetModel(
+                resource: payload,
+                eventRecorder: self.eventRecorder,
+                livelikeAPI: self.livelikeRestAPIService,
+                userProfile: self.userProfile
+            )
+            return .socialEmbed(model)
         }
     }
 

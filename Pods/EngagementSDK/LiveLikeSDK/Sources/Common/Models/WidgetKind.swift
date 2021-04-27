@@ -20,6 +20,7 @@ public enum WidgetKind: Int {
     case imageQuiz
     case imageSlider
     case cheerMeter
+    case socialEmbed
 }
 
 public extension WidgetKind {
@@ -47,6 +48,7 @@ extension WidgetKind {
         case .imageQuiz: return "image-quiz"
         case .imageSlider: return "emoji-slider"
         case .cheerMeter: return "cheer-meter"
+        case .socialEmbed: return "social-embed"
         }
     }
 
@@ -74,6 +76,8 @@ extension WidgetKind {
             return "Image Slider"
         case .cheerMeter:
             return "Cheer Meter"
+        case .socialEmbed:
+            return "Social Embed"
         }
     }
 }

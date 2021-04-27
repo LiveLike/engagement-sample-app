@@ -59,7 +59,7 @@ class HorizontalScrollingStackView: UIScrollView {
 
 extension HorizontalScrollingStackView: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        UIApplication.shared.sendAction(#selector(WidgetViewController.scrollViewDidChange(_:)), to: nil, from: scrollView, for: nil)
+        UIApplication.shared.sendAction(#selector(WidgetPopupViewController.scrollViewDidChange(_:)), to: nil, from: scrollView, for: nil)
     }
 }
 

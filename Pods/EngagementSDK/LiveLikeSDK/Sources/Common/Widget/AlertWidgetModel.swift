@@ -34,6 +34,7 @@ public class AlertWidgetModel: AlertWidgetModelable {
     public var publishedAt: Date?
     public var interactionTimeInterval: TimeInterval
     public var customData: String?
+    public let programID: String
 
     let eventRecorder: EventRecorder
     
@@ -52,6 +53,7 @@ public class AlertWidgetModel: AlertWidgetModelable {
         self.id = data.id
         self.kind = data.kind
         self.title = data.title
+        self.programID = data.programId
         self.createdAt = data.createdAt
         self.publishedAt = data.publishedAt
         self.interactionTimeInterval = data.timeout.timeInterval
@@ -70,6 +72,7 @@ public class AlertWidgetModel: AlertWidgetModelable {
     /// Opens the `linkURL` in a webpage if available.
     public func openLinkUrl() {
         if let widgetLink = linkURL {
+            eventRecorder.record(.widgetEngaged(programID: programID, kind: kind, id: id))
             eventRecorder.record(.alertWidgetLinkOpened(alertId: data.id, programId: data.programId, linkUrl: widgetLink.absoluteString))
             UIApplication.shared.open(widgetLink)
         }
@@ -81,7 +84,7 @@ public class AlertWidgetModel: AlertWidgetModelable {
         completion: @escaping (Result<Void, Error>) -> Void = { _ in }
     ) {
         self.eventRecorder.record(
-            .widgetDisplayed(kind: kind.analyticsName, widgetId: id, widgetLink: linkURL)
+            .widgetDisplayed(programID: programID, kind: kind.analyticsName, widgetId: id, widgetLink: linkURL)
         )
         guard let impressionURL = data.impressionUrl else { return }
         firstly {
@@ -96,6 +99,12 @@ public class AlertWidgetModel: AlertWidgetModelable {
             completion(.failure(error))
         }
 
+    }
+    
+    public func markAsInteractive() {
+        self.eventRecorder.record(
+            .widgetBecameInteractive(programID: programID, kind: kind, widgetID: id)
+        )
     }
 
 }

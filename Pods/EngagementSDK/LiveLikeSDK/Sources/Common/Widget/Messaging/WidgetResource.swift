@@ -39,6 +39,8 @@ enum WidgetResource: CustomStringConvertible, Decodable {
             self = try .imageSliderCreated(ImageSliderCreated(from: decoder))
         case .cheerMeter:
             self = try .cheerMeterCreated(CheerMeterCreated(from: decoder))
+        case .socialEmbed:
+            self = try .socialEmbed(SocialEmbedWidgetResource(from: decoder))
         }
     }
 
@@ -53,6 +55,7 @@ enum WidgetResource: CustomStringConvertible, Decodable {
     case imageQuizCreated(ImageQuizCreated)
     case imageSliderCreated(ImageSliderCreated)
     case cheerMeterCreated(CheerMeterCreated)
+    case socialEmbed(SocialEmbedWidgetResource)
 
     var kind: String {
         switch self {
@@ -77,6 +80,8 @@ enum WidgetResource: CustomStringConvertible, Decodable {
         case let .imageSliderCreated(payload):
             return payload.kind.stringValue
         case let .cheerMeterCreated(payload):
+            return payload.kind.stringValue
+        case let .socialEmbed(payload):
             return payload.kind.stringValue
         }
     }
@@ -105,6 +110,8 @@ enum WidgetResource: CustomStringConvertible, Decodable {
             return payload.programId
         case let .cheerMeterCreated(payload):
             return payload.programId
+        case let .socialEmbed(payload):
+            return payload.programId
         }
     }
 
@@ -131,6 +138,8 @@ enum WidgetResource: CustomStringConvertible, Decodable {
         case let .imageSliderCreated(payload):
             return payload.programDateTime?.timeIntervalSince1970.rounded()
         case let .cheerMeterCreated(payload):
+            return payload.programDateTime?.timeIntervalSince1970.rounded()
+        case let .socialEmbed(payload):
             return payload.programDateTime?.timeIntervalSince1970.rounded()
         }
     }
@@ -159,6 +168,8 @@ enum WidgetResource: CustomStringConvertible, Decodable {
             return "\(payload.kind.stringValue) Titled: \(payload.question)"
         case let .cheerMeterCreated(payload):
             return "\(payload.kind.stringValue) Titled: \(payload.question)"
+        case let .socialEmbed(payload):
+            return "\(payload.kind.stringValue) Titled: \(String(describing: payload.comment))"
         }
     }
 }

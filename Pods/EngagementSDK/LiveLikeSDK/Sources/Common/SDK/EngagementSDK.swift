@@ -815,9 +815,10 @@ private extension EngagementSDK {
                 .init(value: application),
                 self.livelikeIDVendor.whenLiveLikeID,
                 self.accessTokenVendor.whenAccessToken,
-                self.livelikeRestAPIService.getChatRoomResource(roomID: config.roomID, accessToken: accessToken)
+                self.livelikeRestAPIService.getChatRoomResource(roomID: config.roomID, accessToken: accessToken),
+                self.userNicknameService.whenInitialNickname
             )
-        }.then { application, livelikeid, accessToken, chatRoomResource in
+        }.then { application, livelikeid, accessToken, chatRoomResource, userNickname in
             guard let chatPubnubChannel = chatRoomResource.channels.chat.pubnub else {
                 return
             }
@@ -855,7 +856,8 @@ private extension EngagementSDK {
                 roomID: chatRoomResource.id,
                 chatChannel: chatChannel,
                 userID: chatId,
-                nickname: self.userNicknameService,
+                userNickname: userNickname,
+                nicknameVendor: self.userNicknameService,
                 imageUploader: imageUploader,
                 analytics: self.analytics,
                 reactionsVendor: reactionVendor,
