@@ -43,6 +43,7 @@ public class PollWidgetModel: PollWidgetModelable {
     public let interactionTimeInterval: TimeInterval
     public let customData: String?
     public let containsImages: Bool
+    public let programID: String
     
     // MARK: Internal Properties
 
@@ -79,6 +80,7 @@ public class PollWidgetModel: PollWidgetModelable {
         
         self.id = data.id
         self.kind = data.kind
+        self.programID = data.programId
         self.question = data.question
         self.options = data.options.map {
             Option(
@@ -119,6 +121,7 @@ public class PollWidgetModel: PollWidgetModelable {
         
         self.id = data.id
         self.kind = data.kind
+        self.programID = data.programId
         self.question = data.question
         self.options = data.options.map {
             Option(
@@ -150,7 +153,7 @@ public class PollWidgetModel: PollWidgetModelable {
     /// Call this once when the widget is first displayed to the user.
     public func registerImpression(completion: @escaping (Result<Void, Error>) -> Void = { _ in }) {
         self.eventRecorder.record(
-            .widgetDisplayed(kind: kind.analyticsName, widgetId: id, widgetLink: nil)
+            .widgetDisplayed(programID: programID, kind: kind.analyticsName, widgetId: id, widgetLink: nil)
         )
         guard let impressionURL = self.impressionURL else { return }
         firstly {
@@ -168,7 +171,9 @@ public class PollWidgetModel: PollWidgetModelable {
     
     /// Submit or update an already submitted vote by `optionID`
     public func submitVote(optionID: String, completion: @escaping (Result<PollWidgetModel.Vote, Error>) -> Void = { _ in }){
-        self.eventRecorder.record(.widgetEngaged(kind: self.kind, id: self.id))
+        self.eventRecorder.record(
+            .widgetEngaged(programID: self.programID, kind: self.kind, id: self.id)
+        )
 
         // Avoid repeat vote on a previously voted option
         guard lastSuccessfulVote?.optionId != optionID else {
@@ -229,6 +234,12 @@ public class PollWidgetModel: PollWidgetModelable {
         }.always {
             self.isVotingInProgress = false
         }
+    }
+    
+    public func markAsInteractive() {
+        self.eventRecorder.record(
+            .widgetBecameInteractive(programID: programID, kind: kind, widgetID: id)
+        )
     }
 
     // MARK: Types

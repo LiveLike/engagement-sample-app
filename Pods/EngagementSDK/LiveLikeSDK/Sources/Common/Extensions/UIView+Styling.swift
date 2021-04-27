@@ -7,7 +7,6 @@
 
 import UIKit
 
-//swiftlint:disable implicit_getter
 extension UIView {
     @objc var livelike_cornerRadius: CGFloat {
         get {

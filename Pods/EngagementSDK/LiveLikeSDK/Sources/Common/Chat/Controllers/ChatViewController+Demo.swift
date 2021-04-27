@@ -23,7 +23,6 @@ public extension ChatViewController {
         let chatMessageType = ChatMessage(
             id: ChatMessageID(UUID().uuidString),
             roomID: "room-id",
-            channelName: "channel-name",
             message: message,
             sender: user,
             videoTimestamp: nil,

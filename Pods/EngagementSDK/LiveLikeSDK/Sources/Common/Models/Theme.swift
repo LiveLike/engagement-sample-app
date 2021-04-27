@@ -591,17 +591,21 @@ public class Theme: NSObject {
         public var prediction: ChoiceWidget
         /// Changes the properties of the alert widget
         public var alert: AlertWidget
-
+        /// Changes the properties of the social embed widget
+        public var socialEmbed: SocialEmbedWidget
+        
         public init(
             poll: Theme.ChoiceWidget,
             quiz: Theme.ChoiceWidget,
             prediction: Theme.ChoiceWidget,
-            alert: Theme.AlertWidget
+            alert: Theme.AlertWidget,
+            socialEmbed: Theme.SocialEmbedWidget
         ) {
             self.poll = poll
             self.quiz = quiz
             self.prediction = prediction
             self.alert = alert
+            self.socialEmbed = socialEmbed
         }
 
         /// Defaults
@@ -841,6 +845,37 @@ public class Theme: NSObject {
                 link: Text(
                     color: widgetTextColor,
                     font: widgetTitleFont
+                )
+            )
+            
+            socialEmbed = SocialEmbedWidget(
+                main: Container(
+                    background: .fill(color: .black),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: CornerRadii(all: widgetCornerRadius)
+                ),
+                header: Container(
+                    background: .gradient(
+                        gradient: Background.Gradient(
+                            colors: [#colorLiteral(red: 0, green: 0, blue: 0, alpha: 1), #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1)],
+                            start: CGPoint(x: 0, y: 0.5),
+                            end: CGPoint(x: 1, y: 0.5)
+                        )
+                    ),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: .zero
+                ),
+                title: Text(
+                    color: widgetTextColor,
+                    font: widgetTitleFont
+                ),
+                body: Container(
+                    background: .fill(color: .white),
+                    borderColor: .clear,
+                    borderWidth: 0,
+                    cornerRadii: .zero
                 )
             )
         }

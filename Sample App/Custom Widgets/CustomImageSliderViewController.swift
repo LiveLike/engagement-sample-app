@@ -109,6 +109,7 @@ class CustomImageSliderViewController: Widget {
                 }
             }
         }
+        model.markAsInteractive()
         model.registerImpression()
     }
 

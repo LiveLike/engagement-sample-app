@@ -7,10 +7,12 @@
 
 import UIKit
 
+/// A type representing a unique ID of a `Chat Message`
 public struct ChatMessageID: Equatable, Hashable {
     private let internalId: AnyHashable
 
-    var asString: String {
+    /// The stringified id
+    public var asString: String {
         return internalId.description
     }
 
@@ -31,7 +33,6 @@ class MessageViewModel: Equatable {
     let isLocalClient: Bool
     let syncPublishTimecode: String?
     let chatRoomId: String
-    let channelName: String // PubNub Channel Name
     private(set) var isDeleted: Bool = false
     let createdAt: Date
     
@@ -55,7 +56,6 @@ class MessageViewModel: Equatable {
          isLocalClient: Bool,
          syncPublishTimecode: String?,
          chatRoomId: String,
-         channel: String,
          chatReactions: ReactionButtonListViewModel,
          profileImageUrl: URL?,
          createdAt: Date,
@@ -70,7 +70,6 @@ class MessageViewModel: Equatable {
         self.username = username
         self.isLocalClient = isLocalClient
         self.syncPublishTimecode = syncPublishTimecode
-        self.channelName = channel
         self.chatReactions = chatReactions
         self.profileImageUrl = profileImageUrl
         self.createdAt = createdAt

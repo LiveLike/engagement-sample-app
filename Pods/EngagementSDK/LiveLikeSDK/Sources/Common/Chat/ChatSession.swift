@@ -18,6 +18,17 @@ protocol InternalChatSessionDelegate: ChatSessionDelegate {
     func chatSession(_ chatSession: ChatSession, didRecieveError error: Error)
 }
 
+public enum ChatSessionError: LocalizedError {
+    case concurrentLoadHistoryCalls
+    
+    public var errorDescription: String? {
+        switch self {
+        case .concurrentLoadHistoryCalls:
+            return "Cannot make concurrent calls to `loadNextHistory`. Wait until `loadNextHistory` completes before calling again."
+        }
+    }
+}
+
 /// A connection to a chat room
 public protocol ChatSession: AnyObject {
     var title: String? { get }
@@ -52,8 +63,23 @@ public protocol ChatSession: AnyObject {
     func getMessages(since timestamp: TimeToken, completion: @escaping (Result<[ChatMessage], Error>) -> Void)
     func getMessageCount(since timestamp: TimeToken, completion: @escaping (Result<Int, Error>) -> Void)
     
+    /// Sends a user message.
+    ///
+    /// - Parameters:
+    ///   - chatMessage: An object representing the contents of a chat message
+    ///   - completion: A callback indicating whether the message was sent or failed where `ChatMessage` represents
+    ///   the newly sent message
+    /// - Returns: the newly sent message
+    @discardableResult
+    func sendMessage(_ chatMessage: NewChatMessage, completion: @escaping (Result<ChatMessage, Error>) -> Void) -> ChatMessage
+    
     @available(*, deprecated, message: "Please set property `avatarURL` to update user chat room avatar")
     func updateUserChatRoomImage(url: URL, completion: @escaping (Result<Void, Error>) -> Void)
+    
+    /// Loads older chat messages from history.
+    /// The loaded messages are inserted into `messages` at index 0.
+    /// - Parameter completion: Returns the messages that were loaded.
+    func loadNextHistory(completion: @escaping (Result<[ChatMessage], Error>) -> Void)
 }
 
 protocol InternalChatSessionProtocol: ChatSession {
@@ -71,17 +97,6 @@ protocol InternalChatSessionProtocol: ChatSession {
     /// Disconnects from messaging client. If this method is invoked,
     /// the current user will be invalidated.
     func disconnect()
-
-    /// Sends a user message.
-    ///
-    /// - Parameters:
-    ///   - clientMessage: The message text.
-    ///   - completion: callback indicating the message was sent
-    func sendMessage(_ clientMessage: ClientMessage) -> Promise<ChatMessageID>
-    
-    /// Deletes an already posted message
-    @discardableResult
-    func deleteMessage(_ clientMessage: ClientMessage, messageID: String) -> Promise<ChatMessageID>
     
     func reportMessage(withID id: ChatMessageID, completion: @escaping (Result<Void, Error>) -> Void)
     
@@ -95,10 +110,6 @@ protocol InternalChatSessionProtocol: ChatSession {
         reaction: ReactionVote.ID,
         fromMessageWithID messageID: ChatMessageID
     ) -> Promise<Void>
-
-    /// Loads previous messages from history.
-    /// Subsequent calls to this will continue to load from the oldest message loaded.
-    func loadPreviousMessagesFromHistory() -> Promise<Void>
 
     func loadInitialHistory(completion: @escaping (Result<Void, Error>) -> Void)
     

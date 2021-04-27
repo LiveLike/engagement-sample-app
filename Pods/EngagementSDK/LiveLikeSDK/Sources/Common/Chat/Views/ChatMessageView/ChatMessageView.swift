@@ -17,6 +17,7 @@ class ChatMessageView: UIView {
     @IBOutlet weak private var bottomBorder: UIView!
     @IBOutlet weak private var bottomBorderHeight: NSLayoutConstraint!
     
+    @IBOutlet weak private var messageViewHolderWidth: NSLayoutConstraint!
     @IBOutlet weak private var messageViewHolderLeading: NSLayoutConstraint!
     @IBOutlet weak private var usernameLabel: UILabel!
     @IBOutlet weak private var messageViewHolder: UIView!
@@ -236,6 +237,8 @@ class ChatMessageView: UIView {
             }
             
             messageViewHolderLeading.constant = theme.chatImageWidth + theme.chatImageTrailingMargin + theme.messageMargins.left
+            let currentMessageWidth = messageViewHolderWidth.constant
+            messageViewHolderWidth.constant = currentMessageWidth - messageViewHolderLeading.constant
         } else {
             messageViewHolderLeading.constant = theme.messageMargins.left
         }
@@ -281,6 +284,14 @@ class ChatMessageView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         messageViewHolder.layer.cornerRadius = theme.messageCornerRadius
+        
+        // Handle Chat Avatar
+        if self.shouldDisplayAvatar {
+            /*  This hack sets a forced width to the `messageLabel` in order to handle issues with inline stickers.
+                If the width is not set, the sticker images are not aligned correctly and go over
+                the margins of the screen after a few orientation changes. (ES-1579) */
+            messageLabel.frame.size.width = messageViewHolder.frame.size.width - (theme.messagePadding * 2)
+        }
     }
     
     func prepareForReuse() {

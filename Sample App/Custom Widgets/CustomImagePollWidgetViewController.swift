@@ -55,6 +55,7 @@ class CustomImagePollWidgetViewController: Widget, UICollectionViewDelegate, UIC
             }
         }
 
+        model.markAsInteractive()
         model.registerImpression()
         view = widgetView
     }
