@@ -9,7 +9,7 @@ import AVFoundation
 import Foundation
 
 /// Unix epoch. The number of seconds that have elapsed since January 1, 1970 (midnight UTC/GMT), not counting leap seconds
-typealias EpochTime = TimeInterval
+public typealias EpochTime = TimeInterval
 
 /// Represents the different  pagination types that can be passed down to `getPostedWidgets`
 public enum WidgetPagination {
@@ -20,7 +20,7 @@ public enum WidgetPagination {
 /**
  A `ContentSession` instance represents a program item, usually related to a live feed.
 
- `ContentSession` instance needs to be set in both `ChatViewController` and `WidgetViewController` to receive chat/widgets.
+ `ContentSession` instance needs to be set in both `ChatViewController` and `WidgetPopupViewController` to receive chat/widgets.
 
  */
 public protocol ContentSession: AnyObject {

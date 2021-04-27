@@ -9,25 +9,66 @@ import Foundation
 import UIKit
 
 /// The `UserMessage` struct represents the user **message**.
-@objc public class ChatMessage: NSObject {
-    /// Unique message ID.
-    var id: ChatMessageID
-
-    /// Chat Room ID
-    let roomID: String
+public class ChatMessage: Equatable {
     
-    /// PubNub Channel Name
-    let channelName: String
-
-    /// The message
-    public let message: String
-
-    /// Sender of the **message**. This is represented by `ChatUser` struct.
-    let sender: ChatUser
-
+    // MARK: - Public Properties
+    
+    /// The unique identifer of the message
+    public let id: ChatMessageID
+    
+    @available(*, deprecated, renamed: "text")
+    public var message: String {
+        return text ?? ""
+    }
+    
+    /// The unique id of the message's sender
+    public let senderID: String
+    
+    /// The nickname of the message's sender
+    public let senderNickname: String
+    
+    @available(*, deprecated, renamed: "senderNickname")
     public var nickname: String {
         return sender.nickName
     }
+    
+    /// The message after it has been filtered.
+    public var filteredMessage: String?
+    
+    /// The reason(s) why a message was filtered.
+    public var filteredReasons: Set<ChatFilter>
+    
+    /// Has the message been filtered.
+    public var isMessageFiltered: Bool {
+        return filteredReasons.count > 0
+    }
+    
+    /// The text component of the message
+    public let text: String?
+    
+    /// The URL of the message's image component
+    public let imageURL: URL?
+    
+    /// The CGSize of the message's image component
+    public let imageSize: CGSize?
+    
+    /// The timestamp of when this message was created
+    public let timestamp: Date
+
+    /// The TimeToken of when this message was created.
+    /// Used for `getMessages` and `getMessageCount` methods of `ContentSession`
+    public let createdAt: TimeToken
+    
+    /// True if the current user is the message's sender
+    public let isMine: Bool
+    
+    // MARK: - Internal Properties
+    
+    /// Chat Room ID
+    let roomID: String
+    
+    /// Sender of the **message**. This is represented by `ChatUser` struct.
+    let sender: ChatUser
 
     /// The UNIX Epoch for the senders playhead position.
     let videoTimestamp: EpochTime?
@@ -36,33 +77,10 @@ import UIKit
     
     // chat cell image (avatar)
     let profileImageUrl: URL?
-    
-    // chat cell body image (image attachment)
-    let bodyImageUrl: URL?
-    
-    // chat cell body image size (image attachment)
-    let bodyImageSize: CGSize?
-    
-    // The message after it has been filtered.
-    public var filteredMessage: String?
-    
-    // The reason(s) why a message was filtered.
-    public var filteredReasons: Set<ChatFilter>
-    
-    // Has the message been filtered.
-    public var isMessageFiltered: Bool {
-        return filteredReasons.count > 0
-    }
-
-    /// The timestamp of when this message was created
-    public let timestamp: Date
-
-    public let createdAt: TimeToken
 
     init(
         id: ChatMessageID,
         roomID: String,
-        channelName: String,
         message: String,
         sender: ChatUser,
         videoTimestamp: EpochTime?,
@@ -77,34 +95,30 @@ import UIKit
     ) {
         self.id = id
         self.roomID = roomID
-        self.channelName = channelName
-        self.message = message
+        self.text = message
         self.sender = sender
         self.videoTimestamp = videoTimestamp
         self.reactions = reactions
         self.profileImageUrl = profileImageUrl
         self.timestamp = timestamp
         self.createdAt = createdAt
-        self.bodyImageUrl = bodyImageUrl
-        self.bodyImageSize = bodyImageSize
+        self.imageURL = bodyImageUrl
+        self.imageSize = bodyImageSize
         self.filteredMessage = filteredMessage
         self.filteredReasons = filteredReasons
+        self.senderID = sender.id.asString
+        self.senderNickname = sender.nickName
+        self.isMine = sender.isLocalUser
     }
-
-    public override var hash: Int {
-        var hasher = Hasher()
-        hasher.combine(id)
-        return hasher.finalize()
-
+    
+    // MARK: - Equatable
+    
+    public static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
+        return lhs.id == rhs.id
     }
-
-    public override func isEqual(_ other: Any?) -> Bool {
-        guard let other = other as? ChatMessage else { return false }
-        return self.id == other.id
-    }
-
 }
 
+// MARK: - Convenience Init
 extension ChatMessage {
     convenience init(
         from chatPubnubMessage: PubSubChatPayload,
@@ -143,7 +157,6 @@ extension ChatMessage {
         self.init(
             id: ChatMessageID(chatPubnubMessage.id),
             roomID: chatRoomID,
-            channelName: channel,
             message: chatPubnubMessage.message ?? "deleted_\(chatPubnubMessage.id)",
             sender: chatUser,
             videoTimestamp: chatPubnubMessage.programDateTime?.timeIntervalSince1970,
@@ -195,7 +208,6 @@ extension ChatMessage {
         self.init(
             id: ChatMessageID(chatPubnubMessage.id),
             roomID: chatRoomID,
-            channelName: channel,
             message: "", // no message
             sender: chatUser,
             videoTimestamp: chatPubnubMessage.programDateTime?.timeIntervalSince1970,

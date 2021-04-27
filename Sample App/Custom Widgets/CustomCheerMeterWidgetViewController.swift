@@ -81,6 +81,7 @@ class CustomCheerMeterWidgetViewController: Widget {
                 self.delegate?.widgetDidEnterState(widget: self, state: .finished)
             }
         }
+        model.markAsInteractive()
         model.registerImpression()
     }
 

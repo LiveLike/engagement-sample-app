@@ -11,7 +11,7 @@ enum DismissAction: String {
     case swipe = "Swipe"
     case tapX = "Tap X"
     case timeout = "Timeout"
-    // The integrator has manually called the WidgetViewController.dismissWidget
+    // The integrator has manually called the WidgetPopupViewController.dismissWidget
     case integrator = "Integrator"
     // The widget has been 'completed' (eg. confirmation button). This should not be counted as a user dismiss
     case complete = "Complete"
