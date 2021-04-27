@@ -31,6 +31,8 @@ class PrivateChatViewController: UIViewController {
         button.setTitle("Quick Replies", for: .normal)
         button.backgroundColor = .systemBlue
         button.layer.cornerRadius = 10
+        button.isUserInteractionEnabled = false
+        button.alpha = 0.0
         return button
     }()
     
@@ -81,6 +83,8 @@ class PrivateChatViewController: UIViewController {
                 
                 // Starts table at bottom
                 DispatchQueue.main.async {
+                    self.quickMessageButton.isUserInteractionEnabled = true
+                    self.quickMessageButton.alpha = 1.0
                     self.tableView.reloadData()
                     self.tableView.scrollToRow(
                         at: IndexPath(row: self.chatSession.messages.count - 1, section: 0),
