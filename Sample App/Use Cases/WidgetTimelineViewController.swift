@@ -97,7 +97,7 @@ public final class WidgetTimelineViewController: UIViewController {
             } else {
                 return CustomTextPredictionFollowUpWidgetViewController(model: model)
             }
-        case .socialEmbed(_):
+        default:
             return DefaultWidgetFactory.makeWidget(from: widgetModel)
         }
     }
@@ -135,7 +135,7 @@ public final class WidgetTimelineViewController: UIViewController {
             } else {
                 return TextPredictionFollowUpResultsViewController(model: model)
             }
-        case .socialEmbed(_):
+        default:
             return DefaultWidgetFactory.makeWidget(from: widgetModel)
         }
     }

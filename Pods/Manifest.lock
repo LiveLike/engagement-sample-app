@@ -1,41 +1,24 @@
 PODS:
-  - EngagementSDK (2.21):
+  - EngagementSDK (2.46):
     - lottie-ios (~> 3.0)
-    - Mixpanel-swift (~> 2.7)
-    - PubNub (~> 4.12.0)
-  - lottie-ios (3.2.1)
-  - Mixpanel-swift (2.9.1):
-    - Mixpanel-swift/Complete (= 2.9.1)
-  - Mixpanel-swift/Complete (2.9.1)
-  - PubNub (4.12.0):
-    - PubNub/Core (= 4.12.0)
-  - PubNub/Core (4.12.0)
+    - PubNubSwift (~> 4.0)
+  - lottie-ios (3.2.3)
+  - PubNubSwift (4.1.2)
 
 DEPENDENCIES:
-  - "EngagementSDK (from `git@bitbucket.org:livelike/livelike-ios-sdk.git`, branch `jelzon-test-release-2.21`)"
+  - EngagementSDK
 
 SPEC REPOS:
   trunk:
+    - EngagementSDK
     - lottie-ios
-    - Mixpanel-swift
-    - PubNub
-
-EXTERNAL SOURCES:
-  EngagementSDK:
-    :branch: jelzon-test-release-2.21
-    :git: "git@bitbucket.org:livelike/livelike-ios-sdk.git"
-
-CHECKOUT OPTIONS:
-  EngagementSDK:
-    :commit: 72c1f23ccd7aae22d3533c041cd82c887fdef0ca
-    :git: "git@bitbucket.org:livelike/livelike-ios-sdk.git"
+    - PubNubSwift
 
 SPEC CHECKSUMS:
-  EngagementSDK: 48fb41430ef4783fb3ee01a3cecfb1b9b9d76579
-  lottie-ios: 106e92eaf11fbed0a76590b4cdb9b5ec26123ff7
-  Mixpanel-swift: f945f36adc3b76fc6517df98682211d3c0bf5bbe
-  PubNub: 44e2eb39746e7231b98b978a8e3b9726b11dca9c
+  EngagementSDK: eca45281062ca7cff35fafaf13fab2d75c189d44
+  lottie-ios: c058aeafa76daa4cf64d773554bccc8385d0150e
+  PubNubSwift: bb37151932fad1fa8233c224719d6bdf6bb62dc5
 
-PODFILE CHECKSUM: 58f92e226acebabc64e0c4f5c3dd896ecd46499c
+PODFILE CHECKSUM: 5cbf445e0fcf5a884867b76a13e595b88be0dedd
 
-COCOAPODS: 1.9.1
+COCOAPODS: 1.8.4

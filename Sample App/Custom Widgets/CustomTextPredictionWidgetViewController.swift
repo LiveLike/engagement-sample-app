@@ -94,6 +94,8 @@ class CustomTextPredictionWidgetViewController: Widget {
 }
 
 extension CustomTextPredictionWidgetViewController: PredictionWidgetModelDelegate {
+    func predictionWidgetModel(_ model: PredictionWidgetModel, didReceiveFollowUp id: String, kind: WidgetKind) {}
+    
     func predictionWidgetModel(_ model: PredictionWidgetModel, voteCountDidChange voteCount: Int, forOption optionID: String) {
         DispatchQueue.main.async {
             guard let optionIndex = model.options.firstIndex(where: { $0.id == optionID }) else { return }

@@ -145,7 +145,7 @@ extension CustomWidgetsUseCase: WidgetPopupViewControllerDelegate {
                 return CustomCheerMeterWidgetViewController(model: model)
             }
             return nil
-        case .socialEmbed(_):
+        default:
             return DefaultWidgetFactory.makeWidget(from: widgetModel)
         }
     }

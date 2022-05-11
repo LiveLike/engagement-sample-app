@@ -36,6 +36,7 @@
 		76FE3E992437990E003F179B /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E972437990E003F179B /* Main.storyboard */; };
 		76FE3E9B24379912003F179B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E9A24379912003F179B /* Assets.xcassets */; };
 		76FE3E9E24379912003F179B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 76FE3E9C24379912003F179B /* LaunchScreen.storyboard */; };
+		8B5996A9024F358C55C51DDE /* Pods_Sample_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5854787E0CB69B05B3845C4D /* Pods_Sample_App.framework */; };
 		D32167A425DDAA6C004076C3 /* ImagePollWidgetResultsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D321679E25DDAA6C004076C3 /* ImagePollWidgetResultsViewController.swift */; };
 		D32167A525DDAA6C004076C3 /* ImageQuizWidgetResultsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D321679F25DDAA6C004076C3 /* ImageQuizWidgetResultsViewController.swift */; };
 		D32167A625DDAA6C004076C3 /* CheerMeterWidgetResultsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32167A025DDAA6C004076C3 /* CheerMeterWidgetResultsViewController.swift */; };
@@ -120,6 +121,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8B5996A9024F358C55C51DDE /* Pods_Sample_App.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

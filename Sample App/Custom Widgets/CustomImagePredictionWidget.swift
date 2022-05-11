@@ -172,6 +172,8 @@ class CustomImagePredictionWidget: Widget, UICollectionViewDelegate, UICollectio
 }
 
 extension CustomImagePredictionWidget: PredictionWidgetModelDelegate {
+    func predictionWidgetModel(_ model: PredictionWidgetModel, didReceiveFollowUp id: String, kind: WidgetKind) {} 
+    
     func predictionWidgetModel(_ model: PredictionWidgetModel, voteCountDidChange voteCount: Int, forOption optionID: String) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }

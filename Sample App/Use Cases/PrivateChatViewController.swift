@@ -138,6 +138,12 @@ class PrivateChatViewController: UIViewController {
 
 @available(iOS 13.0, *)
 extension PrivateChatViewController: ChatSessionDelegate {
+    func chatSession(_ chatSession: ChatSession, didRecieveRoomUpdate chatRoom: ChatRoomInfo) {}
+    
+    func chatSession(_ chatSession: ChatSession, didPinMessage message: PinMessageInfo) {}
+    
+    func chatSession(_ chatSession: ChatSession, didUnpinMessage pinMessageInfoID: String) {}
+    
     func chatSession(_ chatSession: ChatSession, didRecieveNewMessage message: ChatMessage) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
