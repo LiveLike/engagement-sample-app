@@ -142,6 +142,17 @@ class HomeViewController: UIViewController {
         return button
     }()
     
+    private let tokenGatesChatUseCaseButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle("Token Gated Chat", for: .normal)
+        button.backgroundColor = .lightGray
+        button.contentHorizontalAlignment = .left
+        button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
+        button.addTarget(self, action: #selector(tokenGatedChatUseCaseButtonSelected), for: .touchUpInside)
+        return button
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -171,6 +182,9 @@ class HomeViewController: UIViewController {
         stackView.addArrangedSubview(customWidgetModuleButton)
         stackView.addArrangedSubview(chatWithTimelineModuleButton)
         stackView.addArrangedSubview(privateChatCustomViewControllerButton)
+        stackView.addArrangedSubview(tokenGatesChatUseCaseButton)
+        
+        Defaults.activeClientID = "w2E7aVPe1FHrdOwKEvl6w33yVd4dA2SC9QqQIQu5" // TODO: remove before PR
         
         // Loads previous client id and program id from UserDefaults
         clientIDTextField.text = Defaults.activeClientID
@@ -311,6 +325,18 @@ class HomeViewController: UIViewController {
         createEnterChatRoomUseCase.modalPresentationStyle = .fullScreen
         self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)
         
+    }
+    
+    @objc func tokenGatedChatUseCaseButtonSelected() {
+        guard let clientID = Defaults.activeClientID, !clientID.isEmpty else {
+            presentInvalidClientIDAlert()
+            return
+        }
+
+        let createEnterChatRoomUseCase = TokenGatedChatUseCase(clientID: clientID)
+        
+        createEnterChatRoomUseCase.modalPresentationStyle = .fullScreen
+        self.navigationController?.pushViewController(createEnterChatRoomUseCase, animated: true)
     }
     
     private func presentInvalidClientIDAlert() {

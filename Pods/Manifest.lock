@@ -1,24 +1,36 @@
 PODS:
+  - CryptoSwift (1.5.1)
   - EngagementSDK (2.46):
     - lottie-ios (~> 3.0)
     - PubNubSwift (~> 4.0)
-  - lottie-ios (3.2.3)
+  - lottie-ios (3.3.0)
   - PubNubSwift (4.1.2)
+  - Starscream (3.1.1)
+  - WalletConnectSwift (1.6.0):
+    - CryptoSwift (~> 1.4)
+    - Starscream (~> 3.1)
 
 DEPENDENCIES:
   - EngagementSDK
+  - WalletConnectSwift
 
 SPEC REPOS:
   trunk:
+    - CryptoSwift
     - EngagementSDK
     - lottie-ios
     - PubNubSwift
+    - Starscream
+    - WalletConnectSwift
 
 SPEC CHECKSUMS:
+  CryptoSwift: c4f2debceb38bf44c80659afe009f71e23e4a082
   EngagementSDK: eca45281062ca7cff35fafaf13fab2d75c189d44
-  lottie-ios: c058aeafa76daa4cf64d773554bccc8385d0150e
+  lottie-ios: 6ac74dcc09904798f59b18cb3075c089d76be9ae
   PubNubSwift: bb37151932fad1fa8233c224719d6bdf6bb62dc5
+  Starscream: 4bb2f9942274833f7b4d296a55504dcfc7edb7b0
+  WalletConnectSwift: 1fbff8f5315bd8d41596773ca1b384aa873b6824
 
-PODFILE CHECKSUM: 5cbf445e0fcf5a884867b76a13e595b88be0dedd
+PODFILE CHECKSUM: 8ce4b7c1eb21a92f77a650f3938288fbec3d4033
 
-COCOAPODS: 1.8.4
+COCOAPODS: 1.11.3

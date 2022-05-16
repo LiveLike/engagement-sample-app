@@ -10,6 +10,17 @@ struct Defaults {
     private static let progamIDKeyUserDefaults = "com.livelike.SampleApp.programID"
     private static let accessTokenKeyUserDefaults = "com.livelike.SampleApp.accessToken"
     private static let programClientID = "com.livelike.SampleApp.clientID"
+    private static let walletAddressID = "com.livelike.SampleApp.walletAddressID"
+    
+    public static var walletAddress: String? {
+        get {
+            return UserDefaults.standard.string(forKey: walletAddressID)
+        }
+        set(newValue) {
+            UserDefaults.standard.set(newValue, forKey: walletAddressID)
+            UserDefaults.standard.synchronize()
+        }
+    }
     
     public static var activeProgramID: String? {
         get {
