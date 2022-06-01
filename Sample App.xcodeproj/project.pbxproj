@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		2706E66925AE5A4500996A8B /* CustomImagePollWidgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2706E66825AE5A4500996A8B /* CustomImagePollWidgetViewController.swift */; };
 		2706E66C25AE5AC900996A8B /* CustomImageOptionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2706E66B25AE5AC900996A8B /* CustomImageOptionCell.swift */; };
+		270D8EA028344345008EE9C5 /* EtherscanAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 270D8E9D28344341008EE9C5 /* EtherscanAPI.swift */; };
+		270D8EA128344345008EE9C5 /* TokenGatedChatUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 270D8E9E28344345008EE9C5 /* TokenGatedChatUseCase.swift */; };
+		270D8EA228344345008EE9C5 /* WalletConnect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 270D8E9F28344345008EE9C5 /* WalletConnect.swift */; };
 		2757FD31249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2757FD30249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift */; };
 		276401B3243BB0080016C2FC /* Utils+UserDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276401B2243BB0080016C2FC /* Utils+UserDefaults.swift */; };
 		276401B6243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276401B5243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift */; };
@@ -62,6 +65,9 @@
 /* Begin PBXFileReference section */
 		2706E66825AE5A4500996A8B /* CustomImagePollWidgetViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomImagePollWidgetViewController.swift; sourceTree = "<group>"; };
 		2706E66B25AE5AC900996A8B /* CustomImageOptionCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomImageOptionCell.swift; sourceTree = "<group>"; };
+		270D8E9D28344341008EE9C5 /* EtherscanAPI.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EtherscanAPI.swift; sourceTree = "<group>"; };
+		270D8E9E28344345008EE9C5 /* TokenGatedChatUseCase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenGatedChatUseCase.swift; sourceTree = "<group>"; };
+		270D8E9F28344345008EE9C5 /* WalletConnect.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WalletConnect.swift; sourceTree = "<group>"; };
 		2757FD30249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateEnterChatRoomUseCase.swift; sourceTree = "<group>"; };
 		276401B2243BB0080016C2FC /* Utils+UserDefaults.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Utils+UserDefaults.swift"; sourceTree = "<group>"; };
 		276401B5243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetChatSpoilerPreventionUseCase.swift; sourceTree = "<group>"; };
@@ -137,9 +143,20 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
+		270D8EA32834434F008EE9C5 /* Token Gated Chat */ = {
+			isa = PBXGroup;
+			children = (
+				270D8E9F28344345008EE9C5 /* WalletConnect.swift */,
+				270D8E9D28344341008EE9C5 /* EtherscanAPI.swift */,
+				270D8E9E28344345008EE9C5 /* TokenGatedChatUseCase.swift */,
+			);
+			path = "Token Gated Chat";
+			sourceTree = "<group>";
+		};
 		276401B4243BB5170016C2FC /* Use Cases */ = {
 			isa = PBXGroup;
 			children = (
+				270D8EA32834434F008EE9C5 /* Token Gated Chat */,
 				D32167AB25DDAAC6004076C3 /* WidgetTimelineViewController.swift */,
 				767AFD56243B8B2600F85E8A /* ChatUseCase.swift */,
 				27C83D01243B8D44009F35DA /* WidgetsUseCase.swift */,
@@ -368,6 +385,7 @@
 				2772CED425AE7B7500EA27CE /* CustomTextPredictionFollowUpViewController.swift in Sources */,
 				7695A97E260987FB00C1C46E /* PrivateChatViewController.swift in Sources */,
 				2772CED125AE7B7500EA27CE /* CustomTextPollWidgetViewController.swift in Sources */,
+				270D8EA128344345008EE9C5 /* TokenGatedChatUseCase.swift in Sources */,
 				2772CED525AE7B7500EA27CE /* CustomTextQuizWidgetViewController.swift in Sources */,
 				D3F9FC2425A4E0E000ECBAA5 /* CustomAlertWidgetView.swift in Sources */,
 				D32167A525DDAA6C004076C3 /* ImageQuizWidgetResultsViewController.swift in Sources */,
@@ -376,6 +394,7 @@
 				2772CEC925AE7B5800EA27CE /* CustomImageSliderView.swift in Sources */,
 				2706E66C25AE5AC900996A8B /* CustomImageOptionCell.swift in Sources */,
 				D3708E6325DF042C006F891A /* ImagePredictionResultsWidgetViewController.swift in Sources */,
+				270D8EA228344345008EE9C5 /* WalletConnect.swift in Sources */,
 				2772CEF025AE800F00EA27CE /* CustomImageQuizWidgetViewController.swift in Sources */,
 				2772CECA25AE7B5800EA27CE /* CustomImageSliderViewController.swift in Sources */,
 				276401B6243BB5480016C2FC /* WidgetChatSpoilerPreventionUseCase.swift in Sources */,
@@ -396,6 +415,7 @@
 				27C39D9D26386FEE00980A76 /* ChatWithTimelineUseCase.swift in Sources */,
 				2757FD31249955FA00DCE8C0 /* CreateEnterChatRoomUseCase.swift in Sources */,
 				2772CED825AE7C5300EA27CE /* CustomImagePredictionWidget.swift in Sources */,
+				270D8EA028344345008EE9C5 /* EtherscanAPI.swift in Sources */,
 				2772CED225AE7B7500EA27CE /* CustomTextChoiceWidgetView.swift in Sources */,
 				D32167AC25DDAAC6004076C3 /* WidgetTimelineViewController.swift in Sources */,
 				D3CB4DD025B1ECB20042BE4D /* CustomCheerMeterWidgetViewController.swift in Sources */,
